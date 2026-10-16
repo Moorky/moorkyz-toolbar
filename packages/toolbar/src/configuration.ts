@@ -1,4 +1,5 @@
 export const CONFIGURATION_VERSION = "1.0" as const;
+export type ToolbarPlacementMode = "viewport" | "container" | "fullscreen";
 
 export const FEATURE_DEFAULTS = Object.freeze({
   search: true,
@@ -61,6 +62,18 @@ export const CONFIGURATION_SCHEMA = deepFreeze({
       },
       default: [],
     },
+    placement: {
+      type: "object",
+      properties: {
+        mode: {
+          enum: ["viewport", "container", "fullscreen"],
+          default: "viewport",
+        },
+        anchor: { enum: ["bottom"], default: "bottom" },
+      },
+      additionalProperties: false,
+      default: { mode: "viewport", anchor: "bottom" },
+    },
     renderMode: { enum: ["shadow", "light"], default: "shadow" },
     label: {
       type: "string",
@@ -83,10 +96,21 @@ export interface ToolbarActionDescriptor {
   readonly label: string;
 }
 
+export interface ToolbarPlacementInput {
+  readonly mode?: ToolbarPlacementMode;
+  readonly anchor?: "bottom";
+}
+
+export interface ToolbarPlacement {
+  readonly mode: ToolbarPlacementMode;
+  readonly anchor: "bottom";
+}
+
 export interface ToolbarConfigurationInput {
   readonly schemaVersion?: string;
   readonly features?: FeatureOverrides;
   readonly actions?: readonly ToolbarActionDescriptor[];
+  readonly placement?: ToolbarPlacementInput;
   readonly renderMode?: "shadow" | "light";
   readonly label?: string;
 }
@@ -95,6 +119,7 @@ export interface ToolbarConfiguration {
   readonly schemaVersion: typeof CONFIGURATION_VERSION;
   readonly features: FeatureFlags;
   readonly actions: readonly ToolbarActionDescriptor[];
+  readonly placement: ToolbarPlacement;
   readonly renderMode: "shadow" | "light";
   readonly label: string;
 }
@@ -109,6 +134,9 @@ export type ConfigurationDiagnosticCode =
   | "CONFIG_INVALID_ACTIONS"
   | "CONFIG_INVALID_ACTION"
   | "CONFIG_DUPLICATE_ACTION"
+  | "CONFIG_INVALID_PLACEMENT"
+  | "CONFIG_INVALID_PLACEMENT_MODE"
+  | "CONFIG_INVALID_PLACEMENT_ANCHOR"
   | "CONFIG_INVALID_RENDER_MODE"
   | "CONFIG_INVALID_LABEL";
 
@@ -130,6 +158,9 @@ const FEATURE_KEYS = new Set(
 );
 const ACTION_KEYS = new Set(
   Object.keys(CONFIGURATION_SCHEMA.properties.actions.items.properties),
+);
+const PLACEMENT_KEYS = new Set(
+  Object.keys(CONFIGURATION_SCHEMA.properties.placement.properties),
 );
 const ACTION_ID_PATTERN_RE = new RegExp(ACTION_ID_PATTERN);
 
@@ -309,6 +340,55 @@ function normalizeActions(
   return actions;
 }
 
+function normalizePlacement(
+  value: unknown,
+  errors: ConfigurationDiagnostic[],
+): ToolbarPlacement {
+  if (value === undefined) {
+    return { mode: "viewport", anchor: "bottom" };
+  }
+  if (!isPlainRecord(value)) {
+    errors.push({
+      code: "CONFIG_INVALID_PLACEMENT",
+      path: "placement",
+      message: "Expected a plain placement object.",
+    });
+    return { mode: "viewport", anchor: "bottom" };
+  }
+
+  const safePlacement = dataProperties(value, "placement", errors);
+  reportUnknownKeys(safePlacement, PLACEMENT_KEYS, "placement", errors);
+
+  const requestedMode =
+    safePlacement.mode === undefined ? "viewport" : safePlacement.mode;
+  let mode: ToolbarPlacementMode = "viewport";
+  if (
+    requestedMode === "viewport" ||
+    requestedMode === "container" ||
+    requestedMode === "fullscreen"
+  ) {
+    mode = requestedMode;
+  } else {
+    errors.push({
+      code: "CONFIG_INVALID_PLACEMENT_MODE",
+      path: "placement.mode",
+      message:
+        'Placement mode must be "viewport", "container", or "fullscreen".',
+    });
+  }
+
+  const requestedAnchor =
+    safePlacement.anchor === undefined ? "bottom" : safePlacement.anchor;
+  if (requestedAnchor !== "bottom") {
+    errors.push({
+      code: "CONFIG_INVALID_PLACEMENT_ANCHOR",
+      path: "placement.anchor",
+      message: 'Placement anchor must be "bottom".',
+    });
+  }
+  return { mode, anchor: "bottom" };
+}
+
 export function validateConfiguration(input: unknown): ConfigurationValidation {
   if (!isPlainRecord(input)) {
     return {
@@ -341,6 +421,7 @@ export function validateConfiguration(input: unknown): ConfigurationValidation {
 
   const features = normalizeFeatures(config.features, errors);
   const actions = normalizeActions(config.actions, errors);
+  const placement = normalizePlacement(config.placement, errors);
   const requestedRenderMode =
     config.renderMode === undefined ? "shadow" : config.renderMode;
   let renderMode: "shadow" | "light" = "shadow";
@@ -377,6 +458,7 @@ export function validateConfiguration(input: unknown): ConfigurationValidation {
       schemaVersion: CONFIGURATION_VERSION,
       features: Object.freeze(features),
       actions: Object.freeze(actions),
+      placement: Object.freeze(placement),
       renderMode,
       label,
     }),

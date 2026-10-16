@@ -42,6 +42,8 @@ const server = createServer(async (request, response) => {
     file = resolve(fixtureRoot, "index.html");
   } else if (path === "/fixture.js") {
     file = resolve(fixtureRoot, "fixture.js");
+  } else if (path === "/fixture.css") {
+    file = resolve(fixtureRoot, "fixture.css");
   } else if (packageFiles.has(path)) {
     file = resolve(packageRoot, packageFiles.get(path));
   } else {

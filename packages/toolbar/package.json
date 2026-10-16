@@ -1,7 +1,7 @@
 {
   "name": "@moorkyz/toolbar",
   "version": "0.1.0",
-  "description": "Framework-neutral, accessible application toolbar",
+  "description": "A lightweight, framework-agnostic, extensible toolbar for modern web applications.",
   "license": "Apache-2.0",
   "type": "module",
   "sideEffects": false,

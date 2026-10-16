@@ -38,3 +38,18 @@ window.mountLightToolbar = () => {
   if (!outcome.ok) throw new Error(outcome.error.message);
   return lightToolbar;
 };
+window.mountPlacementToolbar = (mode) => {
+  const placementToolbar = createToolbar(
+    {
+      placement: { mode, anchor: "bottom" },
+      label: `${mode} toolbar`,
+      actions: [{ id: "home", label: "Home" }],
+    },
+    { dispatchAction: () => {} },
+  );
+  const outcome = placementToolbar.mount(
+    document.querySelector("#container-target"),
+  );
+  if (!outcome.ok) throw new Error(outcome.error.message);
+  window.placementToolbar = placementToolbar;
+};

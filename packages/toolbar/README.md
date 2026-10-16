@@ -53,4 +53,6 @@ Mounting defaults to Shadow DOM; set `renderMode: "light"` to opt into scoped cl
 
 `update()` applies a validated partial patch; supplied action lists replace the existing list, while supplied feature flags merge with existing flags. Omitted fields are preserved. A mounted instance cannot switch between Shadow and Light DOM; create a new controller to change modes. Collapse is explicit and does not auto-restore.
 
+Placement defaults to the viewport bottom. `placement: { mode: "container" }` positions relative to the host-provided positioned mount container; `mode: "fullscreen"` positions inside the host's fullscreen root, which the host enters and exits through the Fullscreen API. Narrow action rows retain native horizontal scrolling and expose labeled start/end scroll buttons only when content overflows.
+
 Feature flags and configuration diagnostics are draft contracts. Recognizing a feature flag does not mean that the feature module is implemented or activated. See the repository [implementation status](../../docs/engineering/implementation-status.md) and [SDK/schema contract](../../docs/contracts/sdk-and-schema.md).

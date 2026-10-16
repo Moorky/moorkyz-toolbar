@@ -38,7 +38,24 @@
   pointer-events: none;
 }
 
+.mzk-toolbar-host[data-placement="container"],
+.mzk-toolbar-host[data-placement="fullscreen"] {
+  position: absolute;
+  bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+  padding-inline: max(0.75rem, env(safe-area-inset-left, 0px))
+    max(0.75rem, env(safe-area-inset-right, 0px));
+}
+
+:host(.mzk-toolbar-host[data-placement="container"]),
+:host(.mzk-toolbar-host[data-placement="fullscreen"]) {
+  position: absolute;
+  bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+  padding-inline: max(0.75rem, env(safe-area-inset-left, 0px))
+    max(0.75rem, env(safe-area-inset-right, 0px));
+}
+
 .mzk-toolbar {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.45rem;
@@ -58,13 +75,69 @@
     opacity 250ms ease;
 }
 
+.mzk-toolbar__action-viewport {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .mzk-toolbar__actions {
   display: flex;
+  width: 100%;
   min-width: 0;
   gap: 0.25rem;
   overflow-x: auto;
   overscroll-behavior-inline: contain;
   scrollbar-width: none;
+}
+
+.mzk-toolbar__fade {
+  position: absolute;
+  z-index: 1;
+  inset-block: 0;
+  width: 1rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.mzk-toolbar__fade--start {
+  inset-inline-start: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--dock-bg, rgb(255 255 255 / 82%))
+  );
+}
+
+.mzk-toolbar__fade--end {
+  inset-inline-end: 0;
+  background: linear-gradient(
+    90deg,
+    var(--dock-bg, rgb(255 255 255 / 82%)),
+    transparent
+  );
+}
+
+.mzk-toolbar[data-overflow-start="true"] .mzk-toolbar__fade--start,
+.mzk-toolbar[data-overflow-end="true"] .mzk-toolbar__fade--end {
+  opacity: 1;
+}
+
+.mzk-toolbar:dir(rtl) .mzk-toolbar__fade--start {
+  background: linear-gradient(
+    270deg,
+    transparent,
+    var(--dock-bg, rgb(255 255 255 / 82%))
+  );
+}
+
+.mzk-toolbar:dir(rtl) .mzk-toolbar__fade--end {
+  background: linear-gradient(
+    270deg,
+    var(--dock-bg, rgb(255 255 255 / 82%)),
+    transparent
+  );
 }
 
 .mzk-toolbar [hidden] {
@@ -86,6 +159,14 @@
   color: inherit;
   font: inherit;
   cursor: pointer;
+}
+
+.mzk-toolbar .mzk-toolbar__scroll {
+  position: relative;
+  z-index: 2;
+  min-width: 2.75rem;
+  padding-inline: 0.45rem;
+  font-size: 1.1rem;
 }
 
 .mzk-toolbar button:hover:not(:disabled) {
@@ -141,7 +222,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mzk-toolbar {
+  .mzk-toolbar,
+  .mzk-toolbar__fade {
     transition: none;
   }
 }

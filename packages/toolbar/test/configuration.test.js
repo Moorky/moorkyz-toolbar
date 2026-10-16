@@ -41,6 +41,36 @@ test("keeps independently optional integrations disabled by default", () => {
   assert.equal(result.value.features.experimental, false);
 });
 
+test("normalizes placement defaults and rejects unsupported placement settings", () => {
+  const normalized = validateConfiguration({
+    placement: { mode: "fullscreen" },
+  });
+  assert.equal(normalized.ok, true);
+  if (normalized.ok) {
+    assert.deepEqual(normalized.value.placement, {
+      mode: "fullscreen",
+      anchor: "bottom",
+    });
+  }
+
+  const invalid = validateConfiguration({
+    placement: { mode: "floating", anchor: "top" },
+  });
+  assert.equal(invalid.ok, false);
+  if (!invalid.ok) {
+    assert.ok(
+      invalid.errors.some(
+        ({ code }) => code === "CONFIG_INVALID_PLACEMENT_MODE",
+      ),
+    );
+    assert.ok(
+      invalid.errors.some(
+        ({ code }) => code === "CONFIG_INVALID_PLACEMENT_ANCHOR",
+      ),
+    );
+  }
+});
+
 test("exports a frozen JSON Schema derived from the normalized feature defaults", () => {
   assert.equal(
     CONFIGURATION_SCHEMA.$schema,
@@ -54,6 +84,10 @@ test("exports a frozen JSON Schema derived from the normalized feature defaults"
     CONFIGURATION_SCHEMA.properties.features.default,
     FEATURE_DEFAULTS,
   );
+  assert.deepEqual(CONFIGURATION_SCHEMA.properties.placement.default, {
+    mode: "viewport",
+    anchor: "bottom",
+  });
   assert.equal(Object.isFrozen(CONFIGURATION_SCHEMA.properties), true);
   assert.equal(
     Object.isFrozen(CONFIGURATION_SCHEMA.properties.features.properties),

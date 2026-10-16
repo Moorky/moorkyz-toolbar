@@ -41,8 +41,20 @@ test("mounts a semantic Shadow DOM toolbar with a local stylesheet", (t) => {
     shadow.querySelector('[role="toolbar"]').getAttribute("aria-label"),
     "Application toolbar",
   );
-  assert.equal(shadow.querySelectorAll("button").length, 3);
-  assert.equal(shadow.querySelectorAll("button[disabled]").length, 2);
+  assert.equal(shadow.querySelectorAll("button").length, 5);
+  assert.equal(
+    shadow.querySelectorAll('[data-toolbar-control^="action:"][disabled]')
+      .length,
+    2,
+  );
+  assert.equal(
+    shadow.querySelector('[data-toolbar-control="scroll-start"]').hidden,
+    true,
+  );
+  assert.equal(
+    shadow.querySelector('[data-toolbar-control="scroll-end"]').hidden,
+    true,
+  );
   assert.match(
     shadow.querySelector('link[rel="stylesheet"]').getAttribute("href"),
     /toolbar\.css$/,
@@ -107,20 +119,23 @@ test("supports toolbar arrow/Home/End keyboard navigation and manual collapse", 
   current.toolbar.mount(current.target);
 
   const shadow = current.target.firstElementChild.shadowRoot;
-  const controls = shadow.querySelectorAll("button");
-  assert.equal(controls[0].tabIndex, 0);
+  const home = shadow.querySelector('[data-toolbar-control="action:home"]');
+  const projects = shadow.querySelector(
+    '[data-toolbar-control="action:projects"]',
+  );
+  assert.equal(home.tabIndex, 0);
 
-  controls[0].focus();
-  controls[0].dispatchEvent(
+  home.focus();
+  home.dispatchEvent(
     new current.window.KeyboardEvent("keydown", {
       key: "ArrowRight",
       bubbles: true,
       cancelable: true,
     }),
   );
-  assert.equal(shadow.activeElement, controls[1]);
+  assert.equal(shadow.activeElement, projects);
 
-  controls[1].dispatchEvent(
+  projects.dispatchEvent(
     new current.window.KeyboardEvent("keydown", {
       key: "End",
       bubbles: true,
@@ -225,11 +240,19 @@ test("supports Light DOM, idempotent mount, and complete disposal", (t) => {
   assert.equal(current.toolbar.mount(current.target).ok, true);
   assert.equal(current.toolbar.mount(current.target).ok, true);
   assert.equal(current.target.children.length, 1);
+  const mountHost = current.target.firstElementChild;
+  assert.equal(mountHost.dataset.placement, "viewport");
   assert.equal(
     current.target.querySelector('[role="toolbar"]').getAttribute("aria-label"),
     "Application toolbar",
   );
+  assert.equal(
+    current.toolbar.update({ placement: { mode: "container" } }).ok,
+    true,
+  );
+  assert.equal(mountHost.dataset.placement, "container");
   assert.equal(current.toolbar.update({ label: "Light dock" }).ok, true);
+  assert.equal(mountHost.dataset.placement, "container");
   assert.equal(
     current.target.querySelector('[role="toolbar"]').getAttribute("aria-label"),
     "Light dock",

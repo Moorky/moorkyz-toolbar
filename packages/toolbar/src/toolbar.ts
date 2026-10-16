@@ -80,10 +80,15 @@ class ToolbarControllerImpl implements ToolbarController {
   private renderRoot: RenderRoot | null = null;
   private toolbarElement: HTMLDivElement | null = null;
   private statusElement: HTMLDivElement | null = null;
+  private actionsElement: HTMLDivElement | null = null;
   private collapsed = false;
   private disposed = false;
   private keydownHandler: ((event: KeyboardEvent) => void) | null = null;
   private clickHandler: ((event: MouseEvent) => void) | null = null;
+  private overflowObserver: ResizeObserver | null = null;
+  private overflowWindow: Window | null = null;
+  private overflowScrollHandler: (() => void) | null = null;
+  private overflowResizeHandler: (() => void) | null = null;
 
   constructor(configuration: ToolbarConfiguration, host: ToolbarHost) {
     this.configuration = configuration;
@@ -124,6 +129,7 @@ class ToolbarControllerImpl implements ToolbarController {
     const document = target.ownerDocument;
     const hostElement = document.createElement("div");
     hostElement.className = "mzk-toolbar-host";
+    hostElement.dataset.placement = this.configuration.placement.mode;
 
     try {
       const root =
@@ -201,6 +207,12 @@ class ToolbarControllerImpl implements ToolbarController {
       actions: hasOwn("actions")
         ? patchValidation.value.actions
         : this.configuration.actions,
+      placement: hasOwn("placement")
+        ? {
+            ...this.configuration.placement,
+            ...(configuration.placement ?? {}),
+          }
+        : this.configuration.placement,
       renderMode: hasOwn("renderMode")
         ? patchValidation.value.renderMode
         : this.configuration.renderMode,
@@ -274,6 +286,7 @@ class ToolbarControllerImpl implements ToolbarController {
   }
 
   private clearMountReferences(): void {
+    this.clearOverflowMonitoring();
     this.mountTarget = null;
     this.hostElement = null;
     this.renderRoot = null;
@@ -281,6 +294,29 @@ class ToolbarControllerImpl implements ToolbarController {
     this.statusElement = null;
     this.keydownHandler = null;
     this.clickHandler = null;
+  }
+
+  private createScrollButton(
+    document: Document,
+    direction: "start" | "end",
+    glyph: string,
+  ): HTMLButtonElement {
+    const button = document.createElement("button");
+    button.className = `mzk-toolbar__scroll mzk-toolbar__scroll--${direction}`;
+    button.type = "button";
+    button.setAttribute("data-toolbar-control", `scroll-${direction}`);
+    button.setAttribute(
+      "aria-label",
+      `Scroll toolbar actions toward ${direction}`,
+    );
+    const icon = document.createElement("span");
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = glyph;
+    button.appendChild(icon);
+    button.hidden = true;
+    button.disabled = true;
+    button.tabIndex = -1;
+    return button;
   }
 
   private render(): void {
@@ -295,9 +331,35 @@ class ToolbarControllerImpl implements ToolbarController {
       activeElement !== null && toolbar.contains(activeElement)
         ? activeElement.getAttribute("data-toolbar-control")
         : null;
+    this.clearOverflowMonitoring();
 
     toolbar.setAttribute("aria-label", this.configuration.label);
     toolbar.setAttribute("data-collapsed", String(this.collapsed));
+    if (this.hostElement !== null) {
+      this.hostElement.dataset.placement = this.configuration.placement.mode;
+    }
+
+    const hostElement = this.hostElement;
+    const direction =
+      hostElement === null
+        ? "ltr"
+        : (toolbar.ownerDocument.defaultView?.getComputedStyle(hostElement)
+            .direction ?? "ltr");
+    const scrollStart = this.createScrollButton(
+      document,
+      "start",
+      direction === "rtl" ? "›" : "‹",
+    );
+    const scrollEnd = this.createScrollButton(
+      document,
+      "end",
+      direction === "rtl" ? "‹" : "›",
+    );
+    const actionViewport = document.createElement("div");
+    actionViewport.className = "mzk-toolbar__action-viewport";
+    const fadeStart = document.createElement("span");
+    fadeStart.className = "mzk-toolbar__fade mzk-toolbar__fade--start";
+    fadeStart.setAttribute("aria-hidden", "true");
 
     const actions = document.createElement("div");
     actions.className = "mzk-toolbar__actions";
@@ -314,6 +376,11 @@ class ToolbarControllerImpl implements ToolbarController {
       actions.appendChild(button);
     }
 
+    const fadeEnd = document.createElement("span");
+    fadeEnd.className = "mzk-toolbar__fade mzk-toolbar__fade--end";
+    fadeEnd.setAttribute("aria-hidden", "true");
+    actionViewport.append(fadeStart, actions, fadeEnd);
+
     const collapseButton = document.createElement("button");
     collapseButton.className = "mzk-toolbar__collapse";
     collapseButton.type = "button";
@@ -326,7 +393,16 @@ class ToolbarControllerImpl implements ToolbarController {
     collapseButton.setAttribute("aria-expanded", String(!this.collapsed));
     collapseButton.tabIndex = -1;
 
-    toolbar.replaceChildren(actions, collapseButton);
+    toolbar.replaceChildren(
+      scrollStart,
+      actionViewport,
+      scrollEnd,
+      collapseButton,
+    );
+    this.actionsElement = actions;
+    this.startOverflowMonitoring();
+    this.updateOverflowControls();
+
     const buttons = Array.from(toolbar.querySelectorAll("button")).filter(
       (button) => !button.disabled && button.closest("[hidden]") === null,
     );
@@ -392,6 +468,10 @@ class ToolbarControllerImpl implements ToolbarController {
     }
 
     const control = button.getAttribute("data-toolbar-control");
+    if (control === "scroll-start" || control === "scroll-end") {
+      this.scrollActions(control === "scroll-start");
+      return;
+    }
     if (control === "collapse") {
       if (this.collapsed) {
         this.expand();
@@ -407,6 +487,125 @@ class ToolbarControllerImpl implements ToolbarController {
     if (action !== undefined) {
       this.dispatchAction(action.id, action.label);
     }
+  }
+
+  private startOverflowMonitoring(): void {
+    const actions = this.actionsElement;
+    if (actions === null) return;
+
+    this.overflowScrollHandler = () => this.updateOverflowControls();
+    actions.addEventListener("scroll", this.overflowScrollHandler, {
+      passive: true,
+    });
+
+    const view = actions.ownerDocument.defaultView;
+    if (view === null) return;
+    const ResizeObserverConstructor = view.ResizeObserver;
+    if (ResizeObserverConstructor !== undefined) {
+      this.overflowObserver = new ResizeObserverConstructor(() =>
+        this.updateOverflowControls(),
+      );
+      this.overflowObserver.observe(actions);
+      if (this.toolbarElement !== null) {
+        this.overflowObserver.observe(this.toolbarElement);
+      }
+    } else {
+      this.overflowWindow = view;
+      this.overflowResizeHandler = () => this.updateOverflowControls();
+      view.addEventListener("resize", this.overflowResizeHandler, {
+        passive: true,
+      });
+    }
+  }
+
+  private updateOverflowControls(): void {
+    const toolbar = this.toolbarElement;
+    const actions = this.actionsElement;
+    if (toolbar === null || actions === null) return;
+
+    const start = toolbar.querySelector<HTMLButtonElement>(
+      '[data-toolbar-control="scroll-start"]',
+    );
+    const end = toolbar.querySelector<HTMLButtonElement>(
+      '[data-toolbar-control="scroll-end"]',
+    );
+    if (start === null || end === null) return;
+
+    const overflowing = actions.scrollWidth > actions.clientWidth + 1;
+    toolbar.dataset.overflowing = String(overflowing);
+    start.hidden = !overflowing;
+    end.hidden = !overflowing;
+    if (!overflowing) {
+      start.disabled = true;
+      end.disabled = true;
+      toolbar.dataset.overflowStart = "false";
+      toolbar.dataset.overflowEnd = "false";
+      return;
+    }
+
+    const buttons = Array.from(actions.querySelectorAll("button"));
+    const first = buttons[0];
+    const last = buttons[buttons.length - 1];
+    const viewport = actions.getBoundingClientRect();
+    const direction =
+      actions.ownerDocument.defaultView?.getComputedStyle(actions).direction ??
+      "ltr";
+    const firstBounds = first?.getBoundingClientRect();
+    const lastBounds = last?.getBoundingClientRect();
+    const atStart =
+      firstBounds === undefined ||
+      (direction === "rtl"
+        ? firstBounds.right <= viewport.right + 1
+        : firstBounds.left >= viewport.left - 1);
+    const atEnd =
+      lastBounds === undefined ||
+      (direction === "rtl"
+        ? lastBounds.left >= viewport.left - 1
+        : lastBounds.right <= viewport.right + 1);
+
+    start.disabled = atStart;
+    end.disabled = atEnd;
+    toolbar.dataset.overflowStart = String(!atStart);
+    toolbar.dataset.overflowEnd = String(!atEnd);
+  }
+
+  private scrollActions(toStart: boolean): void {
+    const actions = this.actionsElement;
+    if (actions === null) return;
+    const buttons = Array.from(actions.querySelectorAll("button"));
+    const target = toStart ? buttons[0] : buttons[buttons.length - 1];
+    if (target === undefined) return;
+
+    const reducedMotion =
+      actions.ownerDocument.defaultView?.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches ?? false;
+    target.scrollIntoView({
+      behavior: reducedMotion ? "auto" : "smooth",
+      block: "nearest",
+      inline: toStart ? "start" : "end",
+    });
+  }
+
+  private clearOverflowMonitoring(): void {
+    if (this.actionsElement !== null && this.overflowScrollHandler !== null) {
+      this.actionsElement.removeEventListener(
+        "scroll",
+        this.overflowScrollHandler,
+      );
+    }
+    this.overflowObserver?.disconnect();
+    if (this.overflowWindow !== null && this.overflowResizeHandler !== null) {
+      this.overflowWindow.removeEventListener(
+        "resize",
+        this.overflowResizeHandler,
+      );
+    }
+    this.actionsElement = null;
+    this.overflowObserver = null;
+    this.overflowWindow = null;
+    this.overflowScrollHandler = null;
+    this.overflowResizeHandler = null;
   }
 
   private dispatchAction(actionId: string, label: string): void {
