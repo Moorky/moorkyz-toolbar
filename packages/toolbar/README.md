@@ -108,4 +108,32 @@ if (!result.ok) {
 
 The host remains responsible for task execution, authorization, freshness, and deciding when to publish a snapshot. With `features.tasks: false`, the controller does not validate or retain task data and creates no Task Center DOM.
 
+## Federated search providers
+
+`createFederatedSearchCoordinator()` queries only the host-provided providers when called. Its required feature gate and per-provider authorization policy fail closed; provider declarations are not inspected until the first enabled query. The library has no built-in search endpoint, cache, or network request. Providers receive the normalized query and an `AbortSignal`, return bounded plain-text records, and remain responsible for cooperative cancellation and data access.
+
+```ts
+import { createFederatedSearchCoordinator } from "@moorkyz/toolbar";
+
+const search = createFederatedSearchCoordinator(
+  [
+    {
+      id: "portal:docs",
+      async search(query, signal) {
+        return docsIndex.search(query, { signal });
+      },
+    },
+  ],
+  {
+    isEnabled: () => currentFeatures.search,
+    authorize: (providerId, query) => hostPolicy.canSearch(providerId, query),
+  },
+);
+
+const controller = new AbortController();
+const outcome = await search.search("keyboard shortcuts", controller.signal);
+```
+
+The coordinator preserves provider order, returns partial results with per-provider diagnostics, and exposes result IDs/text only—no navigable URLs or executable callbacks. The host decides how to present results and how a selected result maps to its own commands. Query/result caps are documented in the draft contract. A built-in search panel is not part of this coordinator slice.
+
 Feature flags and configuration diagnostics are draft contracts. Recognizing a feature flag does not mean that the feature module is implemented or activated. See the repository [implementation status](../../docs/engineering/implementation-status.md) and [SDK/schema contract](../../docs/contracts/sdk-and-schema.md).

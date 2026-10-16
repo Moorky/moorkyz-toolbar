@@ -120,5 +120,11 @@ Manual collapse state is persisted when customization and an adapter are enabled
 
 Disabling the flag removes the feature UI and clears its in-memory snapshot; disposal also releases the snapshot. While disabled, `updateTasks()` returns `TASKS_DISABLED` before inspecting the supplied value. The runtime UI and browser accessibility checks are covered by the toolbar tests. This is a display-only M6 slice; task actions, progress controls, host event adapters, and broader lifecycle reconciliation are not implemented.
 
+## M6 federated search coordinator draft
+
+`createFederatedSearchCoordinator(providers, policy)` is a headless, explicit host adapter. It requires an `isEnabled()` gate and a per-provider `authorize(providerId, query)` callback; neither is inferred from toolbar configuration. When disabled, no provider authorization, provider declaration inspection, or search callback runs. Provider declarations are validated and snapshotted lazily on the first enabled query; providers are namespaced, unique, bounded to 16, and queried only after host authorization. Search input is trimmed and limited to 256 characters; each provider may return at most 20 records with unique IDs, plain-text titles (160 characters max), and optional summaries (500 characters max). Coordinator output preserves provider/result order, adds the source provider ID, and returns provider failures/denials/invalid records as structured diagnostics alongside successful partial results. Results contain no URLs or executable callbacks.
+
+The caller supplies an `AbortSignal`; providers must cooperate with cancellation. The library has no built-in endpoint, cache, telemetry, or network call, and it does not navigate selected results. Host code owns provider data access, freshness, permission policy, result presentation, and host-command mapping. A built-in toolbar search panel and AI integration are not implemented in this slice.
+
 ## Schema validation gate
 Schema definitions must be the shared source for typed validation, Studio controls, CLI validation, generator, reference docs and representative consumer fixtures. The code generator must not independently invent a second config interpretation.
