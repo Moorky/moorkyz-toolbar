@@ -160,6 +160,12 @@ const placement = spatial.resolve(
 
 The host owns zone freshness and applying or rejecting the returned placement. Disabling coordination clears zones; an unsuccessful calculation does not collapse or move the toolbar.
 
+## Host-fed offline status
+
+The offline flag remains false by default. This slice only displays a host-supplied connectivity hint; it does not read `navigator.onLine`, listen for connectivity events, poll, queue commands, retry, or persist data. When enabled, call `updateConnectivityStatus("online" | "offline" | "unknown")`. Disabling the flag removes the status display and resets its state.
+
+Queueing and retrying commands remain blocked pending the host idempotency, authorization, and storage-retention validation recorded in `docs/engineering/open-validations.md` (V09).
+
 ## Host-authorized AI adapter
 
 AI remains disabled by default. `createHostAuthorizedAIAdapter()` requires a host-supplied provider plus an explicit feature gate and authorization callback; the library has no bundled model, remote endpoint, automatic retry, cache, or telemetry.

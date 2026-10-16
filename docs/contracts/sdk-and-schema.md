@@ -156,5 +156,9 @@ The coordinator only signals host callbacks. It does not pause or cancel host-ow
 
 The utility does not scan the DOM, install observers, mutate host layout/padding, inject CSS, or automatically apply the calculated rectangle. Host code owns zone freshness, coordinate spaces, and how an accepted rectangle is applied. This is a pure placement contract helper; integration with the mounted toolbar and broader spatial feedback-loop testing remain future work.
 
+## M6 host-fed offline status draft
+
+The existing `features.offline` flag remains false by default. When explicitly enabled, `ToolbarController.updateConnectivityStatus(status)` accepts only `unknown`, `online`, or `offline` from the host and shows a small static status label. It does not query browser connectivity APIs, install listeners, poll, queue work, retry, cache, persist, or automatically restore a collapsed toolbar. Disabling the feature clears the status and removes the label. Offline queue/retry remains blocked by open validation V09 pending host idempotency, authorization, and storage-retention decisions.
+
 ## Schema validation gate
 Schema definitions must be the shared source for typed validation, Studio controls, CLI validation, generator, reference docs and representative consumer fixtures. The code generator must not independently invent a second config interpretation.

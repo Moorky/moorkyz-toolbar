@@ -680,3 +680,59 @@ test("disabled notifications do not inspect incoming state or create UI", (t) =>
     null,
   );
 });
+
+test("offline status is host-fed, optional, and cannot restore a collapsed toolbar", (t) => {
+  const current = fixture({ features: { offline: true } });
+  t.after(() => disposeFixture(current));
+  assert.equal(current.toolbar.mount(current.target).ok, true);
+
+  const shadow = current.target.firstElementChild.shadowRoot;
+  let status = shadow.querySelector(".mzk-toolbar__connectivity");
+  assert.ok(status);
+  assert.equal(status.textContent, "Connection status unknown");
+
+  assert.equal(current.toolbar.collapse().ok, true);
+  status = shadow.querySelector(".mzk-toolbar__connectivity");
+  assert.equal(current.toolbar.updateConnectivityStatus("offline").ok, true);
+  assert.equal(current.toolbar.isCollapsed, true);
+  assert.equal(status.textContent, "Offline");
+  assert.equal(status.dataset.status, "offline");
+  assert.equal(status.getAttribute("aria-label"), "Connection status: Offline");
+  assert.equal(current.toolbar.updateConnectivityStatus("online").ok, true);
+  assert.equal(current.toolbar.isCollapsed, true);
+  assert.equal(status.textContent, "Online");
+
+  assert.equal(
+    current.toolbar.update({ features: { offline: false } }).ok,
+    true,
+  );
+  assert.equal(shadow.querySelector(".mzk-toolbar__connectivity"), null);
+  assert.equal(
+    current.toolbar.update({ features: { offline: true } }).ok,
+    true,
+  );
+  assert.equal(
+    shadow.querySelector(".mzk-toolbar__connectivity").textContent,
+    "Connection status unknown",
+  );
+});
+
+test("disabled offline status rejects before inspecting non-string inputs", (t) => {
+  const current = fixture();
+  t.after(() => disposeFixture(current));
+  assert.equal(current.toolbar.mount(current.target).ok, true);
+
+  const result = current.toolbar.updateConnectivityStatus({
+    toString() {
+      throw new Error("must not be read");
+    },
+  });
+  assert.equal(result.ok, false);
+  if (!result.ok) assert.equal(result.error.code, "OFFLINE_DISABLED");
+  assert.equal(
+    current.target.firstElementChild.shadowRoot.querySelector(
+      ".mzk-toolbar__connectivity",
+    ),
+    null,
+  );
+});

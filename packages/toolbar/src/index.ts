@@ -7,6 +7,7 @@ export * from "./diagnostics.js";
 export * from "./input.js";
 export * from "./lifecycle.js";
 export * from "./notifications.js";
+export * from "./offline.js";
 export * from "./preferences.js";
 export * from "./search.js";
 export * from "./spatial.js";

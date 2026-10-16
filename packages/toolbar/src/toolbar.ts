@@ -15,6 +15,10 @@ import {
   type NotificationDiagnostic,
   type ToolbarNotification,
 } from "./notifications.js";
+import {
+  isToolbarConnectivityStatus,
+  type ToolbarConnectivityStatus,
+} from "./offline.js";
 import { createToolbarPreferenceStore } from "./preferences.js";
 import { THEME_NAMES, type ToolbarColorScheme } from "./themes.js";
 import {
@@ -43,7 +47,9 @@ export type ToolbarErrorCode =
   | "TASKS_DISABLED"
   | "INVALID_TASK_SNAPSHOT"
   | "NOTIFICATIONS_DISABLED"
-  | "INVALID_NOTIFICATION_SNAPSHOT";
+  | "INVALID_NOTIFICATION_SNAPSHOT"
+  | "OFFLINE_DISABLED"
+  | "INVALID_CONNECTIVITY_STATUS";
 
 export interface ToolbarRuntimeError {
   readonly code: ToolbarErrorCode;
@@ -76,6 +82,7 @@ export interface ToolbarController {
   updateUserPreferences(preferences: ToolbarPreferenceValues): ToolbarResult;
   updateTasks(snapshot: unknown): ToolbarResult;
   updateNotifications(snapshot: unknown): ToolbarResult;
+  updateConnectivityStatus(status: unknown): ToolbarResult;
   collapse(): ToolbarResult;
   expand(): ToolbarResult;
   dispose(): void;
@@ -118,6 +125,12 @@ function preferenceButtonLabel(value: string): string {
     .split("-")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+function connectivityLabel(status: ToolbarConnectivityStatus): string {
+  if (status === "online") return "Online";
+  if (status === "offline") return "Offline";
+  return "Connection status unknown";
 }
 
 function failure(
@@ -179,6 +192,8 @@ class ToolbarControllerImpl implements ToolbarController {
   private notificationPanelOpen = false;
   private notificationPanelElement: HTMLElement | null = null;
   private notificationButtonElement: HTMLButtonElement | null = null;
+  private connectivityStatus: ToolbarConnectivityStatus = "unknown";
+  private connectivityElement: HTMLSpanElement | null = null;
 
   constructor(configuration: ToolbarConfiguration, host: ToolbarHost) {
     this.configuration = configuration;
@@ -367,6 +382,9 @@ class ToolbarControllerImpl implements ToolbarController {
       this.notificationItems = Object.freeze([]);
       this.notificationPanelOpen = false;
     }
+    if (!this.configuration.features.offline) {
+      this.connectivityStatus = "unknown";
+    }
     if (!this.configuration.features.customize) this.editing = false;
     if (this.toolbarElement !== null) {
       this.render();
@@ -474,6 +492,38 @@ class ToolbarControllerImpl implements ToolbarController {
     return { ok: true };
   }
 
+  updateConnectivityStatus(status: unknown): ToolbarResult {
+    if (this.disposed) {
+      return failure(
+        "DISPOSED",
+        "Connectivity status cannot be updated on a disposed toolbar.",
+      );
+    }
+    if (!this.configuration.features.offline) {
+      return failure(
+        "OFFLINE_DISABLED",
+        "Offline status is disabled by configuration.",
+      );
+    }
+    if (!isToolbarConnectivityStatus(status)) {
+      return failure(
+        "INVALID_CONNECTIVITY_STATUS",
+        "Connectivity status must be unknown, online, or offline.",
+      );
+    }
+    this.connectivityStatus = status;
+    if (this.connectivityElement !== null) {
+      const label = connectivityLabel(status);
+      this.connectivityElement.textContent = label;
+      this.connectivityElement.setAttribute(
+        "aria-label",
+        `Connection status: ${label}`,
+      );
+      this.connectivityElement.dataset.status = status;
+    }
+    return { ok: true };
+  }
+
   collapse(): ToolbarResult {
     if (this.disposed) {
       return failure("DISPOSED", "A disposed toolbar cannot be collapsed.");
@@ -526,6 +576,8 @@ class ToolbarControllerImpl implements ToolbarController {
     this.notificationButtonElement = null;
     this.notificationItems = Object.freeze([]);
     this.notificationPanelOpen = false;
+    this.connectivityStatus = "unknown";
+    this.connectivityElement = null;
     this.keydownHandler = null;
     this.clickHandler = null;
   }
@@ -781,6 +833,18 @@ class ToolbarControllerImpl implements ToolbarController {
       controls.push(notificationsButton);
     } else {
       this.notificationButtonElement = null;
+    }
+    if (this.configuration.features.offline) {
+      const status = document.createElement("span");
+      status.className = "mzk-toolbar__connectivity";
+      status.dataset.status = this.connectivityStatus;
+      const label = connectivityLabel(this.connectivityStatus);
+      status.textContent = label;
+      status.setAttribute("aria-label", `Connection status: ${label}`);
+      this.connectivityElement = status;
+      controls.push(status);
+    } else {
+      this.connectivityElement = null;
     }
     if (this.configuration.features.customize) {
       const customizeButton = document.createElement("button");

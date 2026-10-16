@@ -366,6 +366,41 @@ test("notifications remain quiet until the user opens them and never restore col
   await expect(panel).toHaveCount(0);
 });
 
+test("offline status is explicit host state and does not change collapse or fetch", async ({
+  page,
+}) => {
+  const externalRequests = [];
+  page.on("request", (request) => {
+    if (!request.url().startsWith("http://127.0.0.1:4173/")) {
+      externalRequests.push(request.url());
+    }
+  });
+  await page.evaluate(() => {
+    window.toolbar.dispose();
+    window.mountOfflineToolbar();
+  });
+  const toolbar = page.getByRole("toolbar", {
+    name: "Offline status test toolbar",
+  });
+  const status = toolbar.locator(".mzk-toolbar__connectivity");
+  await expect(status).toHaveText("Connection status unknown");
+  await page.evaluate(() => window.offlineToolbar.collapse());
+  const updated = await page.evaluate(() =>
+    window.offlineToolbar.updateConnectivityStatus("offline"),
+  );
+  expect(updated.ok).toBe(true);
+  await expect(toolbar).toHaveAttribute("data-collapsed", "true");
+  await expect(status).toHaveText("Offline");
+  const { violations } = await new AxeBuilder({ page }).analyze();
+  expect(violations).toEqual([]);
+  expect(externalRequests).toEqual([]);
+
+  await page.evaluate(() =>
+    window.offlineToolbar.update({ features: { offline: false } }),
+  );
+  await expect(toolbar.locator(".mzk-toolbar__connectivity")).toHaveCount(0);
+});
+
 test("dispose removes the mounted interface", async ({ page }) => {
   await page.evaluate(() => window.toolbar.dispose());
   await expect(page.getByRole("toolbar")).toHaveCount(0);

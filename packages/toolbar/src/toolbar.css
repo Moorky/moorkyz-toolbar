@@ -113,6 +113,16 @@
   border-radius: 0.5rem;
 }
 
+.mzk-toolbar__connectivity {
+  flex: 0 0 auto;
+  padding: 0.45rem 0.65rem;
+  border-radius: 999px;
+  background: var(--mzk-toolbar-hover);
+  color: var(--mzk-toolbar-foreground);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
 .mzk-toolbar__fade {
   position: absolute;
   z-index: 1;

@@ -80,6 +80,18 @@ window.mountNotificationsToolbar = () => {
   window.notificationToolbar = notificationToolbar;
 };
 
+window.mountOfflineToolbar = () => {
+  const offlineToolbar = createToolbar({
+    features: { offline: true },
+    label: "Offline status test toolbar",
+  });
+  const outcome = offlineToolbar.mount(
+    document.querySelector("#offline-target"),
+  );
+  if (!outcome.ok) throw new Error(outcome.error.message);
+  window.offlineToolbar = offlineToolbar;
+};
+
 window.mountShortcutManager = () => {
   let activeScope = "app:editor";
   const shortcutManager = createShortcutManager(target, {
