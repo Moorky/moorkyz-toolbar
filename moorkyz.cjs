@@ -24,6 +24,25 @@ function die(message, code = 1) {
 function info(message) {
   console.log(message);
 }
+function openBrowser(url) {
+  if (process.env.CI || !process.stdout.isTTY) return;
+  const command =
+    process.platform === "win32"
+      ? "explorer.exe"
+      : process.platform === "darwin"
+        ? "open"
+        : "xdg-open";
+  const browser = spawn(command, [url], {
+    detached: true,
+    stdio: "ignore",
+    windowsHide: true,
+  });
+  browser.on("error", (error) => {
+    info(`Could not open ${url} in the default browser: ${error.message}`);
+  });
+  browser.unref();
+  info(`Opening ${url} in the default browser.`);
+}
 // Windows resolves 'pnpm' to a .cmd shim, which Node only runs through a shell.
 // Spawn cmd.exe explicitly instead of using shell: true, which concatenates arguments (DEP0190).
 function pnpmInvocation(argv) {
@@ -382,6 +401,7 @@ function startOne(project, mode) {
   const name = project.name;
   if (running(name)) {
     info(`Already running: ${name} — URL: ${project.url}`);
+    openBrowser(project.url);
     return true;
   }
   const previous = readState(name);
@@ -431,6 +451,7 @@ function startOne(project, mode) {
       info(
         `Started '${name}' (${mode}; supervisor PID ${proc.pid}). URL: ${project.url}. Logs: .moorkyz/${name}.log`,
       );
+      openBrowser(project.url);
       return true;
     }
     if (!alive(proc.pid)) break;
@@ -600,10 +621,10 @@ function doctor(config) {
 function help(command) {
   const commands = {
     start:
-      "moorkyz start [project|all] [--prod]  Launch an isolated background dev server (or production script with --prod).",
+      "moorkyz start [project|all] [--prod]  Launch the service and open its URL in the default browser.",
     stop: "moorkyz stop [project|all]          Stop only services started and verified by Moorkyz.",
     restart:
-      "moorkyz restart [project|all] [--prod]  Restart a managed service.",
+      "moorkyz restart [project|all] [--prod]  Restart the service and open its URL in the default browser.",
     status:
       "moorkyz status [project|all]        Show the status of managed processes.",
     logs: "moorkyz logs [project] [--lines 80] [--follow]  Show or follow a service log.",

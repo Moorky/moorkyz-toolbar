@@ -20,6 +20,9 @@ On macOS/Linux, use `sh ./moorkyz`. The `audit` command creates an unfilled repo
 
 `moorkyz.config.json` selects `packages/portal` as the default project, using its `dev` script for `start` and its `start` script for `start --prod`. The portal is served at `http://localhost:3000` by default. The production command requires a prior portal build.
 
+After `start` or `restart` succeeds, the CLI opens the configured URL in the default browser in an
+interactive terminal. Browser launching is skipped in CI and non-interactive sessions.
+
 The CLI also supports `restart`, `verify`, `build`, `test`, `lint`, `typecheck`, `security`, and `run`. Package-check commands require the selected package to define the requested script.
 
 The workspace configuration is intentionally scoped to the portal. Use the named-project argument only if further projects are later added to this configuration.
