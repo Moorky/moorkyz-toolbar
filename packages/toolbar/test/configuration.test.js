@@ -22,6 +22,8 @@ test("normalizes the documented defaults and round-trips valid overrides", () =>
   });
   assert.equal(result.value.actions[0]?.label, "Projects");
   assert.equal(result.value.renderMode, "shadow");
+  assert.equal(result.value.theme, "signature");
+  assert.equal(result.value.colorScheme, "system");
 
   const roundTrip = validateConfiguration(result.value);
   assert.equal(roundTrip.ok, true);
@@ -71,6 +73,32 @@ test("normalizes placement defaults and rejects unsupported placement settings",
   }
 });
 
+test("validates built-in theme names and color schemes", () => {
+  const normalized = validateConfiguration({
+    theme: "midnight",
+    colorScheme: "dark",
+  });
+  assert.equal(normalized.ok, true);
+  if (normalized.ok) {
+    assert.equal(normalized.value.theme, "midnight");
+    assert.equal(normalized.value.colorScheme, "dark");
+  }
+
+  const invalid = validateConfiguration({
+    theme: "unlisted",
+    colorScheme: "sepia",
+  });
+  assert.equal(invalid.ok, false);
+  if (!invalid.ok) {
+    assert.ok(
+      invalid.errors.some(({ code }) => code === "CONFIG_INVALID_THEME"),
+    );
+    assert.ok(
+      invalid.errors.some(({ code }) => code === "CONFIG_INVALID_COLOR_SCHEME"),
+    );
+  }
+});
+
 test("exports a frozen JSON Schema derived from the normalized feature defaults", () => {
   assert.equal(
     CONFIGURATION_SCHEMA.$schema,
@@ -88,6 +116,8 @@ test("exports a frozen JSON Schema derived from the normalized feature defaults"
     mode: "viewport",
     anchor: "bottom",
   });
+  assert.equal(CONFIGURATION_SCHEMA.properties.theme.default, "signature");
+  assert.equal(CONFIGURATION_SCHEMA.properties.colorScheme.default, "system");
   assert.equal(Object.isFrozen(CONFIGURATION_SCHEMA.properties), true);
   assert.equal(
     Object.isFrozen(CONFIGURATION_SCHEMA.properties.features.properties),

@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { Window } from "happy-dom";
-import { ToolbarConfigurationError, createToolbar } from "../dist/index.js";
+import {
+  PREFERENCE_SCHEMA_VERSION,
+  ToolbarConfigurationError,
+  createToolbar,
+  createToolbarPreferenceStore,
+} from "../dist/index.js";
 
 function fixture(configuration = {}, host = {}) {
   const window = new Window({ url: "http://localhost/" });
@@ -41,7 +46,7 @@ test("mounts a semantic Shadow DOM toolbar with a local stylesheet", (t) => {
     shadow.querySelector('[role="toolbar"]').getAttribute("aria-label"),
     "Application toolbar",
   );
-  assert.equal(shadow.querySelectorAll("button").length, 5);
+  assert.equal(shadow.querySelectorAll("button").length, 6);
   assert.equal(
     shadow.querySelectorAll('[data-toolbar-control^="action:"][disabled]')
       .length,
@@ -277,4 +282,176 @@ test("rejects invalid construction with machine-readable diagnostics", () => {
       error instanceof ToolbarConfigurationError &&
       error.diagnostics.some(({ code }) => code === "CONFIG_INVALID_FEATURE"),
   );
+});
+
+test("loads persisted theme, collapse, and action order and saves manual restore", (t) => {
+  const values = new Map();
+  const storage = {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, value),
+    removeItem: (key) => values.delete(key),
+  };
+  const store = createToolbarPreferenceStore("controller", storage);
+  assert.equal(
+    store.save({
+      theme: "midnight",
+      colorScheme: "dark",
+      collapsed: true,
+      actionOrder: ["projects", "home"],
+    }).ok,
+    true,
+  );
+  const current = fixture(
+    {
+      actions: [
+        { id: "home", label: "Home" },
+        { id: "projects", label: "Projects" },
+      ],
+    },
+    { preferenceStore: createToolbarPreferenceStore("controller", storage) },
+  );
+  t.after(() => disposeFixture(current));
+
+  const mounted = current.toolbar.mount(current.target);
+  assert.equal(mounted.ok, true);
+  assert.equal(current.toolbar.isCollapsed, true);
+  const shadow = current.target.firstElementChild.shadowRoot;
+  const toolbar = shadow.querySelector('[role="toolbar"]');
+  assert.equal(toolbar.dataset.theme, "midnight");
+  assert.equal(toolbar.dataset.colorScheme, "dark");
+  assert.deepEqual(
+    Array.from(shadow.querySelectorAll(".mzk-toolbar__action"))
+      .map((button) => button.getAttribute("data-toolbar-control"))
+      .map((control) => control.slice("action:".length)),
+    ["projects", "home"],
+  );
+
+  assert.equal(
+    current.toolbar.update({ theme: "warm-minimal", colorScheme: "light" }).ok,
+    true,
+  );
+  const restored = current.toolbar.expand();
+  assert.equal(restored.ok, true);
+  if (restored.ok) assert.equal(restored.warning, undefined);
+  const reloaded = createToolbarPreferenceStore("controller", storage).load();
+  assert.equal(reloaded.value.collapsed, false);
+  assert.equal(reloaded.value.theme, "warm-minimal");
+  assert.equal(reloaded.value.colorScheme, "light");
+  assert.equal(reloaded.value.schemaVersion, PREFERENCE_SCHEMA_VERSION);
+});
+
+test("customization is keyboard-accessible and edit clicks never dispatch host actions", (t) => {
+  const dispatched = [];
+  const current = fixture(
+    {
+      actions: [
+        { id: "home", label: "Home" },
+        { id: "projects", label: "Projects" },
+      ],
+    },
+    { dispatchAction: (id) => dispatched.push(id) },
+  );
+  t.after(() => disposeFixture(current));
+  current.toolbar.mount(current.target);
+
+  const shadow = current.target.firstElementChild.shadowRoot;
+  shadow.querySelector('[data-toolbar-control="customize"]').click();
+  assert.equal(
+    shadow
+      .querySelector('[data-toolbar-control="customize"]')
+      .getAttribute("aria-pressed"),
+    "true",
+  );
+  shadow.querySelector('[data-toolbar-control="cycle-theme"]').click();
+  shadow.querySelector('[data-toolbar-control="move-down:home"]').click();
+  assert.equal(
+    shadow.querySelector('[role="toolbar"]').dataset.theme,
+    "frosted-glass",
+  );
+  assert.deepEqual(
+    Array.from(shadow.querySelectorAll(".mzk-toolbar__action"))
+      .map((button) => button.getAttribute("data-toolbar-control"))
+      .map((control) => control.slice("action:".length)),
+    ["projects", "home"],
+  );
+  assert.equal(shadow.querySelector('[role="alert"]').hidden, false);
+
+  shadow.querySelector('[data-toolbar-control="action:home"]').click();
+  assert.deepEqual(dispatched, []);
+  shadow.querySelector('[data-toolbar-control="customize"]').click();
+  shadow.querySelector('[data-toolbar-control="action:home"]').click();
+  assert.deepEqual(dispatched, ["home"]);
+  assert.equal(shadow.querySelector('[role="alert"]').hidden, false);
+});
+
+test("disabled customization performs no preference I/O", (t) => {
+  let loads = 0;
+  let saves = 0;
+  const current = fixture(
+    {
+      features: { customize: false },
+    },
+    {
+      preferenceStore: {
+        load() {
+          loads += 1;
+          throw new Error("should not load");
+        },
+        save() {
+          saves += 1;
+          throw new Error("should not save");
+        },
+      },
+    },
+  );
+  t.after(() => disposeFixture(current));
+
+  assert.equal(current.toolbar.mount(current.target).ok, true);
+  assert.equal(current.toolbar.collapse().ok, true);
+  assert.equal(current.toolbar.expand().ok, true);
+  const update = current.toolbar.updateUserPreferences({
+    theme: "midnight",
+    colorScheme: "dark",
+    collapsed: false,
+    actionOrder: [],
+  });
+  assert.equal(update.ok, false);
+  if (!update.ok) assert.equal(update.error.code, "CUSTOMIZATION_DISABLED");
+  assert.equal(loads, 0);
+  assert.equal(saves, 0);
+  assert.equal(
+    current.target.firstElementChild.shadowRoot.querySelector(
+      '[data-toolbar-control="customize"]',
+    ),
+    null,
+  );
+});
+
+test("corrupt preferences remain untouched and produce accessible diagnostics", (t) => {
+  const values = new Map([
+    ["@moorkyz/toolbar/corrupt/preferences", "not-json"],
+  ]);
+  const reported = [];
+  const storage = {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, value),
+    removeItem: (key) => values.delete(key),
+  };
+  const current = fixture(
+    {},
+    {
+      preferenceStore: createToolbarPreferenceStore("corrupt", storage),
+      onPreferenceError: (issue) => reported.push(issue.code),
+    },
+  );
+  t.after(() => disposeFixture(current));
+
+  const mounted = current.toolbar.mount(current.target);
+  assert.equal(mounted.ok, true);
+  if (mounted.ok)
+    assert.equal(mounted.warning?.code, "PREFERENCE_INVALID_DATA");
+  const shadow = current.target.firstElementChild.shadowRoot;
+  assert.equal(shadow.querySelector('[role="alert"]').hidden, false);
+  assert.equal(values.get("@moorkyz/toolbar/corrupt/preferences"), "not-json");
+  assert.deepEqual(reported, ["PREFERENCE_INVALID_DATA"]);
 });

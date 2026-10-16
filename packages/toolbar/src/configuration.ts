@@ -1,3 +1,9 @@
+import {
+  THEME_NAMES,
+  type ToolbarColorScheme,
+  type ToolbarThemeName,
+} from "./themes.js";
+
 export const CONFIGURATION_VERSION = "1.0" as const;
 export type ToolbarPlacementMode = "viewport" | "container" | "fullscreen";
 
@@ -74,6 +80,11 @@ export const CONFIGURATION_SCHEMA = deepFreeze({
       additionalProperties: false,
       default: { mode: "viewport", anchor: "bottom" },
     },
+    theme: { enum: THEME_NAMES, default: "signature" },
+    colorScheme: {
+      enum: ["system", "light", "dark"],
+      default: "system",
+    },
     renderMode: { enum: ["shadow", "light"], default: "shadow" },
     label: {
       type: "string",
@@ -106,11 +117,16 @@ export interface ToolbarPlacement {
   readonly anchor: "bottom";
 }
 
+export type ToolbarTheme = ToolbarThemeName;
+export type ToolbarColorPreference = ToolbarColorScheme;
+
 export interface ToolbarConfigurationInput {
   readonly schemaVersion?: string;
   readonly features?: FeatureOverrides;
   readonly actions?: readonly ToolbarActionDescriptor[];
   readonly placement?: ToolbarPlacementInput;
+  readonly theme?: ToolbarTheme;
+  readonly colorScheme?: ToolbarColorPreference;
   readonly renderMode?: "shadow" | "light";
   readonly label?: string;
 }
@@ -120,6 +136,8 @@ export interface ToolbarConfiguration {
   readonly features: FeatureFlags;
   readonly actions: readonly ToolbarActionDescriptor[];
   readonly placement: ToolbarPlacement;
+  readonly theme: ToolbarTheme;
+  readonly colorScheme: ToolbarColorPreference;
   readonly renderMode: "shadow" | "light";
   readonly label: string;
 }
@@ -137,6 +155,8 @@ export type ConfigurationDiagnosticCode =
   | "CONFIG_INVALID_PLACEMENT"
   | "CONFIG_INVALID_PLACEMENT_MODE"
   | "CONFIG_INVALID_PLACEMENT_ANCHOR"
+  | "CONFIG_INVALID_THEME"
+  | "CONFIG_INVALID_COLOR_SCHEME"
   | "CONFIG_INVALID_RENDER_MODE"
   | "CONFIG_INVALID_LABEL";
 
@@ -163,6 +183,14 @@ const PLACEMENT_KEYS = new Set(
   Object.keys(CONFIGURATION_SCHEMA.properties.placement.properties),
 );
 const ACTION_ID_PATTERN_RE = new RegExp(ACTION_ID_PATTERN);
+
+function isThemeName(value: unknown): value is ToolbarThemeName {
+  return THEME_NAMES.some((theme) => theme === value);
+}
+
+function isColorScheme(value: unknown): value is ToolbarColorScheme {
+  return value === "system" || value === "light" || value === "dark";
+}
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
@@ -422,6 +450,30 @@ export function validateConfiguration(input: unknown): ConfigurationValidation {
   const features = normalizeFeatures(config.features, errors);
   const actions = normalizeActions(config.actions, errors);
   const placement = normalizePlacement(config.placement, errors);
+  const requestedTheme =
+    config.theme === undefined ? "signature" : config.theme;
+  let theme: ToolbarThemeName = "signature";
+  if (isThemeName(requestedTheme)) {
+    theme = requestedTheme;
+  } else {
+    errors.push({
+      code: "CONFIG_INVALID_THEME",
+      path: "theme",
+      message: "Theme must name one of the built-in theme families.",
+    });
+  }
+  const requestedColorScheme =
+    config.colorScheme === undefined ? "system" : config.colorScheme;
+  let colorScheme: ToolbarColorScheme = "system";
+  if (isColorScheme(requestedColorScheme)) {
+    colorScheme = requestedColorScheme;
+  } else {
+    errors.push({
+      code: "CONFIG_INVALID_COLOR_SCHEME",
+      path: "colorScheme",
+      message: 'Color scheme must be "system", "light", or "dark".',
+    });
+  }
   const requestedRenderMode =
     config.renderMode === undefined ? "shadow" : config.renderMode;
   let renderMode: "shadow" | "light" = "shadow";
@@ -459,6 +511,8 @@ export function validateConfiguration(input: unknown): ConfigurationValidation {
       features: Object.freeze(features),
       actions: Object.freeze(actions),
       placement: Object.freeze(placement),
+      theme,
+      colorScheme,
       renderMode,
       label,
     }),

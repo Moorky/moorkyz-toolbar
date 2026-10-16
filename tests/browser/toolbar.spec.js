@@ -93,6 +93,7 @@ test("positions container and fullscreen mounts within their host element", asyn
   await expect(
     page.getByRole("toolbar", { name: "container toolbar" }),
   ).toBeVisible();
+  await expect(host).toHaveCSS("position", "absolute");
   let placement = await host.evaluate((element) => ({
     position: getComputedStyle(element).position,
     bottom: element.getBoundingClientRect().bottom,
@@ -110,6 +111,7 @@ test("positions container and fullscreen mounts within their host element", asyn
   await expect(
     page.getByRole("toolbar", { name: "fullscreen toolbar" }),
   ).toBeVisible();
+  await expect(host).toHaveCSS("position", "absolute");
   placement = await host.evaluate((element) => ({
     position: getComputedStyle(element).position,
     bottom: element.getBoundingClientRect().bottom,
@@ -163,6 +165,75 @@ test("supports scoped Light DOM styling and passes axe checks", async ({
 
   const { violations } = await new AxeBuilder({ page }).analyze();
   expect(violations).toEqual([]);
+});
+
+test("built-in theme families render without axe violations", async ({
+  page,
+}) => {
+  const themes = [
+    "signature",
+    "frosted-glass",
+    "midnight",
+    "warm-minimal",
+    "high-contrast",
+    "project-adaptive",
+  ];
+
+  for (const theme of themes) {
+    const result = await page.evaluate(
+      (name) => window.toolbar.update({ theme: name, colorScheme: "light" }),
+      theme,
+    );
+    expect(result.ok).toBe(true);
+    await expect(page.getByRole("toolbar")).toHaveAttribute(
+      "data-theme",
+      theme,
+    );
+    const background = await page
+      .getByRole("toolbar")
+      .evaluate((element) => getComputedStyle(element).backgroundColor);
+    expect(background).not.toBe("rgba(0, 0, 0, 0)");
+
+    const { violations } = await new AxeBuilder({ page }).analyze();
+    expect(violations).toEqual([]);
+  }
+});
+
+test("customization mode supports accessible reordering and never dispatches edits", async ({
+  page,
+}) => {
+  const toolbar = page.getByRole("toolbar");
+  await page.getByRole("button", { name: "Customize toolbar" }).click();
+  await expect(
+    page.getByRole("button", { name: /finish customizing toolbar/i }),
+  ).toHaveAttribute("aria-pressed", "true");
+
+  const { violations } = await new AxeBuilder({ page }).analyze();
+  expect(violations).toEqual([]);
+
+  await page.getByRole("button", { name: /Theme: Signature/ }).click();
+  await expect(toolbar).toHaveAttribute("data-theme", "frosted-glass");
+  const moveHomeLater = page.getByRole("button", { name: "Move Home later" });
+  await moveHomeLater.focus();
+  await page.keyboard.press("Enter");
+  expect(
+    await toolbar
+      .locator(".mzk-toolbar__action")
+      .evaluateAll((actions) =>
+        actions.map((action) =>
+          action.getAttribute("data-toolbar-control").slice("action:".length),
+        ),
+      ),
+  ).toEqual(["projects", "home", "documentation", "settings", "support"]);
+  await expect(
+    page.getByRole("button", { name: "Home", exact: true }),
+  ).toBeDisabled();
+  await expect(page.locator("#action-result")).toBeEmpty();
+  await page
+    .getByRole("button", { name: /finish customizing toolbar/i })
+    .click();
+  await page.getByRole("button", { name: "Home", exact: true }).click();
+  await expect(page.locator("#action-result")).toHaveText("home");
 });
 
 test("dispose removes the mounted interface", async ({ page }) => {

@@ -9,7 +9,12 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { createToolbar, type ToolbarController } from "@moorkyz/toolbar";
+import {
+  createBrowserPreferenceStorage,
+  createToolbar,
+  createToolbarPreferenceStore,
+  type ToolbarController,
+} from "@moorkyz/toolbar";
 
 const presets = {
   website: [
@@ -80,6 +85,10 @@ function ToolbarNavigation({ preset }: { readonly preset: DemoPreset }) {
     const target = mountTarget.current;
     if (target === null) return;
 
+    const preferenceStore = createToolbarPreferenceStore(
+      "portal-navigation",
+      createBrowserPreferenceStorage(window),
+    );
     const instance = createToolbar(
       {
         renderMode: "light",
@@ -89,8 +98,12 @@ function ToolbarNavigation({ preset }: { readonly preset: DemoPreset }) {
       },
       {
         dispatchAction,
+        preferenceStore,
         onActionError: (_cause, actionId) => {
           setError(`Could not navigate to the "${actionId}" section.`);
+        },
+        onPreferenceError: (diagnostic) => {
+          setError(`Toolbar preferences need attention: ${diagnostic.code}`);
         },
       },
     );

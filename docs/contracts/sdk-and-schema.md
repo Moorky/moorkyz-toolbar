@@ -106,5 +106,13 @@ The configuration now accepts `placement.mode` values `viewport` (default), `con
 
 The placement names and exact composition are still proposed. Spatial coordination remains independently disabled and no page scanning or host-padding mutation is performed. Advanced pointer/touch gestures and numeric performance budgets remain open.
 
+## M5 implemented draft
+
+The current M5 slice exposes six built-in theme names and token validation in `packages/toolbar/src/themes.ts`. Foreground/background contrast is checked at 4.5:1 and focus/background at 3:1; the controller applies the built-in palettes in its local stylesheet and the portal browser tests exercise each theme. The customization control provides explicit theme/color-scheme cycling and earlier/later action reordering. While edit mode is active, action buttons do not dispatch host commands. Host settings surfaces can call `updateUserPreferences()` with a complete value.
+
+`createToolbarPreferenceStore(namespace, adapter?)` stores schema version 1 values under a validated application namespace. It migrates the legacy version 0 light/dark theme representation, validates stored and caller-provided data without invoking accessors, retains corrupt storage as evidence, and reports read/write/migration diagnostics while retaining in-memory choices. `createBrowserPreferenceStorage(window)` is an explicit adapter; importing or constructing the toolbar never reads `window.localStorage`. If no adapter is supplied, user choices work for the controller instance but are reported as session-only. When `features.customize` is false, mounting does not read preferences, manual collapse/restore does not write preferences, and the customization control/API are disabled.
+
+Manual collapse state is persisted when customization and an adapter are enabled, then restored as collapsed; the toolbar never auto-expands. Preference records contain no callbacks or action labels, only theme, color scheme, collapse state, and action identifiers. These exports and schema remain draft, not approved stable API. A portable custom-theme file format and the complete Theme Design Studio remain future work.
+
 ## Schema validation gate
 Schema definitions must be the shared source for typed validation, Studio controls, CLI validation, generator, reference docs and representative consumer fixtures. The code generator must not independently invent a second config interpretation.

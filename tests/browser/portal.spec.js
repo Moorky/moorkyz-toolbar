@@ -59,6 +59,28 @@ test("portal theme persists locally and updates the mounted dock tokens", async 
   ).toHaveAttribute("aria-pressed", "true");
 });
 
+test("toolbar preferences persist in the portal's explicit local namespace", async ({
+  page,
+}) => {
+  await page.goto(portalUrl);
+  const toolbar = page.getByRole("toolbar", {
+    name: "Moorkyz Toolbar website navigation",
+  });
+  await page.getByRole("button", { name: "Customize toolbar" }).click();
+  await page.getByRole("button", { name: /Theme: Signature/ }).click();
+  await expect(toolbar).toHaveAttribute("data-theme", "frosted-glass");
+  await page
+    .getByRole("button", { name: /finish customizing toolbar/i })
+    .click();
+
+  await page.reload();
+  await expect(
+    page.getByRole("toolbar", {
+      name: "Moorkyz Toolbar website navigation",
+    }),
+  ).toHaveAttribute("data-theme", "frosted-glass");
+});
+
 test("portal landing page has no automated axe violations", async ({
   page,
 }) => {

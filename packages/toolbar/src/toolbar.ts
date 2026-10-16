@@ -4,10 +4,20 @@ import {
   type ToolbarConfiguration,
   type ToolbarConfigurationInput,
 } from "./configuration.js";
+import type {
+  PreferenceDiagnostic,
+  ToolbarPreferenceStore,
+  ToolbarPreferenceValues,
+  ToolbarPreferences,
+} from "./preferences.js";
+import { createToolbarPreferenceStore } from "./preferences.js";
+import { THEME_NAMES, type ToolbarColorScheme } from "./themes.js";
 
 export interface ToolbarHost {
   readonly dispatchAction?: (actionId: string) => void | Promise<void>;
   readonly onActionError?: (error: unknown, actionId: string) => void;
+  readonly preferenceStore?: ToolbarPreferenceStore;
+  readonly onPreferenceError?: (diagnostic: PreferenceDiagnostic) => void;
 }
 
 export type ToolbarErrorCode =
@@ -16,7 +26,10 @@ export type ToolbarErrorCode =
   | "ALREADY_MOUNTED"
   | "MOUNT_MODE_IMMUTABLE"
   | "DISPOSED"
-  | "MOUNT_FAILED";
+  | "MOUNT_FAILED"
+  | "PREFERENCE_LOAD_FAILED"
+  | "CUSTOMIZATION_DISABLED"
+  | "PREFERENCE_SAVE_FAILED";
 
 export interface ToolbarRuntimeError {
   readonly code: ToolbarErrorCode;
@@ -26,7 +39,7 @@ export interface ToolbarRuntimeError {
 }
 
 export type ToolbarResult =
-  | { readonly ok: true }
+  | { readonly ok: true; readonly warning?: PreferenceDiagnostic }
   | { readonly ok: false; readonly error: ToolbarRuntimeError };
 
 export class ToolbarConfigurationError extends Error {
@@ -44,12 +57,50 @@ export interface ToolbarController {
   readonly isCollapsed: boolean;
   mount(target: HTMLElement): ToolbarResult;
   update(configuration: ToolbarConfigurationInput): ToolbarResult;
+  updateUserPreferences(preferences: ToolbarPreferenceValues): ToolbarResult;
   collapse(): ToolbarResult;
   expand(): ToolbarResult;
   dispose(): void;
 }
 
 type RenderRoot = HTMLElement | ShadowRoot;
+
+function orderActions(
+  actions: ToolbarConfiguration["actions"],
+  order: readonly string[],
+): ToolbarConfiguration["actions"] {
+  const byId = new Map(actions.map((action) => [action.id, action]));
+  const ordered: ToolbarConfiguration["actions"][number][] = [];
+  for (const id of order) {
+    const action = byId.get(id);
+    if (action !== undefined) {
+      ordered.push(action);
+      byId.delete(id);
+    }
+  }
+  for (const action of actions) {
+    if (byId.has(action.id)) ordered.push(action);
+  }
+  return Object.freeze(ordered);
+}
+
+function preferenceDiagnosticMessage(issue: PreferenceDiagnostic): string {
+  if (
+    issue.code === "PREFERENCE_STORAGE_WRITE_FAILED" ||
+    issue.code === "PREFERENCE_STORAGE_REMOVE_FAILED" ||
+    issue.code === "PREFERENCE_MIGRATION_WRITE_FAILED"
+  ) {
+    return "Toolbar preferences are active but may not persist between visits.";
+  }
+  return "Saved toolbar preferences could not be read; current defaults remain active.";
+}
+
+function preferenceButtonLabel(value: string): string {
+  return value
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
 
 function failure(
   code: ToolbarErrorCode,
@@ -89,6 +140,11 @@ class ToolbarControllerImpl implements ToolbarController {
   private overflowWindow: Window | null = null;
   private overflowScrollHandler: (() => void) | null = null;
   private overflowResizeHandler: (() => void) | null = null;
+  private preferenceValue: ToolbarPreferences | null = null;
+  private pendingPreferenceDiagnostic: PreferenceDiagnostic | null = null;
+  private memoryPreferenceStore: ToolbarPreferenceStore | null = null;
+  private editing = false;
+  private statusKind: "action" | "customization" | "preference" | null = null;
 
   constructor(configuration: ToolbarConfiguration, host: ToolbarHost) {
     this.configuration = configuration;
@@ -125,6 +181,9 @@ class ToolbarControllerImpl implements ToolbarController {
         "Mount target must be an element with an owner document.",
       );
     }
+
+    const preferenceResult = this.loadPreferences();
+    if (!preferenceResult.ok) return preferenceResult;
 
     const document = target.ownerDocument;
     const hostElement = document.createElement("div");
@@ -166,7 +225,7 @@ class ToolbarControllerImpl implements ToolbarController {
       toolbar.addEventListener("click", this.clickHandler);
       target.appendChild(hostElement);
       this.render();
-      return { ok: true };
+      return preferenceResult;
     } catch (cause) {
       hostElement.remove();
       this.clearMountReferences();
@@ -213,6 +272,12 @@ class ToolbarControllerImpl implements ToolbarController {
             ...(configuration.placement ?? {}),
           }
         : this.configuration.placement,
+      theme: hasOwn("theme")
+        ? patchValidation.value.theme
+        : this.configuration.theme,
+      colorScheme: hasOwn("colorScheme")
+        ? patchValidation.value.colorScheme
+        : this.configuration.colorScheme,
       renderMode: hasOwn("renderMode")
         ? patchValidation.value.renderMode
         : this.configuration.renderMode,
@@ -239,15 +304,78 @@ class ToolbarControllerImpl implements ToolbarController {
       );
     }
 
+    let nextConfiguration = validation.value;
+    if (
+      this.preferenceValue !== null &&
+      validation.value.features.customize &&
+      Object.prototype.hasOwnProperty.call(configuration, "actions")
+    ) {
+      nextConfiguration = Object.freeze({
+        ...nextConfiguration,
+        actions: orderActions(
+          nextConfiguration.actions,
+          this.preferenceValue.actionOrder,
+        ),
+      });
+    }
     this.configuration =
       this.isMounted && configuration.renderMode === undefined
         ? Object.freeze({
-            ...validation.value,
+            ...nextConfiguration,
             renderMode: this.configuration.renderMode,
           })
-        : validation.value;
+        : nextConfiguration;
+    if (!this.configuration.features.customize) this.editing = false;
     if (this.toolbarElement !== null) {
       this.render();
+    }
+    return { ok: true };
+  }
+
+  updateUserPreferences(preferences: ToolbarPreferenceValues): ToolbarResult {
+    if (this.disposed) {
+      return failure(
+        "DISPOSED",
+        "Preferences cannot be changed on a disposed toolbar.",
+      );
+    }
+    if (!this.configuration.features.customize) {
+      return failure(
+        "CUSTOMIZATION_DISABLED",
+        "Toolbar customization is disabled by configuration.",
+      );
+    }
+    let saved;
+    try {
+      saved = this.getPreferenceStore().save(preferences);
+    } catch (cause) {
+      return failure(
+        "PREFERENCE_SAVE_FAILED",
+        "Toolbar preferences could not be saved.",
+        { cause },
+      );
+    }
+    if (!saved.ok) {
+      return failure(
+        "PREFERENCE_SAVE_FAILED",
+        "Toolbar preferences were not changed.",
+        { cause: saved.error },
+      );
+    }
+    this.applyPreferences(saved.value);
+    if (this.toolbarElement !== null) this.render();
+    const warning =
+      saved.diagnostic ??
+      (this.host.preferenceStore === undefined
+        ? {
+            code: "PREFERENCE_STORAGE_WRITE_FAILED" as const,
+            message:
+              "No host persistence adapter is configured; preferences are active for this toolbar instance only.",
+          }
+        : undefined);
+    if (warning !== undefined) {
+      this.reportPreferenceDiagnostic(warning);
+      return { ok: true, warning };
     }
     return { ok: true };
   }
@@ -258,8 +386,9 @@ class ToolbarControllerImpl implements ToolbarController {
     }
     if (this.collapsed) return { ok: true };
     this.collapsed = true;
+    const persistenceResult = this.persistCurrentPreferences();
     this.render();
-    return { ok: true };
+    return persistenceResult;
   }
 
   expand(): ToolbarResult {
@@ -268,8 +397,9 @@ class ToolbarControllerImpl implements ToolbarController {
     }
     if (!this.collapsed) return { ok: true };
     this.collapsed = false;
+    const persistenceResult = this.persistCurrentPreferences();
     this.render();
-    return { ok: true };
+    return persistenceResult;
   }
 
   dispose(): void {
@@ -294,6 +424,108 @@ class ToolbarControllerImpl implements ToolbarController {
     this.statusElement = null;
     this.keydownHandler = null;
     this.clickHandler = null;
+  }
+
+  private loadPreferences(): ToolbarResult {
+    if (
+      !this.configuration.features.customize ||
+      this.host.preferenceStore === undefined
+    ) {
+      return { ok: true };
+    }
+
+    let snapshot;
+    try {
+      snapshot = this.host.preferenceStore.load();
+    } catch (cause) {
+      return failure(
+        "PREFERENCE_LOAD_FAILED",
+        "Saved toolbar preferences could not be loaded.",
+        { cause },
+      );
+    }
+    if (snapshot.diagnostic !== undefined) {
+      this.pendingPreferenceDiagnostic = snapshot.diagnostic;
+    }
+    if (snapshot.hasPreferences) this.applyPreferences(snapshot.value);
+    return snapshot.diagnostic === undefined
+      ? { ok: true }
+      : { ok: true, warning: snapshot.diagnostic };
+  }
+
+  private applyPreferences(preferences: ToolbarPreferences): void {
+    this.preferenceValue = preferences;
+    this.collapsed = preferences.collapsed;
+    this.configuration = Object.freeze({
+      ...this.configuration,
+      theme: preferences.theme,
+      colorScheme: preferences.colorScheme,
+      actions: orderActions(
+        this.configuration.actions,
+        preferences.actionOrder,
+      ),
+    });
+  }
+
+  private persistCurrentPreferences(): ToolbarResult {
+    if (!this.configuration.features.customize) return { ok: true };
+    let saved;
+    try {
+      saved = this.getPreferenceStore().save({
+        theme: this.configuration.theme,
+        colorScheme: this.configuration.colorScheme,
+        collapsed: this.collapsed,
+        actionOrder: this.configuration.actions.map(({ id }) => id),
+      });
+    } catch (cause) {
+      const issue: PreferenceDiagnostic = {
+        code: "PREFERENCE_STORAGE_WRITE_FAILED",
+        message: "Toolbar preferences could not be saved.",
+        cause,
+      };
+      this.reportPreferenceDiagnostic(issue);
+      return { ok: true, warning: issue };
+    }
+    if (!saved.ok) {
+      const issue: PreferenceDiagnostic = saved.error;
+      this.reportPreferenceDiagnostic(issue);
+      return { ok: true, warning: issue };
+    }
+    this.preferenceValue = saved.value;
+    const warning =
+      saved.diagnostic ??
+      (this.host.preferenceStore === undefined
+        ? {
+            code: "PREFERENCE_STORAGE_WRITE_FAILED" as const,
+            message:
+              "No host persistence adapter is configured; preferences are active for this toolbar instance only.",
+          }
+        : undefined);
+    if (warning !== undefined) {
+      this.reportPreferenceDiagnostic(warning);
+      return { ok: true, warning };
+    }
+    return { ok: true };
+  }
+
+  private getPreferenceStore(): ToolbarPreferenceStore {
+    if (this.host.preferenceStore !== undefined) {
+      return this.host.preferenceStore;
+    }
+    this.memoryPreferenceStore ??=
+      createToolbarPreferenceStore("toolbar-session");
+    return this.memoryPreferenceStore;
+  }
+
+  private reportPreferenceDiagnostic(issue: PreferenceDiagnostic): void {
+    if (this.statusElement === null) {
+      this.pendingPreferenceDiagnostic = issue;
+    } else {
+      this.statusElement.textContent = preferenceDiagnosticMessage(issue);
+      this.statusElement.hidden = false;
+      this.statusKind = "preference";
+    }
+    this.host.onPreferenceError?.(issue);
   }
 
   private createScrollButton(
@@ -335,6 +567,8 @@ class ToolbarControllerImpl implements ToolbarController {
 
     toolbar.setAttribute("aria-label", this.configuration.label);
     toolbar.setAttribute("data-collapsed", String(this.collapsed));
+    toolbar.dataset.theme = this.configuration.theme;
+    toolbar.dataset.colorScheme = this.configuration.colorScheme;
     if (this.hostElement !== null) {
       this.hostElement.dataset.placement = this.configuration.placement.mode;
     }
@@ -364,16 +598,39 @@ class ToolbarControllerImpl implements ToolbarController {
     const actions = document.createElement("div");
     actions.className = "mzk-toolbar__actions";
     actions.hidden = this.collapsed;
-    for (const action of this.configuration.actions) {
+    for (const [index, action] of this.configuration.actions.entries()) {
+      const item = document.createElement("div");
+      item.className = "mzk-toolbar__action-item";
       const button = document.createElement("button");
       button.className = "mzk-toolbar__action";
       button.type = "button";
       button.textContent = action.label;
       button.setAttribute("data-toolbar-control", `action:${action.id}`);
       button.setAttribute("aria-label", action.label);
-      button.disabled = this.host.dispatchAction === undefined;
+      button.disabled = this.host.dispatchAction === undefined || this.editing;
       button.tabIndex = -1;
-      actions.appendChild(button);
+      item.appendChild(button);
+      if (this.editing) {
+        const moveUp = document.createElement("button");
+        moveUp.className = "mzk-toolbar__reorder";
+        moveUp.type = "button";
+        moveUp.textContent = "↑";
+        moveUp.setAttribute("data-toolbar-control", `move-up:${action.id}`);
+        moveUp.setAttribute("aria-label", `Move ${action.label} earlier`);
+        moveUp.disabled = index === 0;
+        moveUp.tabIndex = -1;
+
+        const moveDown = document.createElement("button");
+        moveDown.className = "mzk-toolbar__reorder";
+        moveDown.type = "button";
+        moveDown.textContent = "↓";
+        moveDown.setAttribute("data-toolbar-control", `move-down:${action.id}`);
+        moveDown.setAttribute("aria-label", `Move ${action.label} later`);
+        moveDown.disabled = index === this.configuration.actions.length - 1;
+        moveDown.tabIndex = -1;
+        item.append(moveUp, moveDown);
+      }
+      actions.appendChild(item);
     }
 
     const fadeEnd = document.createElement("span");
@@ -393,12 +650,47 @@ class ToolbarControllerImpl implements ToolbarController {
     collapseButton.setAttribute("aria-expanded", String(!this.collapsed));
     collapseButton.tabIndex = -1;
 
-    toolbar.replaceChildren(
-      scrollStart,
-      actionViewport,
-      scrollEnd,
-      collapseButton,
-    );
+    const controls: HTMLElement[] = [scrollStart, actionViewport, scrollEnd];
+    if (this.configuration.features.customize) {
+      const customizeButton = document.createElement("button");
+      customizeButton.className = "mzk-toolbar__customize";
+      customizeButton.type = "button";
+      customizeButton.textContent = this.editing ? "Done" : "Customize";
+      customizeButton.setAttribute("data-toolbar-control", "customize");
+      customizeButton.setAttribute(
+        "aria-label",
+        this.editing ? "Done; finish customizing toolbar" : "Customize toolbar",
+      );
+      customizeButton.setAttribute("aria-pressed", String(this.editing));
+      customizeButton.tabIndex = -1;
+      controls.push(customizeButton);
+
+      if (this.editing) {
+        const themeButton = document.createElement("button");
+        themeButton.type = "button";
+        themeButton.textContent = `Theme: ${preferenceButtonLabel(this.configuration.theme)}`;
+        themeButton.setAttribute("data-toolbar-control", "cycle-theme");
+        themeButton.setAttribute(
+          "aria-label",
+          `Theme: ${preferenceButtonLabel(this.configuration.theme)}. Change theme`,
+        );
+        themeButton.tabIndex = -1;
+        controls.push(themeButton);
+
+        const schemeButton = document.createElement("button");
+        schemeButton.type = "button";
+        schemeButton.textContent = `Color: ${preferenceButtonLabel(this.configuration.colorScheme)}`;
+        schemeButton.setAttribute("data-toolbar-control", "cycle-color-scheme");
+        schemeButton.setAttribute(
+          "aria-label",
+          `Color: ${preferenceButtonLabel(this.configuration.colorScheme)}. Change color scheme`,
+        );
+        schemeButton.tabIndex = -1;
+        controls.push(schemeButton);
+      }
+    }
+    controls.push(collapseButton);
+    toolbar.replaceChildren(...controls);
     this.actionsElement = actions;
     this.startOverflowMonitoring();
     this.updateOverflowControls();
@@ -413,6 +705,11 @@ class ToolbarControllerImpl implements ToolbarController {
           button.getAttribute("data-toolbar-control") === focusedControl,
       );
       (replacement ?? buttons[0])?.focus();
+    }
+    if (this.pendingPreferenceDiagnostic !== null) {
+      const issue = this.pendingPreferenceDiagnostic;
+      this.pendingPreferenceDiagnostic = null;
+      this.reportPreferenceDiagnostic(issue);
     }
   }
 
@@ -468,6 +765,40 @@ class ToolbarControllerImpl implements ToolbarController {
     }
 
     const control = button.getAttribute("data-toolbar-control");
+    if (control === "customize") {
+      this.editing = !this.editing;
+      this.render();
+      return;
+    }
+    if (control === "cycle-theme") {
+      const index = THEME_NAMES.indexOf(this.configuration.theme);
+      const theme = THEME_NAMES[(index + 1) % THEME_NAMES.length];
+      if (theme !== undefined) {
+        this.applyUserPreferencePatch({ theme });
+      }
+      return;
+    }
+    if (control === "cycle-color-scheme") {
+      const schemes: readonly ToolbarColorScheme[] = [
+        "system",
+        "light",
+        "dark",
+      ];
+      const index = schemes.indexOf(this.configuration.colorScheme);
+      const colorScheme = schemes[(index + 1) % schemes.length];
+      if (colorScheme !== undefined) {
+        this.applyUserPreferencePatch({ colorScheme });
+      }
+      return;
+    }
+    if (control?.startsWith("move-up:") === true) {
+      this.moveAction(control.slice("move-up:".length), -1);
+      return;
+    }
+    if (control?.startsWith("move-down:") === true) {
+      this.moveAction(control.slice("move-down:".length), 1);
+      return;
+    }
     if (control === "scroll-start" || control === "scroll-end") {
       this.scrollActions(control === "scroll-start");
       return;
@@ -483,9 +814,49 @@ class ToolbarControllerImpl implements ToolbarController {
     if (control?.startsWith("action:") !== true) return;
 
     const actionId = control.slice("action:".length);
+    if (this.editing) return;
     const action = this.configuration.actions.find(({ id }) => id === actionId);
     if (action !== undefined) {
       this.dispatchAction(action.id, action.label);
+    }
+  }
+
+  private applyUserPreferencePatch(
+    patch: Partial<ToolbarPreferenceValues>,
+  ): void {
+    const result = this.updateUserPreferences({
+      theme: patch.theme ?? this.configuration.theme,
+      colorScheme: patch.colorScheme ?? this.configuration.colorScheme,
+      collapsed: patch.collapsed ?? this.collapsed,
+      actionOrder:
+        patch.actionOrder ?? this.configuration.actions.map(({ id }) => id),
+    });
+    if (!result.ok) {
+      this.showCustomizationFailure();
+    }
+  }
+
+  private moveAction(actionId: string, offset: -1 | 1): void {
+    const actions = [...this.configuration.actions];
+    const currentIndex = actions.findIndex(({ id }) => id === actionId);
+    const targetIndex = currentIndex + offset;
+    if (currentIndex < 0 || targetIndex < 0 || targetIndex >= actions.length) {
+      return;
+    }
+    const [action] = actions.splice(currentIndex, 1);
+    if (action === undefined) return;
+    actions.splice(targetIndex, 0, action);
+    this.applyUserPreferencePatch({
+      actionOrder: actions.map(({ id }) => id),
+    });
+  }
+
+  private showCustomizationFailure(): void {
+    if (this.statusElement !== null) {
+      this.statusElement.textContent =
+        "Toolbar preferences could not be changed.";
+      this.statusElement.hidden = false;
+      this.statusKind = "customization";
     }
   }
 
@@ -612,9 +983,10 @@ class ToolbarControllerImpl implements ToolbarController {
     const dispatchAction = this.host.dispatchAction;
     if (dispatchAction === undefined) return;
 
-    if (this.statusElement !== null) {
+    if (this.statusElement !== null && this.statusKind === "action") {
       this.statusElement.hidden = true;
       this.statusElement.textContent = "";
+      this.statusKind = null;
     }
 
     try {
@@ -634,6 +1006,7 @@ class ToolbarControllerImpl implements ToolbarController {
     if (this.statusElement !== null) {
       this.statusElement.textContent = `Could not complete ${label}. Try again.`;
       this.statusElement.hidden = false;
+      this.statusKind = "action";
     }
     this.host.onActionError?.(cause, actionId);
   }
