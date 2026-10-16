@@ -1,0 +1,69 @@
+{
+  "document_set": "Moorkyz Toolbar specification",
+  "version": "0.1-draft",
+  "created": "2026-10-16",
+  "questions_covered": "Q1\u2013Q80",
+  "status": "prepared-for-review; committed locally, not deployed or published",
+  "files": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "5eca4740c91ceb52905d4ce3fa95dfdeb90d7b3476642fba5e0d65d368cb2df8"
+    },
+    {
+      "path": "README.md",
+      "sha256": "4fe408f79f1a470e5495df83d75cc4398e9f948c9cb640526289307ece553e88"
+    },
+    {
+      "path": "docs/architecture/features-and-resources.md",
+      "sha256": "8250df6937fe1525f5e94d323249651fcff32b82459f6f4f1ee5d430ca43e430"
+    },
+    {
+      "path": "docs/architecture/product-and-system.md",
+      "sha256": "db0fbada7c7dfb6c744a363f592188cca5572d9728d6cdefdb81157893fdddbb"
+    },
+    {
+      "path": "docs/architecture/security-and-trust.md",
+      "sha256": "61ce9cd1a0e4dded204c8410166dd09dc7ebf9f08fb3296533415f65eadfbb8d"
+    },
+    {
+      "path": "docs/contracts/sdk-and-schema.md",
+      "sha256": "d2781879b934b29259ff5039feca0a325d11d43e99f0352393f386123a50533f"
+    },
+    {
+      "path": "docs/decisions/decision-register.md",
+      "sha256": "745a2dddf37a01f7cb142042860b29140cac3e20e77f3498baf5b4604605a6fb"
+    },
+    {
+      "path": "docs/design/interaction-and-visual-system.md",
+      "sha256": "57f7fa5d1e54779e24eb6808d68204f53cf1cd8a3c60d78e5845d73368823d59"
+    },
+    {
+      "path": "docs/engineering/audit-template.md",
+      "sha256": "26634963129bd2f10296a9f0ed59e109a9cc9000314b869fb1d69a4408aa87a7"
+    },
+    {
+      "path": "docs/engineering/dependency-map.md",
+      "sha256": "39c0a994c291799fb7cdd7a41608312e32ec09ecdf8010bbb1a24b967c24f581"
+    },
+    {
+      "path": "docs/engineering/open-validations.md",
+      "sha256": "dccc2bc9cc76e483983d84542a3bc69d9099dd4d1f43a1d71b3f29810383b9a7"
+    },
+    {
+      "path": "docs/engineering/repository-layout.md",
+      "sha256": "e233159aa7caa44377a3b990fabef046a6cfa0bd43b15e88782a4048bc5181d7"
+    },
+    {
+      "path": "docs/engineering/roadmap.md",
+      "sha256": "83aa976612142d82e8adc24bcca13fe58892c4f22c7860c0dfecc9eeadeea742"
+    },
+    {
+      "path": "docs/engineering/verification-and-release.md",
+      "sha256": "11946c2667b0e1ae7ccc68c5938b52ea0c534a03973475e4684edb1bc86725f0"
+    },
+    {
+      "path": "docs/portal/development-studio.md",
+      "sha256": "00e478128b84d660dcf71f1a32b73911d994be6cd94ff55373cdaa7ada7269bd"
+    }
+  ]
+}

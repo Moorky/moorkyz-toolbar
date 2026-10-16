@@ -1,0 +1,779 @@
+#!/usr/bin/env node
+"use strict";
+
+// Moorkyz project development CLI. Built from Node.js core modules only.
+// Run from the intended project root; never manipulates other projects' processes.
+const fs = require("node:fs");
+const path = require("node:path");
+const crypto = require("node:crypto");
+const { spawn, spawnSync } = require("node:child_process");
+
+const ROOT = process.cwd();
+const STATE = path.join(ROOT, ".moorkyz");
+const DEFAULT = "default";
+const DEFAULT_URL = "http://localhost:3000";
+const NAME_RE = /^[a-zA-Z][a-zA-Z0-9_-]{0,50}$/;
+const SCRIPT_RE = /^[a-zA-Z0-9][a-zA-Z0-9:_./-]*$/;
+const sleep = (ms) =>
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+
+function die(message, code = 1) {
+  console.error(`Error: ${message}`);
+  process.exit(code);
+}
+function info(message) {
+  console.log(message);
+}
+// Windows resolves 'pnpm' to a .cmd shim, which Node only runs through a shell.
+// Spawn cmd.exe explicitly instead of using shell: true, which concatenates arguments (DEP0190).
+function pnpmInvocation(argv) {
+  return process.platform === "win32"
+    ? {
+        command: process.env.ComSpec || "cmd.exe",
+        argv: ["/d", "/s", "/c", "pnpm", ...argv],
+      }
+    : { command: "pnpm", argv };
+}
+function exists(file) {
+  return fs.existsSync(file);
+}
+function readJson(file) {
+  try {
+    return JSON.parse(fs.readFileSync(file, "utf8"));
+  } catch (e) {
+    die(
+      `Cannot read valid JSON from ${path.relative(ROOT, file) || file}: ${e.message}`,
+    );
+  }
+}
+function safeProjectName(name) {
+  if (!NAME_RE.test(name))
+    die(`Invalid project name '${name}'. Use letters, digits, _ and - only.`);
+  return name;
+}
+function projectUrl(value, name) {
+  if (value == null) return DEFAULT_URL;
+  if (typeof value !== "string" || !value.trim())
+    die(`Invalid URL for '${name}'.`);
+  try {
+    const url = new URL(value);
+    if (!["http:", "https:"].includes(url.protocol))
+      throw new Error("unsupported protocol");
+    return url.toString().replace(/\/$/, "");
+  } catch {
+    die(`Invalid URL for '${name}'. Use an http or https URL.`);
+  }
+}
+function folderFor(input) {
+  if (typeof input !== "string") die("Configured cwd must be a string.");
+  const target = path.resolve(ROOT, input);
+  const rel = path.relative(ROOT, target);
+  if (rel === ".." || rel.startsWith(".." + path.sep) || path.isAbsolute(rel))
+    die(`Configured project path escapes repository: ${input}`);
+  if (!exists(target) || !fs.statSync(target).isDirectory())
+    die(`Project folder does not exist: ${input}`);
+  // Resolve symlinks to avoid allowing a config path to escape through a symlink.
+  const actual = fs.realpathSync(target);
+  const rootActual = fs.realpathSync(ROOT);
+  const actualRel = path.relative(rootActual, actual);
+  if (
+    actualRel === ".." ||
+    actualRel.startsWith(".." + path.sep) ||
+    path.isAbsolute(actualRel)
+  )
+    die(`Project symlink escapes repository: ${input}`);
+  return target;
+}
+function cfg() {
+  if (exists(STATE)) folderFor(".moorkyz");
+  const filename = path.join(ROOT, "moorkyz.config.json");
+  const data = exists(filename) ? readJson(filename) : {};
+  if (!data || typeof data !== "object" || Array.isArray(data))
+    die("moorkyz.config.json must contain a JSON object.");
+  if (
+    data.projects != null &&
+    (typeof data.projects !== "object" || Array.isArray(data.projects))
+  )
+    die("projects must be an object.");
+  const raw = data.projects ?? {
+    [DEFAULT]: { cwd: ".", dev: "dev", prod: "start" },
+  };
+  const projects = Object.create(null);
+  for (const [name, settings] of Object.entries(raw)) {
+    safeProjectName(name);
+    if (!settings || typeof settings !== "object" || Array.isArray(settings))
+      die(`Configuration for '${name}' must be an object.`);
+    const cwd = folderFor(settings.cwd ?? ".");
+    const dev = settings.dev ?? "dev";
+    const prod = settings.prod ?? "start";
+    if (![dev, prod].every((s) => typeof s === "string" && SCRIPT_RE.test(s)))
+      die(`Invalid script name for '${name}'.`);
+    projects[name] = {
+      name,
+      cwd,
+      dev,
+      prod,
+      url: projectUrl(settings.url, name),
+    };
+  }
+  const defaultProject =
+    data.defaultProject ??
+    (Object.keys(projects).length === 1 ? Object.keys(projects)[0] : null);
+  if (
+    defaultProject !== null &&
+    (typeof defaultProject !== "string" ||
+      !Object.hasOwn(projects, defaultProject))
+  )
+    die("Configured defaultProject must name an existing project.");
+  return { projects, defaultProject };
+}
+function targetNames(config, raw, allowAll) {
+  const name = raw || config.defaultProject;
+  if (!name)
+    die(
+      'Choose a project name or "all" (or set defaultProject in moorkyz.config.json).',
+    );
+  if (name === "all") {
+    if (!allowAll) die("This command requires a single project name.");
+    return Object.keys(config.projects);
+  }
+  if (!Object.hasOwn(config.projects, name))
+    die(`Unknown project '${name}'. Run 'moorkyz list'.`);
+  return [name];
+}
+function statePath(name) {
+  return path.join(STATE, `${name}.json`);
+}
+function heartbeatPath(name) {
+  return path.join(STATE, `${name}.heartbeat.json`);
+}
+function logPath(name) {
+  return path.join(STATE, `${name}.log`);
+}
+function writeJsonAtomic(file, value) {
+  const temporary = `${file}.${process.pid}.tmp`;
+  try {
+    fs.writeFileSync(temporary, JSON.stringify(value, null, 2));
+    fs.renameSync(temporary, file);
+  } finally {
+    try {
+      fs.unlinkSync(temporary);
+    } catch {
+      /* renamed or never created */
+    }
+  }
+}
+function withProjectLock(name, operation) {
+  fs.mkdirSync(STATE, { recursive: true });
+  folderFor(".moorkyz");
+  const file = path.join(STATE, `${name}.lock.json`);
+  const token = crypto.randomBytes(16).toString("hex");
+  const deadline = Date.now() + 5000;
+  while (true) {
+    try {
+      fs.writeFileSync(file, JSON.stringify({ pid: process.pid, token }), {
+        flag: "wx",
+      });
+      break;
+    } catch (error) {
+      if (error.code !== "EEXIST") throw error;
+      // Do not automatically unlink stale locks: two reclaimers could remove
+      // a new owner's lock between reading the old PID and deleting the file.
+      if (Date.now() >= deadline)
+        die(
+          `Another Moorkyz operation holds the lock for '${name}'. Retry when it completes or review ${path.relative(ROOT, file)}.`,
+        );
+      sleep(100);
+    }
+  }
+  const release = () => {
+    try {
+      const owner = JSON.parse(fs.readFileSync(file, "utf8"));
+      if (owner.token === token) fs.unlinkSync(file);
+    } catch {
+      /* already released */
+    }
+  };
+  const interrupt = () => {
+    release();
+    process.exit(130);
+  };
+  const terminate = () => {
+    release();
+    process.exit(143);
+  };
+  process.once("exit", release);
+  process.once("SIGINT", interrupt);
+  process.once("SIGTERM", terminate);
+  try {
+    return operation();
+  } finally {
+    release();
+    process.removeListener("exit", release);
+    process.removeListener("SIGINT", interrupt);
+    process.removeListener("SIGTERM", terminate);
+  }
+}
+function readState(name) {
+  const file = statePath(name);
+  if (!exists(file)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(file, "utf8"));
+  } catch {
+    return null;
+  }
+}
+function clearState(name, token) {
+  const entry = readState(name);
+  if (entry && entry.token === token) {
+    for (const f of [statePath(name), heartbeatPath(name)]) {
+      try {
+        fs.unlinkSync(f);
+      } catch {
+        /* already removed */
+      }
+    }
+  }
+}
+function alive(pid) {
+  if (!Number.isSafeInteger(pid) || pid < 1) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+function freshHeartbeat(name, entry) {
+  try {
+    const beat = JSON.parse(fs.readFileSync(heartbeatPath(name), "utf8"));
+    return (
+      beat.token === entry.token &&
+      beat.pid === entry.pid &&
+      Date.now() - beat.at >= 0 &&
+      Date.now() - beat.at < 12000
+    );
+  } catch {
+    return false;
+  }
+}
+function running(name) {
+  const entry = readState(name);
+  return entry && alive(entry.pid) && freshHeartbeat(name, entry)
+    ? entry
+    : null;
+}
+function packageScripts(project) {
+  const file = path.join(project.cwd, "package.json");
+  if (!exists(file))
+    die(`No package.json in ${path.relative(ROOT, project.cwd) || "."}.`);
+  const scripts = readJson(file).scripts ?? {};
+  if (
+    !scripts ||
+    typeof scripts !== "object" ||
+    Array.isArray(scripts) ||
+    !Object.values(scripts).every((script) => typeof script === "string")
+  )
+    die("package.json scripts must be an object containing string commands.");
+  return scripts;
+}
+function hasScript(scripts, name) {
+  return (
+    Object.hasOwn(scripts, name) &&
+    typeof scripts[name] === "string" &&
+    scripts[name].trim().length > 0
+  );
+}
+function requirePnpm() {
+  const { command, argv } = pnpmInvocation(["--version"]);
+  const check = spawnSync(command, argv, { encoding: "utf8", timeout: 5000 });
+  if (check.error || check.status !== 0)
+    die("pnpm not found. Use the stable pnpm version approved for this repository.");
+  return (check.stdout || "").trim();
+}
+function runScript(script, project) {
+  if (!SCRIPT_RE.test(script)) die(`Invalid script name: ${script}`);
+  if (!hasScript(packageScripts(project), script))
+    die(
+      `Script '${script}' is not defined in ${path.relative(ROOT, project.cwd) || "."}/package.json.`,
+    );
+  requirePnpm();
+  const { command, argv } = pnpmInvocation(["run", script]);
+  const result = spawnSync(command, argv, {
+    cwd: project.cwd,
+    stdio: "inherit",
+  });
+  if (result.error) die(result.error.message);
+  return result.status == null ? 1 : result.status;
+}
+function worker(argv) {
+  const [name, token, mode] = argv;
+  if (
+    !NAME_RE.test(name || "") ||
+    !/^[a-f0-9]{32}$/.test(token || "") ||
+    !["dev", "prod"].includes(mode)
+  )
+    process.exit(2);
+  const config = cfg();
+  const project = config.projects[name];
+  if (!project) process.exit(2);
+  const state = readState(name);
+  if (!state || state.token !== token) process.exit(2);
+  let child;
+  let stopping = false;
+  const beat = () => {
+    try {
+      writeJsonAtomic(heartbeatPath(name), {
+        token,
+        pid: process.pid,
+        at: Date.now(),
+      });
+    } catch (err) {
+      console.error(`Heartbeat failed: ${err.message}`);
+    }
+  };
+  let heartbeatTimer;
+  try {
+    // Project/script names are constrained and taken from local config; no raw shell arguments.
+    const { command, argv } = pnpmInvocation(["run", project[mode]]);
+    child = spawn(command, argv, {
+      cwd: project.cwd,
+      stdio: "inherit",
+      windowsHide: true,
+    });
+  } catch (e) {
+    console.error(e.message);
+    cleanup(1);
+    return;
+  }
+  function cleanup(code) {
+    if (stopping) return;
+    stopping = true;
+    clearInterval(heartbeatTimer);
+    clearState(name, token);
+    process.exit(code);
+  }
+  const shutdown = (signal) => {
+    if (stopping) return;
+    // When group termination is used, children receive the same signal. If
+    // started directly, forwarding the signal is still appropriate.
+    try {
+      if (child && child.pid) child.kill(signal);
+    } catch {}
+    setTimeout(() => cleanup(0), 1500).unref();
+  };
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
+  child.on("spawn", () => {
+    beat();
+    heartbeatTimer = setInterval(beat, 1500);
+  });
+  child.on("error", (error) => {
+    console.error(`Could not start pnpm: ${error.message}`);
+    cleanup(1);
+  });
+  child.on("exit", (code, signal) => {
+    if (!stopping)
+      console.log(`Project '${name}' exited (${signal || code || 0}).`);
+    cleanup(code || 0);
+  });
+}
+function startOne(project, mode) {
+  const name = project.name;
+  if (running(name)) {
+    info(`Already running: ${name} — URL: ${project.url}`);
+    return true;
+  }
+  const previous = readState(name);
+  if (previous && alive(previous.pid))
+    die(
+      `Supervisor for '${name}' is alive but its heartbeat is unavailable. Inspect the service before starting another instance.`,
+    );
+  if (previous) info(`Removing stale state for ${name}.`);
+  const script = project[mode];
+  if (!hasScript(packageScripts(project), script))
+    die(`${name}: package.json does not declare '${script}'.`);
+  requirePnpm();
+  fs.mkdirSync(STATE, { recursive: true });
+  const token = crypto.randomBytes(16).toString("hex");
+  const state = {
+    name,
+    mode,
+    token,
+    pid: null,
+    script,
+    startedAt: new Date().toISOString(),
+  };
+  // Publish the token before the supervisor can read it. The project lock
+  // protects publication from simultaneous start/stop/restart commands.
+  writeJsonAtomic(statePath(name), state);
+  const out = fs.openSync(logPath(name), "a");
+  let proc;
+  try {
+    proc = spawn(process.execPath, [__filename, "__run", name, token, mode], {
+      cwd: ROOT,
+      detached: true,
+      stdio: ["ignore", out, out],
+      windowsHide: true,
+    });
+  } finally {
+    fs.closeSync(out);
+  }
+  if (!proc.pid) {
+    clearState(name, token);
+    die(`Could not start ${name}.`);
+  }
+  writeJsonAtomic(statePath(name), { ...state, pid: proc.pid });
+  proc.unref();
+  for (let i = 0; i < 15; i++) {
+    sleep(150);
+    if (running(name)) {
+      info(
+        `Started '${name}' (${mode}; supervisor PID ${proc.pid}). URL: ${project.url}. Logs: .moorkyz/${name}.log`,
+      );
+      return true;
+    }
+    if (!alive(proc.pid)) break;
+  }
+  console.error(
+    `Could not confirm startup for '${name}' at ${project.url}. Inspect logs with: moorkyz logs ${name}`,
+  );
+  return false;
+}
+function stopOne(project) {
+  const { name, url } = project;
+  const entry = readState(name);
+  if (!entry) {
+    info(`Not running: ${name} — URL: ${url}`);
+    return true;
+  }
+  if (!running(name)) {
+    if (alive(entry.pid))
+      die(
+        `Supervisor for '${name}' is alive but cannot be verified. Inspect its heartbeat; tracking state has been preserved.`,
+      );
+    info(
+      `No verified live Moorkyz process for '${name}' at ${url}; leaving unrelated processes untouched.`,
+    );
+    clearState(name, entry.token);
+    return true;
+  }
+  try {
+    if (process.platform === "win32") {
+      const result = spawnSync(
+        "taskkill",
+        ["/PID", String(entry.pid), "/T", "/F"],
+        { windowsHide: true, encoding: "utf8", timeout: 10000 },
+      );
+      if (result.status !== 0 && alive(entry.pid))
+        die(`Failed to stop ${name}: ${result.stderr || result.stdout}`);
+    } else {
+      process.kill(-entry.pid, "SIGTERM");
+      for (let i = 0; i < 20 && alive(entry.pid); i++) sleep(150);
+      // Never SIGKILL arbitrary/possibly reused PIDs. Report if still running.
+      if (alive(entry.pid) && freshHeartbeat(name, entry))
+        die(`'${name}' did not stop gracefully. Review its process manually.`);
+    }
+    clearState(name, entry.token);
+    info(`Stopped '${name}'. URL: ${url}`);
+    return true;
+  } catch (e) {
+    die(`Could not stop '${name}': ${e.message}`);
+  }
+}
+function statusOne(project) {
+  const { name, url } = project;
+  const entry = running(name);
+  if (entry)
+    info(
+      `${name}: RUNNING (${entry.mode}, PID ${entry.pid}, started ${entry.startedAt}) — URL: ${url}`,
+    );
+  else info(`${name}: STOPPED — URL: ${url}`);
+}
+function showLogs(name, lines, follow) {
+  const file = logPath(name);
+  if (!exists(file)) die(`No logs yet for '${name}'.`);
+  // Read only the end of the file; large logs are not fully loaded into memory.
+  const st = fs.statSync(file);
+  const start = Math.max(0, st.size - 512 * 1024);
+  const fd = fs.openSync(file, "r");
+  const buf = Buffer.alloc(st.size - start);
+  fs.readSync(fd, buf, 0, buf.length, start);
+  fs.closeSync(fd);
+  const logLines = buf.toString("utf8").split(/\r?\n/);
+  if (logLines.at(-1) === "") logLines.pop();
+  info(logLines.slice(-lines).join("\n"));
+  if (!follow) return;
+  let offset = st.size;
+  info("Following logs; press Ctrl+C to stop.");
+  const timer = setInterval(() => {
+    try {
+      const current = fs.statSync(file);
+      if (current.size < offset) offset = 0;
+      if (current.size > offset) {
+        const readFd = fs.openSync(file, "r");
+        try {
+          let remaining = current.size - offset;
+          while (remaining > 0) {
+            const chunk = Buffer.alloc(Math.min(65536, remaining));
+            const bytes = fs.readSync(readFd, chunk, 0, chunk.length, offset);
+            if (!bytes) break;
+            process.stdout.write(chunk.subarray(0, bytes));
+            remaining -= bytes;
+            offset += bytes;
+          }
+        } finally {
+          fs.closeSync(readFd);
+        }
+      }
+    } catch {
+      /* File may be rotated */
+    }
+  }, 400);
+  process.on("SIGINT", () => {
+    clearInterval(timer);
+    process.exit(0);
+  });
+}
+function slugify(s) {
+  return (
+    s
+      .toLowerCase()
+      .normalize("NFKD")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 60) || "task"
+  );
+}
+function createAudit(title) {
+  const source = path.join(ROOT, "docs", "audits", "TEMPLATE.md");
+  if (!exists(source)) die("Missing docs/audits/TEMPLATE.md.");
+  const date = new Date();
+  const timestamp = date
+    .toISOString()
+    .replace(/\.\d{3}Z$/, "Z")
+    .replace(/:/g, "-");
+  const slug = slugify(title);
+  const dest = path.join(ROOT, "docs", "audits", `${timestamp}-${slug}.md`);
+  const template = fs
+    .readFileSync(source, "utf8")
+    .replaceAll("{{AUDIT_ID}}", `${timestamp}-${slug}`)
+    .replaceAll("{{DATE_UTC}}", date.toISOString())
+    .replaceAll("{{TASK_NAME}}", () =>
+      title.replace(/[\r\n]+/g, " ").slice(0, 120),
+    );
+  fs.writeFileSync(dest, template, { flag: "wx" });
+  info(
+    `Created ${path.relative(ROOT, dest)}. Fill in observed results before committing.`,
+  );
+}
+function listProjects(config) {
+  for (const project of Object.values(config.projects)) {
+    info(
+      `${project.name}${config.defaultProject === project.name ? " (default)" : ""}: ${path.relative(ROOT, project.cwd) || "."} — dev:${project.dev} prod:${project.prod}`,
+    );
+  }
+}
+function doctor(config) {
+  info(`Project root: ${ROOT}`);
+  info(`Node.js: ${process.version}`);
+  const { command, argv } = pnpmInvocation(["--version"]);
+  const p = spawnSync(command, argv, { encoding: "utf8", timeout: 5000 });
+  info(`pnpm: ${p.status === 0 ? p.stdout.trim() : "MISSING"}`);
+  info(
+    `Moorkyz config: ${exists(path.join(ROOT, "moorkyz.config.json")) ? "present" : "defaults (single root project)"}`,
+  );
+  for (const project of Object.values(config.projects)) {
+    const manifest = path.join(project.cwd, "package.json");
+    const scripts = exists(manifest)
+      ? Object.keys(readJson(manifest).scripts || {})
+      : [];
+    info(
+      `  ${project.name}: ${exists(manifest) ? `package.json OK; scripts: ${scripts.join(", ") || "none"}` : "package.json MISSING"}`,
+    );
+  }
+  info(
+    `Audit template: ${exists(path.join(ROOT, "docs/audits/TEMPLATE.md")) ? "OK" : "MISSING"}`,
+  );
+  info(`Runtime directory: ${path.relative(ROOT, STATE)} (ignored by Git)`);
+}
+function help(command) {
+  const commands = {
+    start:
+      "moorkyz start [project|all] [--prod]  Launch an isolated background dev server (or production script with --prod).",
+    stop: "moorkyz stop [project|all]          Stop only services started and verified by Moorkyz.",
+    restart:
+      "moorkyz restart [project|all] [--prod]  Restart a managed service.",
+    status:
+      "moorkyz status [project|all]        Show the status of managed processes.",
+    logs: "moorkyz logs [project] [--lines 80] [--follow]  Show or follow a service log.",
+    list: "moorkyz list                         List configured projects.",
+    doctor:
+      "moorkyz doctor                       Check Node, pnpm, scripts, and repository prerequisites.",
+    verify:
+      "moorkyz verify [project]             Run package.json verify script, or available quality gates.",
+    build:
+      "moorkyz build [project]              Run package.json build script.",
+    test: "moorkyz test [project]               Run package.json test script.",
+    lint: "moorkyz lint [project]               Run package.json lint script.",
+    typecheck:
+      "moorkyz typecheck [project]          Run package.json typecheck script.",
+    security:
+      "moorkyz security [project]           Run read-only pnpm audit at high severity.",
+    run: "moorkyz run <script> [project]       Run an existing package.json script.",
+    audit:
+      'moorkyz audit "task description"       Create a documented audit from docs/audits/TEMPLATE.md.',
+    help: "moorkyz help [command]               Show general or command-specific help.",
+  };
+  if (command) {
+    if (!Object.hasOwn(commands, command))
+      die(`Unknown help topic '${command}'.`);
+    info(commands[command]);
+  } else {
+    info("Moorkyz — reusable project development CLI");
+    info("Usage: moorkyz <command> [project|all] [options]\n");
+    Object.values(commands).forEach(info);
+    info(
+      "\nRun from the target project root. With no config, a single root package.json is assumed.",
+    );
+    info(
+      "For multiple projects, create moorkyz.config.json with the approved project paths and script names.",
+    );
+    info(
+      "Windows: .\\moorkyz.cmd help; Unix: sh ./moorkyz help; see docs/engineering/moorkyz-cli.md.",
+    );
+    info("Local state/logs are stored under .moorkyz/ (gitignored).");
+  }
+}
+function main() {
+  const [command = "help", ...args] = process.argv.slice(2);
+  if (command === "__run") {
+    worker(args);
+    return;
+  }
+  if (command === "help" || command === "--help" || command === "-h") {
+    help(args[0]);
+    return;
+  }
+  const config = cfg();
+  if (command === "list") {
+    listProjects(config);
+    return;
+  }
+  if (command === "doctor") {
+    doctor(config);
+    return;
+  }
+  if (command === "audit") {
+    const title = args.join(" ").trim();
+    if (!title || title.startsWith("-"))
+      die('Usage: moorkyz audit "description of completed task"');
+    createAudit(title);
+    return;
+  }
+  if (["start", "stop", "restart", "status"].includes(command)) {
+    const prod = args.includes("--prod");
+    if (
+      args.filter((x) => x !== "--prod").length > 1 ||
+      args.some((x) => x.startsWith("--") && x !== "--prod")
+    )
+      die(`Invalid arguments for ${command}; run 'moorkyz help ${command}'.`);
+    if (prod && !["start", "restart"].includes(command))
+      die("--prod is only valid for start or restart.");
+    const name = args.find((x) => x !== "--prod");
+    const names = targetNames(config, name, true);
+    let failed = false;
+    for (const n of names) {
+      if (command === "status") statusOne(config.projects[n]);
+      else
+        withProjectLock(n, () => {
+          if (command === "start")
+            failed =
+              !startOne(config.projects[n], prod ? "prod" : "dev") || failed;
+          else if (command === "stop")
+            failed = !stopOne(config.projects[n]) || failed;
+          else {
+            stopOne(config.projects[n]);
+            failed =
+              !startOne(config.projects[n], prod ? "prod" : "dev") || failed;
+          }
+        });
+    }
+    if (failed) process.exitCode = 1;
+    return;
+  }
+  if (command === "logs") {
+    const follow = args.includes("--follow");
+    const idx = args.indexOf("--lines");
+    const lines = idx !== -1 ? Number(args[idx + 1]) : 80;
+    if (!Number.isInteger(lines) || lines < 1 || lines > 10000)
+      die("--lines must be between 1 and 10000.");
+    const filtered = args.filter(
+      (arg, i) =>
+        arg !== "--follow" &&
+        arg !== "--lines" &&
+        (idx === -1 || i !== idx + 1),
+    );
+    if (filtered.length > 1 || filtered.some((x) => x.startsWith("-")))
+      die("Invalid logs arguments.");
+    showLogs(targetNames(config, filtered[0], false)[0], lines, follow);
+    return;
+  }
+  if (
+    [
+      "build",
+      "test",
+      "lint",
+      "typecheck",
+      "verify",
+      "security",
+      "run",
+    ].includes(command)
+  ) {
+    const script = command === "run" ? args.shift() : command;
+    if (!script || !SCRIPT_RE.test(script))
+      die("Usage: moorkyz run <existing-script> [project]");
+    if (args.length > 1 || args.some((x) => x.startsWith("-")))
+      die("Unexpected arguments. Run moorkyz help.");
+    const name = targetNames(config, args[0], false)[0];
+    const project = config.projects[name];
+    if (command === "security") {
+      requirePnpm();
+      const { command, argv } = pnpmInvocation([
+        "audit",
+        "--audit-level",
+        "high",
+      ]);
+      const result = spawnSync(command, argv, {
+        cwd: project.cwd,
+        stdio: "inherit",
+      });
+      process.exitCode = result.status ?? 1;
+    } else if (
+      command === "verify" &&
+      !hasScript(packageScripts(project), "verify")
+    ) {
+      const available = [
+        "format:check",
+        "lint",
+        "typecheck",
+        "test",
+        "build",
+      ].filter((s) => hasScript(packageScripts(project), s));
+      if (!available.length)
+        die(
+          "No verify/format:check/lint/typecheck/test/build scripts found in package.json.",
+        );
+      for (const s of available) {
+        info(`\n--- ${s} ---`);
+        if (runScript(s, project) !== 0) {
+          process.exitCode = 1;
+          break;
+        }
+      }
+    } else process.exitCode = runScript(script, project);
+    return;
+  }
+  die(`Unknown command '${command}'. Run 'moorkyz help'.`);
+}
+main();
