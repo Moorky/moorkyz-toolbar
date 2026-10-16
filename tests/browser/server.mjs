@@ -10,7 +10,11 @@ const packageRoot = resolve(repositoryRoot, "packages/toolbar/dist");
 const fixtureRoot = resolve(repositoryRoot, "tests/browser/fixtures");
 const packageFiles = new Map([
   ["/toolbar/index.js", "index.js"],
+  ["/toolbar/capabilities.js", "capabilities.js"],
+  ["/toolbar/commands.js", "commands.js"],
   ["/toolbar/configuration.js", "configuration.js"],
+  ["/toolbar/context.js", "context.js"],
+  ["/toolbar/surfaces.js", "surfaces.js"],
   ["/toolbar/toolbar.js", "toolbar.js"],
   ["/toolbar/toolbar.css", "toolbar.css"],
 ]);

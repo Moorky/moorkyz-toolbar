@@ -85,5 +85,18 @@ The workspace now contains an **implemented but unapproved draft** of the first 
 
 See [`packages/toolbar/test/configuration.test.js`](../../packages/toolbar/test/configuration.test.js) for executable boundary tests. Feature-key names and diagnostics remain proposals until contract review; approved feature semantics and defaults may not be changed.
 
+## M3 implemented drafts
+
+The package now includes draft, framework-neutral primitives for the approved capability/context/command architecture:
+
+- `createCapabilityRegistry()` commits each registration/removal transaction atomically, uses `namespace:name` identities and owner checks, and denies cross-owner replacement unless a host-provided authorization callback explicitly approves it.
+- `createContextResolver(defaults)` resolves root-to-leaf scopes into versioned snapshots with a frozen top-level value. Scope IDs are namespaced, parent changes reject cycles, and context data rejects accessors and prototype-bearing objects. Context is descriptive only; it never grants command permission.
+- `createCommandExecutor(policy)` returns typed handles with `parallel`, `single-flight`, `drop`, `replace`, and `queue` concurrency modes, required runtime input validators, optional timeouts, cooperative cancellation, host permission checks and active/queued-command cancellation on permission revocation. Permissioned commands fail closed when no host authorization policy is configured. Retries are not implemented.
+- `createSurfaceStack()` maintains a bounded, nested surface order; only the top surface can close, dismissible policy is enforced for escape/outside/trigger dismissal, and close results carry the host's focus-restoration target. It does not install global listeners or move focus itself.
+
+These are candidate API names and semantics, not approved stable exports. The initial dock's action callback remains the host-owned navigation boundary; the core accepts action identifiers, not arbitrary URLs, and does not route or authorize by itself. Dedicated router adapters, full DOM focus orchestration, extension registration adapters and richer command policy schemas remain incomplete. The vanilla consumer fixture compile-checks these M3 APIs.
+
+Executable draft coverage is in [`capabilities.test.js`](../../packages/toolbar/test/capabilities.test.js), [`context.test.js`](../../packages/toolbar/test/context.test.js), [`commands.test.js`](../../packages/toolbar/test/commands.test.js), and [`surfaces.test.js`](../../packages/toolbar/test/surfaces.test.js).
+
 ## Schema validation gate
 Schema definitions must be the shared source for typed validation, Studio controls, CLI validation, generator, reference docs and representative consumer fixtures. The code generator must not independently invent a second config interpretation.
