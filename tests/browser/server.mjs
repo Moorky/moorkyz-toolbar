@@ -17,6 +17,7 @@ const packageFiles = new Map([
   ["/toolbar/context.js", "context.js"],
   ["/toolbar/input.js", "input.js"],
   ["/toolbar/input.js", "input.js"],
+  ["/toolbar/notifications.js", "notifications.js"],
   ["/toolbar/preferences.js", "preferences.js"],
   ["/toolbar/search.js", "search.js"],
   ["/toolbar/surfaces.js", "surfaces.js"],

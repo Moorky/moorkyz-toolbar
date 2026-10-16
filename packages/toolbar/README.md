@@ -153,4 +153,23 @@ const outcome = await ai.complete(userPrompt, controller.signal);
 
 The provider receives only the explicit prompt and signal. It must honor cancellation cooperatively and return bounded plain text. The host owns context selection, data handling, provider/network policy, and safe text presentation.
 
+## Quiet notification center
+
+Notifications are disabled by default. When enabled, the host supplies snapshots through `updateNotifications()`. The dock shows an unread count but never opens a panel, displays a toast, changes collapse state, or marks items read on its own; the user opens the panel, while the host remains authoritative for notification state. Items are text-only and are cleared when the feature is disabled or the toolbar is disposed.
+
+```ts
+toolbar.update({ features: { notifications: true } });
+toolbar.updateNotifications([
+  {
+    id: "sync-recovered",
+    title: "Sync restored",
+    message: "Your changes are syncing again.",
+    severity: "success",
+    unread: true,
+  },
+]);
+```
+
+The notification list is neither persisted nor automatically announced while closed. With `features.notifications: false`, incoming values are not inspected and no notification UI is created.
+
 Feature flags and configuration diagnostics are draft contracts. Recognizing a feature flag does not mean that the feature module is implemented or activated. See the repository [implementation status](../../docs/engineering/implementation-status.md) and [SDK/schema contract](../../docs/contracts/sdk-and-schema.md).

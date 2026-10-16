@@ -68,6 +68,18 @@ window.mountTaskToolbar = () => {
   window.taskToolbar = taskToolbar;
 };
 
+window.mountNotificationsToolbar = () => {
+  const notificationToolbar = createToolbar({
+    features: { notifications: true },
+    label: "Notifications test toolbar",
+  });
+  const outcome = notificationToolbar.mount(
+    document.querySelector("#notification-target"),
+  );
+  if (!outcome.ok) throw new Error(outcome.error.message);
+  window.notificationToolbar = notificationToolbar;
+};
+
 window.mountShortcutManager = () => {
   let activeScope = "app:editor";
   const shortcutManager = createShortcutManager(target, {

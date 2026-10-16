@@ -4,6 +4,7 @@ export * from "./capabilities.js";
 export * from "./commands.js";
 export * from "./context.js";
 export * from "./input.js";
+export * from "./notifications.js";
 export * from "./preferences.js";
 export * from "./search.js";
 export * from "./surfaces.js";

@@ -553,3 +553,130 @@ test("disabled Task Center does not inspect or retain task state", (t) => {
     null,
   );
 });
+
+test("notifications are host-fed, safe, manually opened, and cleared when disabled", (t) => {
+  const current = fixture({ features: { notifications: true } });
+  t.after(() => disposeFixture(current));
+  assert.equal(current.toolbar.mount(current.target).ok, true);
+
+  const shadow = current.target.firstElementChild.shadowRoot;
+  let button = shadow.querySelector('[data-toolbar-control="notifications"]');
+  const panel = shadow.querySelector(".mzk-toolbar__notification-center");
+  assert.ok(button);
+  assert.ok(panel);
+  assert.equal(panel.hidden, true);
+
+  assert.equal(current.toolbar.collapse().ok, true);
+  button = shadow.querySelector('[data-toolbar-control="notifications"]');
+  const updated = current.toolbar.updateNotifications([
+    {
+      id: "build-failed",
+      title: "Build failed",
+      message: "<img src=x onerror=alert(1)>",
+      severity: "error",
+      unread: true,
+    },
+    {
+      id: "build-recovered",
+      title: "Build recovered",
+      message: "The latest build passed.",
+      severity: "success",
+      unread: false,
+    },
+  ]);
+  assert.equal(updated.ok, true);
+  assert.equal(current.toolbar.isCollapsed, true);
+  assert.equal(panel.hidden, true);
+  assert.equal(button.textContent, "Notifications (1)");
+  assert.equal(button.getAttribute("aria-expanded"), "false");
+
+  button.click();
+  assert.equal(panel.hidden, false);
+  assert.equal(
+    panel.querySelector(".mzk-toolbar__notification").querySelector("p")
+      .textContent,
+    "<img src=x onerror=alert(1)>",
+  );
+  assert.equal(panel.querySelector("img"), null);
+
+  const invalid = current.toolbar.updateNotifications([
+    {
+      id: "build-failed",
+      title: "No duplicate",
+      message: "Invalid update",
+      severity: "warning",
+      unread: true,
+    },
+    {
+      id: "build-failed",
+      title: "Duplicate",
+      message: "Must not replace prior snapshot",
+      severity: "error",
+      unread: true,
+    },
+  ]);
+  assert.equal(invalid.ok, false);
+  if (!invalid.ok) {
+    assert.equal(invalid.error.code, "INVALID_NOTIFICATION_SNAPSHOT");
+    assert.equal(
+      invalid.error.notificationDiagnostics[0].code,
+      "NOTIFICATIONS_DUPLICATE_ID",
+    );
+  }
+  assert.equal(
+    panel.querySelector(".mzk-toolbar__notification").querySelector("p")
+      .textContent,
+    "<img src=x onerror=alert(1)>",
+  );
+
+  assert.equal(
+    current.toolbar.update({ features: { notifications: false } }).ok,
+    true,
+  );
+  assert.equal(
+    shadow.querySelector('[data-toolbar-control="notifications"]'),
+    null,
+  );
+  assert.equal(shadow.querySelector(".mzk-toolbar__notification-center"), null);
+  assert.equal(
+    current.toolbar.update({ features: { notifications: true } }).ok,
+    true,
+  );
+  assert.equal(
+    shadow.querySelector('[data-toolbar-control="notifications"]').textContent,
+    "Notifications",
+  );
+});
+
+test("disabled notifications do not inspect incoming state or create UI", (t) => {
+  const current = fixture();
+  t.after(() => disposeFixture(current));
+  assert.equal(current.toolbar.mount(current.target).ok, true);
+
+  let invoked = false;
+  const hostile = Object.defineProperty([], "0", {
+    configurable: true,
+    get() {
+      invoked = true;
+      return {
+        id: "notice",
+        title: "Notice",
+        message: "Body",
+        severity: "info",
+        unread: true,
+      };
+    },
+  });
+  const result = current.toolbar.updateNotifications(hostile);
+  assert.equal(result.ok, false);
+  if (!result.ok) {
+    assert.equal(result.error.code, "NOTIFICATIONS_DISABLED");
+  }
+  assert.equal(invoked, false);
+  assert.equal(
+    current.target.firstElementChild.shadowRoot.querySelector(
+      ".mzk-toolbar__notification-center",
+    ),
+    null,
+  );
+});

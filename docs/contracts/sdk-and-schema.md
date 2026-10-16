@@ -132,5 +132,11 @@ The caller supplies an `AbortSignal`; providers must cooperate with cancellation
 
 The adapter does not select or augment prompts with host context, render model output, persist prompts/responses, retry, log usage, or contact a default AI service. Host code owns provider/network choice, authorization, sensitive-data handling, and safe text presentation. This is a headless adapter only; interactive AI UI and broader data policy documentation remain future work.
 
+## M6 quiet notification presentation draft
+
+`features.notifications` remains false by default. When enabled, the host pushes a bounded snapshot through `ToolbarController.updateNotifications()`. Entries contain a unique ID, non-empty title (120 characters max), message (up to 500 characters; it may be empty), severity (`info`, `success`, `warning`, `error`), and host-owned `unread` state; at most 50 entries are accepted. Accessors, unknown keys, duplicate IDs, oversized text, sparse arrays, and invalid severity/state fail with structured `notificationDiagnostics`. Text is rendered with text nodes only.
+
+New or changed snapshots do not open the notification panel, create toasts, announce content while closed, expand the dock, or mutate unread state. The user must activate the Notifications control to inspect entries. Disabling the feature clears its in-memory snapshot and UI; disposal also clears it. Notifications are not persisted, and the host remains authoritative for read state, freshness, and any corresponding actions. This presentation slice implements the non-intrusive Q26 behavior but not a notification delivery service or attention prioritizer.
+
 ## Schema validation gate
 Schema definitions must be the shared source for typed validation, Studio controls, CLI validation, generator, reference docs and representative consumer fixtures. The code generator must not independently invent a second config interpretation.

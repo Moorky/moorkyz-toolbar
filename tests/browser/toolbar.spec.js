@@ -297,6 +297,75 @@ test("Task Center presents safe host-fed state only while enabled", async ({
   await expect(panel).toHaveCount(0);
 });
 
+test("notifications remain quiet until the user opens them and never restore collapse", async ({
+  page,
+}) => {
+  await page.evaluate(() => {
+    window.toolbar.dispose();
+    window.mountNotificationsToolbar();
+  });
+  const toolbar = page.getByRole("toolbar", {
+    name: "Notifications test toolbar",
+  });
+  const initial = await page.evaluate(() =>
+    window.notificationToolbar.updateNotifications([
+      {
+        id: "connection",
+        title: "Connection lost",
+        message: "<img src=x onerror=alert(1)>",
+        severity: "warning",
+        unread: true,
+      },
+    ]),
+  );
+  expect(initial.ok).toBe(true);
+  const panel = page.getByRole("region", { name: "Notifications" });
+  await expect(panel).toBeHidden();
+
+  const collapsed = await page.evaluate(() =>
+    window.notificationToolbar.collapse(),
+  );
+  expect(collapsed.ok).toBe(true);
+  const update = await page.evaluate(() =>
+    window.notificationToolbar.updateNotifications([
+      {
+        id: "connection",
+        title: "Connection lost",
+        message: "<img src=x onerror=alert(1)>",
+        severity: "warning",
+        unread: true,
+      },
+      {
+        id: "recovered",
+        title: "Connection restored",
+        message: "Changes are syncing again.",
+        severity: "success",
+        unread: true,
+      },
+    ]),
+  );
+  expect(update.ok).toBe(true);
+  await expect(toolbar).toHaveAttribute("data-collapsed", "true");
+  await expect(panel).toBeHidden();
+  const button = page.getByRole("button", { name: "Notifications (2)" });
+  await button.focus();
+  await page.keyboard.press("Enter");
+  await expect(panel).toBeVisible();
+  await expect(panel).toContainText("<img src=x onerror=alert(1)>");
+  await expect(panel.locator("img")).toHaveCount(0);
+
+  const { violations } = await new AxeBuilder({ page }).analyze();
+  expect(violations).toEqual([]);
+
+  await page.evaluate(() =>
+    window.notificationToolbar.update({ features: { notifications: false } }),
+  );
+  await expect(
+    toolbar.getByRole("button", { name: /^Notifications/ }),
+  ).toHaveCount(0);
+  await expect(panel).toHaveCount(0);
+});
+
 test("dispose removes the mounted interface", async ({ page }) => {
   await page.evaluate(() => window.toolbar.dispose());
   await expect(page.getByRole("toolbar")).toHaveCount(0);

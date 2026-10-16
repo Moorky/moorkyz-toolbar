@@ -10,6 +10,11 @@ import type {
   ToolbarPreferenceValues,
   ToolbarPreferences,
 } from "./preferences.js";
+import {
+  validateNotificationSnapshot,
+  type NotificationDiagnostic,
+  type ToolbarNotification,
+} from "./notifications.js";
 import { createToolbarPreferenceStore } from "./preferences.js";
 import { THEME_NAMES, type ToolbarColorScheme } from "./themes.js";
 import {
@@ -36,7 +41,9 @@ export type ToolbarErrorCode =
   | "CUSTOMIZATION_DISABLED"
   | "PREFERENCE_SAVE_FAILED"
   | "TASKS_DISABLED"
-  | "INVALID_TASK_SNAPSHOT";
+  | "INVALID_TASK_SNAPSHOT"
+  | "NOTIFICATIONS_DISABLED"
+  | "INVALID_NOTIFICATION_SNAPSHOT";
 
 export interface ToolbarRuntimeError {
   readonly code: ToolbarErrorCode;
@@ -44,6 +51,7 @@ export interface ToolbarRuntimeError {
   readonly cause?: unknown;
   readonly diagnostics?: readonly ConfigurationDiagnostic[];
   readonly taskDiagnostics?: readonly TaskDiagnostic[];
+  readonly notificationDiagnostics?: readonly NotificationDiagnostic[];
 }
 
 export type ToolbarResult =
@@ -67,6 +75,7 @@ export interface ToolbarController {
   update(configuration: ToolbarConfigurationInput): ToolbarResult;
   updateUserPreferences(preferences: ToolbarPreferenceValues): ToolbarResult;
   updateTasks(snapshot: unknown): ToolbarResult;
+  updateNotifications(snapshot: unknown): ToolbarResult;
   collapse(): ToolbarResult;
   expand(): ToolbarResult;
   dispose(): void;
@@ -118,6 +127,7 @@ function failure(
     cause?: unknown;
     diagnostics?: readonly ConfigurationDiagnostic[];
     taskDiagnostics?: readonly TaskDiagnostic[];
+    notificationDiagnostics?: readonly NotificationDiagnostic[];
   } = {},
 ): ToolbarResult {
   return {
@@ -132,6 +142,9 @@ function failure(
       ...(details.taskDiagnostics === undefined
         ? {}
         : { taskDiagnostics: details.taskDiagnostics }),
+      ...(details.notificationDiagnostics === undefined
+        ? {}
+        : { notificationDiagnostics: details.notificationDiagnostics }),
     },
   };
 }
@@ -162,6 +175,10 @@ class ToolbarControllerImpl implements ToolbarController {
   private taskPanelOpen = false;
   private taskPanelElement: HTMLElement | null = null;
   private taskButtonElement: HTMLButtonElement | null = null;
+  private notificationItems: readonly ToolbarNotification[] = Object.freeze([]);
+  private notificationPanelOpen = false;
+  private notificationPanelElement: HTMLElement | null = null;
+  private notificationButtonElement: HTMLButtonElement | null = null;
 
   constructor(configuration: ToolbarConfiguration, host: ToolbarHost) {
     this.configuration = configuration;
@@ -346,6 +363,10 @@ class ToolbarControllerImpl implements ToolbarController {
       this.taskItems = Object.freeze([]);
       this.taskPanelOpen = false;
     }
+    if (!this.configuration.features.notifications) {
+      this.notificationItems = Object.freeze([]);
+      this.notificationPanelOpen = false;
+    }
     if (!this.configuration.features.customize) this.editing = false;
     if (this.toolbarElement !== null) {
       this.render();
@@ -426,6 +447,33 @@ class ToolbarControllerImpl implements ToolbarController {
     return { ok: true };
   }
 
+  updateNotifications(snapshot: unknown): ToolbarResult {
+    if (this.disposed) {
+      return failure(
+        "DISPOSED",
+        "Notifications cannot be updated on a disposed toolbar.",
+      );
+    }
+    if (!this.configuration.features.notifications) {
+      return failure(
+        "NOTIFICATIONS_DISABLED",
+        "Notifications are disabled by configuration.",
+      );
+    }
+    const validation = validateNotificationSnapshot(snapshot);
+    if (!validation.ok) {
+      return failure(
+        "INVALID_NOTIFICATION_SNAPSHOT",
+        "Notification state was not changed.",
+        { notificationDiagnostics: validation.errors },
+      );
+    }
+    this.notificationItems = validation.value;
+    this.updateNotificationButton();
+    this.renderNotificationCenter();
+    return { ok: true };
+  }
+
   collapse(): ToolbarResult {
     if (this.disposed) {
       return failure("DISPOSED", "A disposed toolbar cannot be collapsed.");
@@ -433,6 +481,7 @@ class ToolbarControllerImpl implements ToolbarController {
     if (this.collapsed) return { ok: true };
     this.collapsed = true;
     this.taskPanelOpen = false;
+    this.notificationPanelOpen = false;
     const persistenceResult = this.persistCurrentPreferences();
     this.render();
     return persistenceResult;
@@ -473,6 +522,10 @@ class ToolbarControllerImpl implements ToolbarController {
     this.taskButtonElement = null;
     this.taskItems = Object.freeze([]);
     this.taskPanelOpen = false;
+    this.notificationPanelElement = null;
+    this.notificationButtonElement = null;
+    this.notificationItems = Object.freeze([]);
+    this.notificationPanelOpen = false;
     this.keydownHandler = null;
     this.clickHandler = null;
   }
@@ -714,6 +767,21 @@ class ToolbarControllerImpl implements ToolbarController {
     } else {
       this.taskButtonElement = null;
     }
+    if (this.configuration.features.notifications) {
+      const notificationsButton = document.createElement("button");
+      notificationsButton.className = "mzk-toolbar__notifications";
+      notificationsButton.type = "button";
+      notificationsButton.setAttribute("data-toolbar-control", "notifications");
+      notificationsButton.setAttribute(
+        "aria-expanded",
+        String(this.notificationPanelOpen),
+      );
+      notificationsButton.tabIndex = -1;
+      this.notificationButtonElement = notificationsButton;
+      controls.push(notificationsButton);
+    } else {
+      this.notificationButtonElement = null;
+    }
     if (this.configuration.features.customize) {
       const customizeButton = document.createElement("button");
       customizeButton.className = "mzk-toolbar__customize";
@@ -760,8 +828,16 @@ class ToolbarControllerImpl implements ToolbarController {
       this.taskPanelElement?.remove();
       this.taskPanelElement = null;
     }
+    if (this.configuration.features.notifications) {
+      this.ensureNotificationPanel(root, document);
+    } else {
+      this.notificationPanelElement?.remove();
+      this.notificationPanelElement = null;
+    }
     this.updateTaskButton();
     this.renderTaskCenter();
+    this.updateNotificationButton();
+    this.renderNotificationCenter();
     this.actionsElement = actions;
     this.startOverflowMonitoring();
     this.updateOverflowControls();
@@ -838,6 +914,18 @@ class ToolbarControllerImpl implements ToolbarController {
     const control = button.getAttribute("data-toolbar-control");
     if (control === "tasks") {
       this.taskPanelOpen = !this.taskPanelOpen;
+      this.notificationPanelOpen = false;
+      this.updateTaskButton();
+      this.renderTaskCenter();
+      this.updateNotificationButton();
+      this.renderNotificationCenter();
+      return;
+    }
+    if (control === "notifications") {
+      this.notificationPanelOpen = !this.notificationPanelOpen;
+      this.taskPanelOpen = false;
+      this.updateNotificationButton();
+      this.renderNotificationCenter();
       this.updateTaskButton();
       this.renderTaskCenter();
       return;
@@ -992,6 +1080,70 @@ class ToolbarControllerImpl implements ToolbarController {
       status.className = "mzk-toolbar__task-status";
       status.textContent = preferenceButtonLabel(task.status);
       item.append(label, status);
+      list.appendChild(item);
+    }
+    panel.appendChild(list);
+  }
+
+  private ensureNotificationPanel(root: RenderRoot, document: Document): void {
+    if (this.notificationPanelElement !== null) return;
+    const panel = document.createElement("section");
+    panel.className = "mzk-toolbar__notification-center";
+    panel.setAttribute("role", "region");
+    panel.setAttribute("aria-label", "Notifications");
+    panel.hidden = true;
+    root.insertBefore(panel, this.statusElement);
+    this.notificationPanelElement = panel;
+  }
+
+  private updateNotificationButton(): void {
+    const button = this.notificationButtonElement;
+    if (button === null) return;
+    const unreadCount = this.notificationItems.filter(
+      ({ unread }) => unread,
+    ).length;
+    const label =
+      unreadCount === 0 ? "Notifications" : `Notifications (${unreadCount})`;
+    button.textContent = label;
+    button.setAttribute("aria-label", label);
+    button.setAttribute("aria-expanded", String(this.notificationPanelOpen));
+  }
+
+  private renderNotificationCenter(): void {
+    const panel = this.notificationPanelElement;
+    if (panel === null) return;
+    panel.hidden = !this.notificationPanelOpen;
+    panel.dataset.theme = this.configuration.theme;
+    panel.dataset.colorScheme = this.configuration.colorScheme;
+    panel.replaceChildren();
+    if (!this.notificationPanelOpen) return;
+
+    const document = panel.ownerDocument;
+    const heading = document.createElement("h2");
+    heading.textContent = "Notifications";
+    panel.appendChild(heading);
+    if (this.notificationItems.length === 0) {
+      const emptyState = document.createElement("p");
+      emptyState.textContent = "No notifications.";
+      panel.appendChild(emptyState);
+      return;
+    }
+
+    const list = document.createElement("ul");
+    for (const notification of this.notificationItems) {
+      const item = document.createElement("li");
+      item.className = "mzk-toolbar__notification";
+      item.dataset.severity = notification.severity;
+      const title = document.createElement("strong");
+      title.textContent = notification.title;
+      const message = document.createElement("p");
+      message.textContent = notification.message;
+      const metadata = document.createElement("span");
+      metadata.className = "mzk-toolbar__notification-status";
+      metadata.textContent = `${preferenceButtonLabel(notification.severity)}${
+        notification.unread ? " · Unread" : ""
+      }`;
+      item.append(title, message, metadata);
       list.appendChild(item);
     }
     panel.appendChild(list);
