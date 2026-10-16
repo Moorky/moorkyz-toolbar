@@ -4,3 +4,7 @@ dist/
 coverage/
 .next/
 .turbo/
+test-results/
+playwright-report/
+playwright/.cache/
+*.tsbuildinfo

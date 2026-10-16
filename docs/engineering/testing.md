@@ -37,6 +37,7 @@ The pnpm workspace now provides the following commands:
 
 ```powershell
 pnpm install --frozen-lockfile
+pnpm exec playwright install chromium
 pnpm check
 pnpm test
 pnpm lint
@@ -45,7 +46,7 @@ pnpm build
 node --test tests/tooling/moorkyz-cli.test.cjs
 ```
 
-`pnpm check` runs lint, formatting, tests, and consumer/package typechecks. Browser integration, automated axe checks, performance gates, and extended security/supply-chain gates remain future work; do not report those as having passed.
+`pnpm check` runs lint, formatting, Node tests, Chromium/Playwright and axe checks, package/portal builds, and consumer/package/portal typechecks. Broader assistive-technology/device coverage, formal performance budgets, and extended security/supply-chain gates remain future work; do not report those as having passed.
 
 ## Reporting
 

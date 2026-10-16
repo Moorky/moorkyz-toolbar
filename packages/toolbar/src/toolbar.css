@@ -1,0 +1,147 @@
+.mzk-toolbar-host {
+  position: fixed;
+  z-index: 2147483000;
+  inset-inline: 0;
+  bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+  display: flex;
+  box-sizing: border-box;
+  justify-content: center;
+  padding-inline: max(0.75rem, env(safe-area-inset-left, 0px))
+    max(0.75rem, env(safe-area-inset-right, 0px));
+  color: var(--dock-ink, #172033);
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  pointer-events: none;
+}
+
+:host(.mzk-toolbar-host) {
+  position: fixed;
+  z-index: 2147483000;
+  inset-inline: 0;
+  bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+  display: flex;
+  box-sizing: border-box;
+  justify-content: center;
+  padding-inline: max(0.75rem, env(safe-area-inset-left, 0px))
+    max(0.75rem, env(safe-area-inset-right, 0px));
+  color: var(--dock-ink, #172033);
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  pointer-events: none;
+}
+
+.mzk-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  box-sizing: border-box;
+  max-width: 100%;
+  padding: 0.375rem;
+  border: 1px solid var(--dock-border, rgb(255 255 255 / 72%));
+  border-radius: 999px;
+  background: var(--dock-bg, rgb(255 255 255 / 82%));
+  box-shadow:
+    0 0.75rem 2rem rgb(17 24 39 / 16%),
+    inset 0 1px rgb(255 255 255 / 85%);
+  backdrop-filter: blur(1rem) saturate(1.3);
+  pointer-events: auto;
+  transition:
+    transform 250ms ease,
+    opacity 250ms ease;
+}
+
+.mzk-toolbar__actions {
+  display: flex;
+  min-width: 0;
+  gap: 0.25rem;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: none;
+}
+
+.mzk-toolbar [hidden] {
+  display: none !important;
+}
+
+.mzk-toolbar__actions::-webkit-scrollbar {
+  display: none;
+}
+
+.mzk-toolbar button {
+  flex: 0 0 auto;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.8rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.mzk-toolbar button:hover:not(:disabled) {
+  background: var(--dock-hover, rgb(32 52 86 / 9%));
+}
+
+.mzk-toolbar button:focus-visible {
+  outline: 3px solid #315bd6;
+  outline-offset: 2px;
+}
+
+.mzk-toolbar button:disabled {
+  color: #566176;
+  cursor: not-allowed;
+}
+
+.mzk-toolbar__status {
+  position: absolute;
+  inset-block-end: calc(100% + 0.5rem);
+  max-width: min(32rem, calc(100vw - 2rem));
+  padding: 0.6rem 0.9rem;
+  border-radius: 0.75rem;
+  background: #7f1d1d;
+  color: #fff;
+  font-size: 0.9rem;
+  pointer-events: auto;
+}
+
+@media (prefers-color-scheme: dark) {
+  .mzk-toolbar-host {
+    color: var(--dock-ink, #f1f4fb);
+  }
+
+  :host(.mzk-toolbar-host) {
+    color: var(--dock-ink, #f1f4fb);
+  }
+
+  .mzk-toolbar {
+    border-color: var(--dock-border, rgb(255 255 255 / 18%));
+    background: var(--dock-bg, rgb(29 36 50 / 88%));
+    box-shadow:
+      0 0.75rem 2rem rgb(0 0 0 / 35%),
+      inset 0 1px rgb(255 255 255 / 10%);
+  }
+
+  .mzk-toolbar button:hover:not(:disabled) {
+    background: var(--dock-hover, rgb(255 255 255 / 12%));
+  }
+
+  .mzk-toolbar button:disabled {
+    color: #adb7c9;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mzk-toolbar {
+    transition: none;
+  }
+}

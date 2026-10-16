@@ -1,30 +1,26 @@
-import { useMemo, type ReactNode } from "react";
-import { validateConfiguration } from "@moorkyz/toolbar";
+import { useEffect, useRef } from "react";
+import { createToolbar } from "@moorkyz/toolbar";
 
-export function ToolbarConfigurationPreview(): ReactNode {
-  const validation = useMemo(
-    () =>
-      validateConfiguration({
-        features: { search: true, spatialCoordination: false },
-      }),
-    [],
-  );
+interface ToolbarMountProps {
+  readonly dispatchAction: (actionId: string) => void | Promise<void>;
+}
 
-  if (!validation.ok) {
-    return (
-      <ul aria-label="Toolbar configuration errors">
-        {validation.errors.map(({ code, path }) => (
-          <li key={`${code}:${path}`}>
-            {code}: {path}
-          </li>
-        ))}
-      </ul>
+export function ToolbarMount({ dispatchAction }: ToolbarMountProps) {
+  const target = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (target.current === null) return;
+    const toolbar = createToolbar(
+      { actions: [{ id: "home", label: "Home" }] },
+      { dispatchAction },
     );
-  }
+    const mounted = toolbar.mount(target.current);
+    if (!mounted.ok) {
+      toolbar.dispose();
+      throw new Error(mounted.error.message);
+    }
+    return () => toolbar.dispose();
+  }, [dispatchAction]);
 
-  return (
-    <output aria-label="Toolbar configuration schema version">
-      {validation.value.schemaVersion}
-    </output>
-  );
+  return <div ref={target} />;
 }

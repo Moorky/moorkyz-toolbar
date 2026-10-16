@@ -43,7 +43,7 @@ moorkyz-toolbar/
 
 ## Implemented scaffold
 
-The current repository has the private pnpm workspace, `packages/toolbar` TypeScript package, and `examples/vanilla-consumer` type fixture. The root CI workflow runs the workspace checks. Portal, framework adapters, generator, and the rest of the proposed tree remain unimplemented until their roadmap milestones.
+The current repository has the private pnpm workspace, `packages/toolbar` TypeScript package, a Next.js consumer in `packages/portal`, vanilla/React consumer fixtures, and browser tests. The portal is a private workspace app, not a public package. The root CI workflow runs package/portal builds and workspace checks. Framework adapters, generator, and the rest of the proposed tree remain unimplemented until their roadmap milestones.
 
 ## Repo command distinction
 `.\moorkyz.cmd start|stop|help` is the project-maintainer workflow for the portal. Public consumer tool is `pnpm exec moorkyz-toolbar ...`, from the single npm package. Neither is automatically authorized to deploy or publish.

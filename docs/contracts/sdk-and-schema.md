@@ -80,7 +80,8 @@ The workspace now contains an **implemented but unapproved draft** of the first 
 - Unknown properties, non-boolean feature values, invalid render modes, malformed/duplicate action IDs, empty labels, prototype-bearing objects, and accessor properties produce stable diagnostic codes and paths.
 - Action descriptors are data-only (`id`, `label`); host behavior and authorization callbacks are not serializable configuration.
 - Validation normalizes defaults and returns immutable result data. Importing the contract module has no browser-global access or runtime side effects.
-- `examples/vanilla-consumer/` is a compile-time consumer fixture. Runtime mounting, framework adapters, CLI/Studio schema consumption, and approved public names are not yet implemented.
+- Vanilla and React consumer fixtures compile against the package; the React example exercises the framework-neutral controller through an effect-owned mount/dispose lifecycle. CLI/Studio schema consumption, dedicated framework adapters, and approved public names are not yet implemented.
+- The initial DOM controller now mounts to a host-owned element, uses Shadow DOM by default (Light DOM is opt-in), renders only text nodes and native buttons, dispatches actions only through a host callback, and provides manual collapse/restore, scoped keyboard navigation, atomic partial updates, and disposal. Update patches merge feature overrides and replace action lists only when supplied. Its stylesheet is a same-package asset (no inline styles or external URL).
 
 See [`packages/toolbar/test/configuration.test.js`](../../packages/toolbar/test/configuration.test.js) for executable boundary tests. Feature-key names and diagnostics remain proposals until contract review; approved feature semantics and defaults may not be changed.
 

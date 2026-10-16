@@ -1,5 +1,8 @@
 # `toolbar.moorkyz.com` — Developer portal and Development Studio
 
+## Current implementation status
+The private Next.js app in `packages/portal/` is an early portal foundation, not the complete Studio. It mounts the workspace library for page navigation, updates real actions from the context picker, and offers a locally persisted light/dark site preference. The production build applies a nonce-based CSP through the Next.js Proxy. The M8 acceptance gates for versioned docs, configurator, component/scenario/theme/extension labs, generator, and local draft recovery remain open.
+
 ## Purpose
 Deliver an actual product experience, not a marketing mock. The fixed bottom dock on this site **uses the actual `@moorkyz/toolbar` workspace library**. Website navigation, product narrative and context change demonstrate real capabilities. Portal light-first with optional dark mode; refined minimalist canvas and no showy unnecessary motion.
 
