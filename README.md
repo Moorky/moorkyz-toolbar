@@ -9,6 +9,10 @@
 
 This package consolidates the 80 confirmed architecture questionnaire decisions into an implementation plan. It contains **specification documents, not implemented software or finalized public API declarations**. Wherever a specific method, file name, feature key, performance threshold, or browser matrix has not been approved, the documents identify it as a *proposed contract* or *validation item*.
 
+## Implementation status
+
+Implementation proceeds through the approved milestones; no product runtime or public API is claimed stable yet. Follow the [implementation checklist](docs/engineering/implementation-status.md) for milestone status and evidence.
+
 ## Document authority and reading order
 
 1. [`docs/decisions/decision-register.md`](docs/decisions/decision-register.md): binding record of decisions Q1–Q80. Changing an approved decision requires a new documented decision and approval; do not silently rewrite its meaning.
@@ -23,6 +27,7 @@ This package consolidates the 80 confirmed architecture questionnaire decisions 
 10. [`docs/engineering/verification-and-release.md`](docs/engineering/verification-and-release.md): automated QA, audits, security and release approvals.
 11. [`docs/engineering/open-validations.md`](docs/engineering/open-validations.md): remaining evidence-backed questions, blockers and non-blockers.
 12. [`AGENTS.md`](AGENTS.md): agent instructions and risk-tiered change permissions.
+13. [`docs/engineering/implementation-status.md`](docs/engineering/implementation-status.md): implementation progress and verification evidence.
 
 ## Scope and execution constraints
 
