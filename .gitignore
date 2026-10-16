@@ -1,1 +1,6 @@
 .moorkyz/
+node_modules/
+dist/
+coverage/
+.next/
+.turbo/

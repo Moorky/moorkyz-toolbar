@@ -7,7 +7,7 @@
 
 **License:** Apache License 2.0. See [`LICENSE`](LICENSE).
 
-This package consolidates the 80 confirmed architecture questionnaire decisions into an implementation plan. It contains **specification documents, not implemented software or finalized public API declarations**. Wherever a specific method, file name, feature key, performance threshold, or browser matrix has not been approved, the documents identify it as a *proposed contract* or *validation item*.
+This repository consolidates the 80 confirmed architecture questionnaire decisions into an implementation plan. **Implementation is in progress**; the current code is an early contract/tooling foundation, not the complete product. Public API declarations are not finalized or approved, and unapproved method names, feature keys, performance thresholds, and browser matrices remain *proposed contracts* or *validation items*.
 
 ## Implementation status
 

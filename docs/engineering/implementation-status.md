@@ -7,8 +7,8 @@ This checklist tracks delivery against the approved milestone roadmap. A milesto
 | Milestone | Status | Evidence / remaining exit criteria |
 |---|---|---|
 | M0 — Repository inventory and specification baseline | Complete | Initial inventory found a documentation-and-maintainer-CLI repository, no application/package workspace, and no third-party dependencies. Baseline CLI tests: `node --test tests/tooling/moorkyz-cli.test.cjs` (3/3 pass). Node.js v22.18.0 and pnpm 11.8.0 are available. The tracked specification manifest hashes match. See the task-scoped M0 audit in `docs/audits/`. |
-| M1 — Public contracts, schemas, and quality harness | Not started | Define and test the approved versioned contracts, defaults, diagnostics, package/workspace setup, and quality gates. |
-| M2 — Minimal production-quality dock | Not started | Implement and verify the SSR-safe, accessible framework-neutral dock and lifecycle. |
+| M1 — Public contracts, schemas, and quality harness | Complete | Added the pnpm workspace, strict TypeScript package, version `1.0` JSON Schema/validator, immutable normalized defaults, stable diagnostics, CI workflow, and compile fixtures for vanilla and React consumers. `pnpm check` passes (10 tests; package and both consumer typechecks pass). API names remain draft. |
+| M2 — Minimal production-quality dock | In progress | Implement the SSR-safe, accessible framework-neutral dock and verify keyboard interaction, reduced motion, and cleanup. |
 | M3 — Capability, context, commands, and surfaces | Not started | Implement host-authorized registries, deterministic context/commands, navigation, focus, and surface behavior. |
 | M4 — Adaptive composition, input, motion, and placement | Not started | Complete responsive composition, input arbitration, motion/reduced motion, and mount contexts. |
 | M5 — Themes, customization, and persistence | Not started | Implement accessible theme tokens, explicit customization, and versioned local preferences/migrations. |

@@ -33,13 +33,19 @@ For toolbar code, prioritize host-owned authorization, deterministic state, SSR-
 
 ## Current repository commands
 
-The project is still a specification draft and has no package manifest or application test pipeline. The CLI regression suite uses Node's built-in test runner:
+The pnpm workspace now provides the following commands:
 
 ```powershell
+pnpm install --frozen-lockfile
+pnpm check
+pnpm test
+pnpm lint
+pnpm typecheck
+pnpm build
 node --test tests/tooling/moorkyz-cli.test.cjs
 ```
 
-`pnpm test`, `pnpm check`, browser tests, lint, typecheck, and build remain unavailable until the corresponding application/tooling is implemented. Do not report these planned commands as having passed.
+`pnpm check` runs lint, formatting, tests, and consumer/package typechecks. Browser integration, automated axe checks, performance gates, and extended security/supply-chain gates remain future work; do not report those as having passed.
 
 ## Reporting
 

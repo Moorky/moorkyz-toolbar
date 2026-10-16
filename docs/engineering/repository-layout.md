@@ -41,5 +41,9 @@ moorkyz-toolbar/
 
 **Not fixed:** exact filenames, folder splits, build tool versions, runtime dependency set, and framework adapter implementation form. The architecture principle *is fixed*: one public library, private tooling/apps, strict runtime module isolation and contract-driven documentation. Inspect actual repo before applying structure to avoid overwriting pre-existing work.
 
+## Implemented scaffold
+
+The current repository has the private pnpm workspace, `packages/toolbar` TypeScript package, and `examples/vanilla-consumer` type fixture. The root CI workflow runs the workspace checks. Portal, framework adapters, generator, and the rest of the proposed tree remain unimplemented until their roadmap milestones.
+
 ## Repo command distinction
 `pnpm moorkyz start|stop|help` (if implemented) is a project-maintainer workflow. Public consumer tool is `pnpm exec moorkyz-toolbar ...`, from the single npm package. Neither is automatically authorized to deploy or publish.

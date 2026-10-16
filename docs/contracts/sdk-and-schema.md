@@ -71,5 +71,18 @@ Optional Node binary exposed from the **same package**. Proposed commands: `init
 ## Compatibility and experimental policy
 Stable SDK follows SemVer with documented migrations and deprecations. Explicit experimental namespace or subpath is optional, unmistakably labeled, tested and version-policy documented, and cannot bypass core security/accessibility checks. Never silently promote experimental behavior into stable defaults.
 
+## M1 implemented draft
+
+The workspace now contains an **implemented but unapproved draft** of the first configuration contract in `packages/toolbar/src/index.ts`, including a machine-readable JSON Schema. It is not a stable public API and may change before explicit contract approval. Validator key sets are derived from that schema object so the runtime validator and Studio/CLI consumers can share the same source.
+
+- Schema version is `1.0`; omitted version normalizes to `1.0`, and unsupported versions fail validation.
+- Feature defaults follow the approved baseline: `search`, `platform`, and `customize` are enabled; AI, tasks, notifications, discovery, spatial coordination, offline, diagnostics, advanced gestures, and experimental integrations are disabled.
+- Unknown properties, non-boolean feature values, invalid render modes, malformed/duplicate action IDs, empty labels, prototype-bearing objects, and accessor properties produce stable diagnostic codes and paths.
+- Action descriptors are data-only (`id`, `label`); host behavior and authorization callbacks are not serializable configuration.
+- Validation normalizes defaults and returns immutable result data. Importing the contract module has no browser-global access or runtime side effects.
+- `examples/vanilla-consumer/` is a compile-time consumer fixture. Runtime mounting, framework adapters, CLI/Studio schema consumption, and approved public names are not yet implemented.
+
+See [`packages/toolbar/test/configuration.test.js`](../../packages/toolbar/test/configuration.test.js) for executable boundary tests. Feature-key names and diagnostics remain proposals until contract review; approved feature semantics and defaults may not be changed.
+
 ## Schema validation gate
 Schema definitions must be the shared source for typed validation, Studio controls, CLI validation, generator, reference docs and representative consumer fixtures. The code generator must not independently invent a second config interpretation.
