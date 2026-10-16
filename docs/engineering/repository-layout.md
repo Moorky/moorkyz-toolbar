@@ -4,7 +4,7 @@
 moorkyz-toolbar/
 ├── AGENTS.md
 ├── README.md
-├── LICENSE                        # Apache-2.0, subject to repository verification
+├── LICENSE                        # Apache-2.0
 ├── package.json                   # Private workspace root
 ├── pnpm-workspace.yaml
 ├── pnpm-lock.yaml

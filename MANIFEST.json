@@ -11,7 +11,11 @@
     },
     {
       "path": "README.md",
-      "sha256": "4fe408f79f1a470e5495df83d75cc4398e9f948c9cb640526289307ece553e88"
+      "sha256": "a3f52ec28f610e2a72b48aeefd277a9722a926595ed3ce9b02796d8c1c18c1ab"
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "ff98b8b9c71f0cc834f285b3684abd1a9cc96ca81be08578caa9ab86d98f631b"
     },
     {
       "path": "docs/architecture/features-and-resources.md",
@@ -51,7 +55,7 @@
     },
     {
       "path": "docs/engineering/repository-layout.md",
-      "sha256": "e233159aa7caa44377a3b990fabef046a6cfa0bd43b15e88782a4048bc5181d7"
+      "sha256": "5a6a1fc9e1f6aed729dbf1dca56308de79c9d50bdd4a687e5bd40264602d288f"
     },
     {
       "path": "docs/engineering/roadmap.md",

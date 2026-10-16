@@ -5,6 +5,8 @@
 
 **Product rule:** **Easy to start. Easy to use. Powerful to master.** Basic installation must work with minimal configuration, while advanced capabilities remain discoverable, documented, independently configurable, and testable.
 
+**License:** Apache License 2.0. See [`LICENSE`](LICENSE).
+
 This package consolidates the 80 confirmed architecture questionnaire decisions into an implementation plan. It contains **specification documents, not implemented software or finalized public API declarations**. Wherever a specific method, file name, feature key, performance threshold, or browser matrix has not been approved, the documents identify it as a *proposed contract* or *validation item*.
 
 ## Document authority and reading order
