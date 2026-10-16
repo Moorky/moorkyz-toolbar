@@ -172,4 +172,25 @@ toolbar.updateNotifications([
 
 The notification list is neither persisted nor automatically announced while closed. With `features.notifications: false`, incoming values are not inspected and no notification UI is created.
 
+## Opt-in local diagnostics
+
+The diagnostics recorder is in-memory only and starts disabled. The host must enable it from its current `features.diagnostics` policy and provide a redactor before any record can be accepted. Disabling or disposing clears the buffer; no timestamps, causes, prompts, network requests, or persistence are added by the recorder.
+
+```ts
+import { createLocalDiagnosticsRecorder } from "@moorkyz/toolbar";
+
+const diagnostics = createLocalDiagnosticsRecorder({
+  capacity: 50,
+  redact: (_code, message) => redactSecrets(message),
+});
+diagnostics.setEnabled(currentFeatures.diagnostics);
+const result = diagnostics.record({
+  code: "HOST_WARNING",
+  severity: "warning",
+  message: "A local diagnostic message",
+});
+```
+
+The redactor is mandatory. Stored messages are limited to 500 characters; the default buffer holds at most 50 records. The SDK does not include a diagnostics panel or send reports anywhere.
+
 Feature flags and configuration diagnostics are draft contracts. Recognizing a feature flag does not mean that the feature module is implemented or activated. See the repository [implementation status](../../docs/engineering/implementation-status.md) and [SDK/schema contract](../../docs/contracts/sdk-and-schema.md).

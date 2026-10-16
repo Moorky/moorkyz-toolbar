@@ -3,6 +3,7 @@ export * from "./configuration.js";
 export * from "./capabilities.js";
 export * from "./commands.js";
 export * from "./context.js";
+export * from "./diagnostics.js";
 export * from "./input.js";
 export * from "./notifications.js";
 export * from "./preferences.js";

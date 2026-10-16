@@ -138,5 +138,11 @@ The adapter does not select or augment prompts with host context, render model o
 
 New or changed snapshots do not open the notification panel, create toasts, announce content while closed, expand the dock, or mutate unread state. The user must activate the Notifications control to inspect entries. Disabling the feature clears its in-memory snapshot and UI; disposal also clears it. Notifications are not persisted, and the host remains authoritative for read state, freshness, and any corresponding actions. This presentation slice implements the non-intrusive Q26 behavior but not a notification delivery service or attention prioritizer.
 
+## M6 opt-in local diagnostics recorder draft
+
+`createLocalDiagnosticsRecorder({ redact, capacity? })` starts disabled and has no storage, timer, listener, network, or telemetry integration. The host explicitly enables it from its current `features.diagnostics` policy and must provide a redaction function. `record()` returns `DIAGNOSTICS_DISABLED` before inspecting input while off. Accepted records contain only a bounded uppercase diagnostic code, severity, and redacted message (500 characters max); causes, timestamps, arbitrary details, and prompts are not retained. Capacity defaults to 50 and cannot exceed 100. Disabling or disposing clears the in-memory buffer.
+
+This is a local recorder primitive, not the developer Inspector UI. The host is responsible for selecting safe diagnostic messages, rendering the snapshot in a dev-only surface, and avoiding exposure in production. No remote reporting is implemented.
+
 ## Schema validation gate
 Schema definitions must be the shared source for typed validation, Studio controls, CLI validation, generator, reference docs and representative consumer fixtures. The code generator must not independently invent a second config interpretation.
