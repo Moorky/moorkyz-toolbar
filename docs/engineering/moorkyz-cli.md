@@ -23,6 +23,8 @@ On macOS/Linux, use `sh ./moorkyz`. The `audit` command creates an unfilled repo
 After `start` or `restart` succeeds, the CLI opens the actual runtime URL in the default browser in
 an interactive terminal. Lifecycle, list, and status output show the recorded runtime URL. Browser
 launching is skipped in CI and non-interactive sessions.
+Starting a project that is already running replaces its existing CLI-managed instance first;
+unrelated processes are left running.
 
 The CLI also supports `restart`, `verify`, `build`, `test`, `lint`, `typecheck`, `security`, and `run`. Package-check commands require the selected package to define the requested script.
 

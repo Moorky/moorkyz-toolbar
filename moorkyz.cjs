@@ -449,10 +449,8 @@ async function startOne(project, mode) {
   const name = project.name;
   const active = running(name);
   if (active) {
-    const url = runtimeUrl(project, active);
-    info(`Already running: ${name} — URL: ${url}`);
-    openBrowser(url);
-    return true;
+    info(`Stopping the existing managed instance of '${name}' before starting it again.`);
+    stopOne(project);
   }
   const previous = readState(name);
   if (previous && alive(previous.pid))
