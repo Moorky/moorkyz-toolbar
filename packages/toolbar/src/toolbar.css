@@ -302,6 +302,87 @@
   pointer-events: auto;
 }
 
+.mzk-toolbar__task-center {
+  position: absolute;
+  z-index: 3;
+  inset-inline-end: 0;
+  inset-block-end: calc(100% + 0.65rem);
+  box-sizing: border-box;
+  width: min(24rem, calc(100vw - 2rem));
+  max-height: min(24rem, 55vh);
+  overflow: auto;
+  padding: 1rem;
+  border: 1px solid var(--dock-border, #d6dae2);
+  border-radius: 1rem;
+  background: var(--dock-bg, #ffffff);
+  color: var(--dock-ink, #172033);
+  box-shadow: 0 0.75rem 2rem rgb(17 24 39 / 20%);
+  pointer-events: auto;
+}
+
+.mzk-toolbar__task-center[hidden] {
+  display: none !important;
+}
+
+.mzk-toolbar__task-center h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.mzk-toolbar__task-center p {
+  margin: 0;
+}
+
+.mzk-toolbar__task-center ul {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mzk-toolbar__task {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 0.45rem;
+  border-block-start: 1px solid var(--dock-border, #d6dae2);
+}
+
+.mzk-toolbar__task-status {
+  flex: 0 0 auto;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.mzk-toolbar__task-center[data-theme="midnight"] {
+  border-color: #536079;
+  background: #161c2a;
+  color: #f4f6fc;
+}
+
+.mzk-toolbar__task-center[data-theme="warm-minimal"] {
+  border-color: #b9a98c;
+  background: #fff8ec;
+  color: #302317;
+}
+
+.mzk-toolbar__task-center[data-theme="high-contrast"] {
+  border: 2px solid #000000;
+  background: #ffffff;
+  color: #000000;
+  box-shadow: none;
+}
+
+.mzk-toolbar__task-center[data-color-scheme="dark"]:not(
+    [data-theme="midnight"]
+  ):not([data-theme="warm-minimal"]):not([data-theme="high-contrast"]) {
+  border-color: #435046;
+  background: #1d2432;
+  color: #f1f4fb;
+}
+
 @media (prefers-color-scheme: dark) {
   .mzk-toolbar-host {
     color: var(--dock-ink, #f1f4fb);
@@ -321,6 +402,14 @@
     --mzk-toolbar-focus: #afc6ff;
     --mzk-toolbar-disabled: #c1c9d9;
   }
+
+  .mzk-toolbar__task-center[data-color-scheme="system"]:not(
+      [data-theme="midnight"]
+    ):not([data-theme="warm-minimal"]):not([data-theme="high-contrast"]) {
+    border-color: #435046;
+    background: #1d2432;
+    color: #f1f4fb;
+  }
 }
 
 .mzk-toolbar button:focus-visible {
@@ -337,6 +426,14 @@
 
 @media (forced-colors: active) {
   .mzk-toolbar {
+    border: 1px solid CanvasText;
+    background: Canvas;
+    color: CanvasText;
+    box-shadow: none;
+    forced-color-adjust: auto;
+  }
+
+  .mzk-toolbar__task-center {
     border: 1px solid CanvasText;
     background: Canvas;
     color: CanvasText;

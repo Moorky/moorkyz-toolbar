@@ -455,3 +455,101 @@ test("corrupt preferences remain untouched and produce accessible diagnostics", 
   assert.equal(values.get("@moorkyz/toolbar/corrupt/preferences"), "not-json");
   assert.deepEqual(reported, ["PREFERENCE_INVALID_DATA"]);
 });
+
+test("Task Center presents validated host state and clears it when disabled", (t) => {
+  const dispatched = [];
+  const current = fixture(
+    {
+      features: { tasks: true },
+      actions: [{ id: "home", label: "Home" }],
+    },
+    { dispatchAction: (id) => dispatched.push(id) },
+  );
+  t.after(() => disposeFixture(current));
+  assert.equal(current.toolbar.mount(current.target).ok, true);
+
+  const shadow = current.target.firstElementChild.shadowRoot;
+  const initialPanel = shadow.querySelector(".mzk-toolbar__task-center");
+  assert.ok(initialPanel);
+  assert.equal(initialPanel.hidden, true);
+  assert.equal(
+    current.toolbar.updateTasks([
+      {
+        id: "build",
+        label: "<img src=x onerror=alert(1)>",
+        status: "running",
+      },
+    ]).ok,
+    true,
+  );
+  shadow.querySelector('[data-toolbar-control="tasks"]').click();
+  const panel = shadow.querySelector(".mzk-toolbar__task-center");
+  assert.equal(panel.hidden, false);
+  assert.equal(
+    panel.querySelector(".mzk-toolbar__task-label").textContent,
+    "<img src=x onerror=alert(1)>",
+  );
+  assert.equal(panel.querySelector("img"), null);
+  assert.equal(
+    shadow.querySelector('[data-toolbar-control="tasks"]').textContent,
+    "Tasks (1)",
+  );
+
+  const invalid = current.toolbar.updateTasks([
+    { id: "build", label: "Build", status: "running" },
+    { id: "build", label: "Duplicate", status: "queued" },
+  ]);
+  assert.equal(invalid.ok, false);
+  if (!invalid.ok) {
+    assert.equal(invalid.error.code, "INVALID_TASK_SNAPSHOT");
+    assert.equal(invalid.error.taskDiagnostics[0].code, "TASKS_DUPLICATE_ID");
+  }
+  assert.equal(
+    panel.querySelector(".mzk-toolbar__task-label").textContent,
+    "<img src=x onerror=alert(1)>",
+  );
+
+  assert.equal(current.toolbar.update({ features: { tasks: false } }).ok, true);
+  assert.equal(shadow.querySelector('[data-toolbar-control="tasks"]'), null);
+  assert.equal(shadow.querySelector(".mzk-toolbar__task-center"), null);
+  const disabled = current.toolbar.updateTasks([]);
+  assert.equal(disabled.ok, false);
+  if (!disabled.ok) assert.equal(disabled.error.code, "TASKS_DISABLED");
+  assert.deepEqual(dispatched, []);
+
+  assert.equal(current.toolbar.update({ features: { tasks: true } }).ok, true);
+  assert.equal(
+    shadow.querySelector('[data-toolbar-control="tasks"]').textContent,
+    "Tasks",
+  );
+  shadow.querySelector('[data-toolbar-control="tasks"]').click();
+  assert.equal(
+    shadow.querySelector(".mzk-toolbar__task-center").textContent,
+    "Task CenterNo tasks to display.",
+  );
+});
+
+test("disabled Task Center does not inspect or retain task state", (t) => {
+  const current = fixture();
+  t.after(() => disposeFixture(current));
+  assert.equal(current.toolbar.mount(current.target).ok, true);
+
+  let invoked = false;
+  const hostile = Object.defineProperty([], "0", {
+    configurable: true,
+    get() {
+      invoked = true;
+      return { id: "task", label: "Task", status: "running" };
+    },
+  });
+  const result = current.toolbar.updateTasks(hostile);
+  assert.equal(result.ok, false);
+  if (!result.ok) assert.equal(result.error.code, "TASKS_DISABLED");
+  assert.equal(invoked, false);
+  assert.equal(
+    current.target.firstElementChild.shadowRoot.querySelector(
+      ".mzk-toolbar__task-center",
+    ),
+    null,
+  );
+});

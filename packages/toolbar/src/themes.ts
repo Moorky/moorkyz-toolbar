@@ -1,11 +1,11 @@
-export const THEME_NAMES = [
+export const THEME_NAMES = Object.freeze([
   "signature",
   "frosted-glass",
   "midnight",
   "warm-minimal",
   "high-contrast",
   "project-adaptive",
-] as const;
+] as const);
 
 export type ToolbarThemeName = (typeof THEME_NAMES)[number];
 export type ToolbarColorScheme = "system" | "light" | "dark";

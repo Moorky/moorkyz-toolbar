@@ -55,6 +55,19 @@ window.mountPlacementToolbar = (mode) => {
   window.placementToolbar = placementToolbar;
 };
 
+window.mountTaskToolbar = () => {
+  const taskToolbar = createToolbar(
+    {
+      features: { tasks: true },
+      label: "Task Center test toolbar",
+    },
+    { dispatchAction: () => {} },
+  );
+  const outcome = taskToolbar.mount(document.querySelector("#task-target"));
+  if (!outcome.ok) throw new Error(outcome.error.message);
+  window.taskToolbar = taskToolbar;
+};
+
 window.mountShortcutManager = () => {
   let activeScope = "app:editor";
   const shortcutManager = createShortcutManager(target, {

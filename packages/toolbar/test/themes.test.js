@@ -8,6 +8,7 @@ import {
 } from "../dist/index.js";
 
 test("all built-in theme families satisfy text and focus contrast targets", () => {
+  assert.equal(Object.isFrozen(THEME_NAMES), true);
   assert.deepEqual(
     Object.keys(BUILT_IN_THEMES).sort(),
     [...THEME_NAMES].sort(),

@@ -114,5 +114,11 @@ The current M5 slice exposes six built-in theme names and token validation in `p
 
 Manual collapse state is persisted when customization and an adapter are enabled, then restored as collapsed; the toolbar never auto-expands. Preference records contain no callbacks or action labels, only theme, color scheme, collapse state, and action identifiers. These exports and schema remain draft, not approved stable API. A portable custom-theme file format and the complete Theme Design Studio remain future work.
 
+## M6 Task Center implemented draft
+
+`features.tasks` remains false by default. When explicitly enabled, the toolbar displays a Task Center panel that accepts host-fed snapshots through `ToolbarController.updateTasks(snapshot)`. The toolbar does not start or execute tasks and does not subscribe, poll, fetch, retry, or persist task state; the host owns execution, authorization, and freshness. Snapshots are limited to 100 plain data records with unique bounded IDs, non-empty labels, and one of `queued`, `running`, `completed`, or `failed`. Unknown keys, accessors, sparse entries, duplicate IDs, malformed values, and oversized snapshots fail with structured `taskDiagnostics`. Labels are rendered as text.
+
+Disabling the flag removes the feature UI and clears its in-memory snapshot; disposal also releases the snapshot. While disabled, `updateTasks()` returns `TASKS_DISABLED` before inspecting the supplied value. The runtime UI and browser accessibility checks are covered by the toolbar tests. This is a display-only M6 slice; task actions, progress controls, host event adapters, and broader lifecycle reconciliation are not implemented.
+
 ## Schema validation gate
 Schema definitions must be the shared source for typed validation, Studio controls, CLI validation, generator, reference docs and representative consumer fixtures. The code generator must not independently invent a second config interpretation.

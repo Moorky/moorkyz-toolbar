@@ -12,6 +12,11 @@ import type {
 } from "./preferences.js";
 import { createToolbarPreferenceStore } from "./preferences.js";
 import { THEME_NAMES, type ToolbarColorScheme } from "./themes.js";
+import {
+  validateTaskSnapshot,
+  type TaskDiagnostic,
+  type ToolbarTask,
+} from "./tasks.js";
 
 export interface ToolbarHost {
   readonly dispatchAction?: (actionId: string) => void | Promise<void>;
@@ -29,13 +34,16 @@ export type ToolbarErrorCode =
   | "MOUNT_FAILED"
   | "PREFERENCE_LOAD_FAILED"
   | "CUSTOMIZATION_DISABLED"
-  | "PREFERENCE_SAVE_FAILED";
+  | "PREFERENCE_SAVE_FAILED"
+  | "TASKS_DISABLED"
+  | "INVALID_TASK_SNAPSHOT";
 
 export interface ToolbarRuntimeError {
   readonly code: ToolbarErrorCode;
   readonly message: string;
   readonly cause?: unknown;
   readonly diagnostics?: readonly ConfigurationDiagnostic[];
+  readonly taskDiagnostics?: readonly TaskDiagnostic[];
 }
 
 export type ToolbarResult =
@@ -58,6 +66,7 @@ export interface ToolbarController {
   mount(target: HTMLElement): ToolbarResult;
   update(configuration: ToolbarConfigurationInput): ToolbarResult;
   updateUserPreferences(preferences: ToolbarPreferenceValues): ToolbarResult;
+  updateTasks(snapshot: unknown): ToolbarResult;
   collapse(): ToolbarResult;
   expand(): ToolbarResult;
   dispose(): void;
@@ -108,6 +117,7 @@ function failure(
   details: {
     cause?: unknown;
     diagnostics?: readonly ConfigurationDiagnostic[];
+    taskDiagnostics?: readonly TaskDiagnostic[];
   } = {},
 ): ToolbarResult {
   return {
@@ -119,6 +129,9 @@ function failure(
       ...(details.diagnostics === undefined
         ? {}
         : { diagnostics: details.diagnostics }),
+      ...(details.taskDiagnostics === undefined
+        ? {}
+        : { taskDiagnostics: details.taskDiagnostics }),
     },
   };
 }
@@ -145,6 +158,10 @@ class ToolbarControllerImpl implements ToolbarController {
   private memoryPreferenceStore: ToolbarPreferenceStore | null = null;
   private editing = false;
   private statusKind: "action" | "customization" | "preference" | null = null;
+  private taskItems: readonly ToolbarTask[] = Object.freeze([]);
+  private taskPanelOpen = false;
+  private taskPanelElement: HTMLElement | null = null;
+  private taskButtonElement: HTMLButtonElement | null = null;
 
   constructor(configuration: ToolbarConfiguration, host: ToolbarHost) {
     this.configuration = configuration;
@@ -325,6 +342,10 @@ class ToolbarControllerImpl implements ToolbarController {
             renderMode: this.configuration.renderMode,
           })
         : nextConfiguration;
+    if (!this.configuration.features.tasks) {
+      this.taskItems = Object.freeze([]);
+      this.taskPanelOpen = false;
+    }
     if (!this.configuration.features.customize) this.editing = false;
     if (this.toolbarElement !== null) {
       this.render();
@@ -380,12 +401,38 @@ class ToolbarControllerImpl implements ToolbarController {
     return { ok: true };
   }
 
+  updateTasks(snapshot: unknown): ToolbarResult {
+    if (this.disposed) {
+      return failure(
+        "DISPOSED",
+        "Tasks cannot be updated on a disposed toolbar.",
+      );
+    }
+    if (!this.configuration.features.tasks) {
+      return failure(
+        "TASKS_DISABLED",
+        "Task Center is disabled by configuration.",
+      );
+    }
+    const validation = validateTaskSnapshot(snapshot);
+    if (!validation.ok) {
+      return failure("INVALID_TASK_SNAPSHOT", "Task state was not changed.", {
+        taskDiagnostics: validation.errors,
+      });
+    }
+    this.taskItems = validation.value;
+    this.updateTaskButton();
+    this.renderTaskCenter();
+    return { ok: true };
+  }
+
   collapse(): ToolbarResult {
     if (this.disposed) {
       return failure("DISPOSED", "A disposed toolbar cannot be collapsed.");
     }
     if (this.collapsed) return { ok: true };
     this.collapsed = true;
+    this.taskPanelOpen = false;
     const persistenceResult = this.persistCurrentPreferences();
     this.render();
     return persistenceResult;
@@ -422,6 +469,10 @@ class ToolbarControllerImpl implements ToolbarController {
     this.renderRoot = null;
     this.toolbarElement = null;
     this.statusElement = null;
+    this.taskPanelElement = null;
+    this.taskButtonElement = null;
+    this.taskItems = Object.freeze([]);
+    this.taskPanelOpen = false;
     this.keydownHandler = null;
     this.clickHandler = null;
   }
@@ -651,6 +702,18 @@ class ToolbarControllerImpl implements ToolbarController {
     collapseButton.tabIndex = -1;
 
     const controls: HTMLElement[] = [scrollStart, actionViewport, scrollEnd];
+    if (this.configuration.features.tasks) {
+      const tasksButton = document.createElement("button");
+      tasksButton.className = "mzk-toolbar__tasks";
+      tasksButton.type = "button";
+      tasksButton.setAttribute("data-toolbar-control", "tasks");
+      tasksButton.setAttribute("aria-expanded", String(this.taskPanelOpen));
+      tasksButton.tabIndex = -1;
+      this.taskButtonElement = tasksButton;
+      controls.push(tasksButton);
+    } else {
+      this.taskButtonElement = null;
+    }
     if (this.configuration.features.customize) {
       const customizeButton = document.createElement("button");
       customizeButton.className = "mzk-toolbar__customize";
@@ -691,6 +754,14 @@ class ToolbarControllerImpl implements ToolbarController {
     }
     controls.push(collapseButton);
     toolbar.replaceChildren(...controls);
+    if (this.configuration.features.tasks) {
+      this.ensureTaskPanel(root, document);
+    } else {
+      this.taskPanelElement?.remove();
+      this.taskPanelElement = null;
+    }
+    this.updateTaskButton();
+    this.renderTaskCenter();
     this.actionsElement = actions;
     this.startOverflowMonitoring();
     this.updateOverflowControls();
@@ -765,6 +836,12 @@ class ToolbarControllerImpl implements ToolbarController {
     }
 
     const control = button.getAttribute("data-toolbar-control");
+    if (control === "tasks") {
+      this.taskPanelOpen = !this.taskPanelOpen;
+      this.updateTaskButton();
+      this.renderTaskCenter();
+      return;
+    }
     if (control === "customize") {
       this.editing = !this.editing;
       this.render();
@@ -858,6 +935,66 @@ class ToolbarControllerImpl implements ToolbarController {
       this.statusElement.hidden = false;
       this.statusKind = "customization";
     }
+  }
+
+  private ensureTaskPanel(root: RenderRoot, document: Document): void {
+    if (this.taskPanelElement !== null) return;
+    const panel = document.createElement("section");
+    panel.className = "mzk-toolbar__task-center";
+    panel.setAttribute("role", "region");
+    panel.setAttribute("aria-label", "Task Center");
+    panel.setAttribute("aria-live", "polite");
+    panel.hidden = true;
+    root.insertBefore(panel, this.statusElement);
+    this.taskPanelElement = panel;
+  }
+
+  private updateTaskButton(): void {
+    const button = this.taskButtonElement;
+    if (button === null) return;
+    const label =
+      this.taskItems.length === 0
+        ? "Tasks"
+        : `Tasks (${this.taskItems.length})`;
+    button.textContent = label;
+    button.setAttribute("aria-label", label);
+    button.setAttribute("aria-expanded", String(this.taskPanelOpen));
+  }
+
+  private renderTaskCenter(): void {
+    const panel = this.taskPanelElement;
+    if (panel === null) return;
+    panel.hidden = !this.taskPanelOpen;
+    panel.dataset.theme = this.configuration.theme;
+    panel.dataset.colorScheme = this.configuration.colorScheme;
+    panel.replaceChildren();
+    if (!this.taskPanelOpen) return;
+
+    const document = panel.ownerDocument;
+    const heading = document.createElement("h2");
+    heading.textContent = "Task Center";
+    panel.appendChild(heading);
+    if (this.taskItems.length === 0) {
+      const emptyState = document.createElement("p");
+      emptyState.textContent = "No tasks to display.";
+      panel.appendChild(emptyState);
+      return;
+    }
+
+    const list = document.createElement("ul");
+    for (const task of this.taskItems) {
+      const item = document.createElement("li");
+      item.className = "mzk-toolbar__task";
+      const label = document.createElement("span");
+      label.className = "mzk-toolbar__task-label";
+      label.textContent = task.label;
+      const status = document.createElement("span");
+      status.className = "mzk-toolbar__task-status";
+      status.textContent = preferenceButtonLabel(task.status);
+      item.append(label, status);
+      list.appendChild(item);
+    }
+    panel.appendChild(list);
   }
 
   private startOverflowMonitoring(): void {

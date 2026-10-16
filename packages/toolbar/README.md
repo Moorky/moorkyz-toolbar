@@ -90,4 +90,22 @@ const toolbar = createToolbar(configuration, {
 
 Create the browser adapter only in a browser-owned lifecycle. Storage failures, invalid data, and migration problems are reported through `onPreferenceError` and an accessible toolbar alert; valid choices remain active in memory. Without a host adapter, customization is session-only and the controller reports that persistence is unavailable. Stored preferences use a versioned application namespace and never contain host callbacks or action data beyond their identifiers.
 
+## Host-owned Task Center
+
+The Task Center is optional and defaults off. Enable `features.tasks` and send validated status snapshots with `updateTasks()`; the toolbar only displays task ID, label, and status. It never starts, polls, retries, or executes task work. At most 100 plain data items are accepted, labels are rendered as text, and invalid snapshots return structured task diagnostics. Disabling the flag removes the task UI and clears the in-memory snapshot; disposal also clears it.
+
+```ts
+const toolbar = createToolbar({ features: { tasks: true } });
+toolbar.mount(document.body);
+
+const result = toolbar.updateTasks([
+  { id: "build", label: "Build project", status: "running" },
+]);
+if (!result.ok) {
+  console.error(result.error.taskDiagnostics);
+}
+```
+
+The host remains responsible for task execution, authorization, freshness, and deciding when to publish a snapshot. With `features.tasks: false`, the controller does not validate or retain task data and creates no Task Center DOM.
+
 Feature flags and configuration diagnostics are draft contracts. Recognizing a feature flag does not mean that the feature module is implemented or activated. See the repository [implementation status](../../docs/engineering/implementation-status.md) and [SDK/schema contract](../../docs/contracts/sdk-and-schema.md).

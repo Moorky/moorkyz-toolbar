@@ -236,6 +236,67 @@ test("customization mode supports accessible reordering and never dispatches edi
   await expect(page.locator("#action-result")).toHaveText("home");
 });
 
+test("Task Center presents safe host-fed state only while enabled", async ({
+  page,
+}) => {
+  await page.evaluate(() => {
+    window.toolbar.dispose();
+    window.mountTaskToolbar();
+  });
+  const toolbar = page.getByRole("toolbar", {
+    name: "Task Center test toolbar",
+  });
+  const updateResult = await page.evaluate(() =>
+    window.taskToolbar.updateTasks([
+      {
+        id: "build",
+        label: "<img src=x onerror=alert(1)>",
+        status: "running",
+      },
+    ]),
+  );
+  expect(updateResult.ok).toBe(true);
+  const tasksButton = page.getByRole("button", { name: "Tasks (1)" });
+  await tasksButton.focus();
+  await page.keyboard.press("Enter");
+  const panel = page.getByRole("region", { name: "Task Center" });
+  await expect(panel).toBeVisible();
+  await expect(panel).toContainText("<img src=x onerror=alert(1)>");
+  await expect(panel.locator("img")).toHaveCount(0);
+
+  const themeSelections = [
+    ["signature", "light"],
+    ["frosted-glass", "light"],
+    ["midnight", "light"],
+    ["warm-minimal", "light"],
+    ["high-contrast", "light"],
+    ["project-adaptive", "light"],
+    ["signature", "dark"],
+    ["midnight", "dark"],
+    ["warm-minimal", "dark"],
+    ["high-contrast", "dark"],
+  ];
+  for (const [theme, colorScheme] of themeSelections) {
+    const result = await page.evaluate(
+      ({ nextTheme, nextScheme }) =>
+        window.taskToolbar.update({
+          theme: nextTheme,
+          colorScheme: nextScheme,
+        }),
+      { nextTheme: theme, nextScheme: colorScheme },
+    );
+    expect(result.ok).toBe(true);
+    const { violations } = await new AxeBuilder({ page }).analyze();
+    expect(violations).toEqual([]);
+  }
+
+  await page.evaluate(() =>
+    window.taskToolbar.update({ features: { tasks: false } }),
+  );
+  await expect(toolbar.getByRole("button", { name: /^Tasks/ })).toHaveCount(0);
+  await expect(panel).toHaveCount(0);
+});
+
 test("dispose removes the mounted interface", async ({ page }) => {
   await page.evaluate(() => window.toolbar.dispose());
   await expect(page.getByRole("toolbar")).toHaveCount(0);
