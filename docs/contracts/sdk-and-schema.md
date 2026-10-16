@@ -150,6 +150,12 @@ This is a local recorder primitive, not the developer Inspector UI. The host is 
 
 The coordinator only signals host callbacks. It does not pause or cancel host-owned commands, install automatically from `createToolbar()`, or decide what work is essential. Hosts own selective suspension, authorization, and BFCache reconciliation policy.
 
+## M6 opt-in pointer gesture draft
+
+`createGestureManager(element, { enabled, onGesture })` attaches pointer listeners only for an explicitly enabled manager and only to the supplied element. It recognizes touch/pen horizontal swipes after a 64px minimum and 1.5:1 horizontal dominance, ignores starts within 24px of viewport edges, mouse pointers, interactive/editable targets, cancelled pointers, and pre-prevented events, and never calls `preventDefault()` or changes `touch-action`. Disabling/disposal removes all four listeners and clears the active pointer. The callback receives only direction, pointer type, and distance; no event, coordinates, velocity, or user history is retained.
+
+This helper reports intent only. Host code owns action mapping and must provide accessible keyboard/button alternatives. It does not call toolbar commands, alter focus, or attach global handlers.
+
 ## M6 cooperative spatial placement draft
 
 `createSpatialCoordinator(enabled = false)` accepts explicit, host-provided exclusion rectangles only. When disabled, registration and resolution return `SPATIAL_DISABLED` before inspecting input; disabling clears registered zones. When enabled, the coordinator accepts at most 64 uniquely identified zones, validates finite bounded coordinates, and resolves a dock rectangle against the host-provided viewport, safe-area insets, and dock size. It tries the preferred anchor first, then a deterministic candidate order (`bottom-center`, `bottom-start`, `bottom-end`, `top-center`, `top-start`, `top-end`), avoiding registered rectangles with an 8px collision gap. No safe placement returns a structured result; the coordinator never hides or collapses the toolbar.

@@ -136,6 +136,23 @@ const outcome = await search.search("keyboard shortcuts", controller.signal);
 
 The coordinator preserves provider order, returns partial results with per-provider diagnostics, and exposes result IDs/text only—no navigable URLs or executable callbacks. The host decides how to present results and how a selected result maps to its own commands. Query/result caps are documented in the draft contract. A built-in search panel is not part of this coordinator slice.
 
+## Opt-in pointer gestures
+
+`createGestureManager()` is disabled unless the host explicitly enables it. It recognizes only touch/pen horizontal swipes on the caller-provided element, ignores browser-edge starts and interactive controls, never calls `preventDefault()`, and removes its four scoped pointer listeners when disabled or disposed. The manager reports a bounded direction/distance intent; the host decides what it means and must retain keyboard/pointer alternatives.
+
+```ts
+import { createGestureManager } from "@moorkyz/toolbar";
+
+const gestures = createGestureManager(toolbarHostElement, {
+  enabled: currentFeatures.advancedGestures,
+  onGesture(intent) {
+    hostGesturePolicy.handle(intent);
+  },
+});
+```
+
+It does not change `touch-action`, attach global listeners, move focus, or perform toolbar commands itself.
+
 ## Host-coordinated spatial placement
 
 Spatial coordination is opt-in. `createSpatialCoordinator()` starts disabled and accepts only explicit host-provided exclusion rectangles; it never scans the page, observes geometry, inserts DOM, or changes host padding. When enabled, it returns a deterministic safe anchor/rectangle for the host to apply through its own placement policy.

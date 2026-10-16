@@ -401,6 +401,120 @@ test("offline status is explicit host state and does not change collapse or fetc
   await expect(toolbar.locator(".mzk-toolbar__connectivity")).toHaveCount(0);
 });
 
+test("advanced gestures stay opt-in, ignore scrolling and edge gestures, and do not cancel browser events", async ({
+  page,
+}) => {
+  await page.evaluate(() => {
+    window.toolbar.dispose();
+    window.mountGestureManager(false);
+  });
+  const beforeEnable = await page.evaluate(() => {
+    const target = document.querySelector("#gesture-target");
+    target.dispatchEvent(
+      new PointerEvent("pointerdown", {
+        pointerId: 1,
+        pointerType: "touch",
+        isPrimary: true,
+        button: 0,
+        clientX: 100,
+        clientY: 100,
+      }),
+    );
+    target.dispatchEvent(
+      new PointerEvent("pointerup", {
+        pointerId: 1,
+        pointerType: "touch",
+        isPrimary: true,
+        button: 0,
+        clientX: 200,
+        clientY: 100,
+      }),
+    );
+    return window.gestureResults.length;
+  });
+  expect(beforeEnable).toBe(0);
+
+  const outcomes = await page.evaluate(() => {
+    const target = document.querySelector("#gesture-target");
+    window.gestureManager.setEnabled(true);
+    const send = (type, properties, element = target) =>
+      element.dispatchEvent(
+        new PointerEvent(type, {
+          pointerId: properties.pointerId,
+          pointerType: properties.pointerType ?? "touch",
+          isPrimary: true,
+          button: 0,
+          cancelable: true,
+          clientX: properties.clientX,
+          clientY: properties.clientY,
+        }),
+      );
+
+    send("pointerdown", { pointerId: 2, clientX: 100, clientY: 100 });
+    const notPrevented = send("pointerup", {
+      pointerId: 2,
+      clientX: 200,
+      clientY: 110,
+    });
+
+    send("pointerdown", { pointerId: 3, clientX: 100, clientY: 100 });
+    send("pointermove", { pointerId: 3, clientX: 105, clientY: 190 });
+    send("pointerup", { pointerId: 3, clientX: 106, clientY: 200 });
+
+    send("pointerdown", { pointerId: 4, clientX: 10, clientY: 100 });
+    send("pointerup", { pointerId: 4, clientX: 110, clientY: 100 });
+
+    send("pointerdown", {
+      pointerId: 5,
+      pointerType: "mouse",
+      clientX: 100,
+      clientY: 100,
+    });
+    send("pointerup", { pointerId: 5, clientX: 200, clientY: 100 });
+
+    const button = document.createElement("button");
+    target.appendChild(button);
+    send("pointerdown", { pointerId: 6, clientX: 100, clientY: 100 }, button);
+    send("pointerup", { pointerId: 6, clientX: 200, clientY: 100 });
+    button.remove();
+
+    send("pointerdown", { pointerId: 7, clientX: 200, clientY: 100 });
+    send("pointercancel", { pointerId: 7, clientX: 100, clientY: 100 });
+    send("pointerup", { pointerId: 7, clientX: 100, clientY: 100 });
+
+    send("pointerdown", {
+      pointerId: 8,
+      pointerType: "pen",
+      clientX: 200,
+      clientY: 100,
+    });
+    send("pointerup", {
+      pointerId: 8,
+      pointerType: "pen",
+      clientX: 100,
+      clientY: 100,
+    });
+    const beforeDisable = window.gestureResults.length;
+
+    send("pointerdown", { pointerId: 9, clientX: 100, clientY: 100 });
+    window.gestureManager.setEnabled(false);
+    send("pointerup", { pointerId: 9, clientX: 200, clientY: 100 });
+    return {
+      beforeDisable,
+      results: window.gestureResults,
+      enabled: window.gestureManager.enabled,
+      notPrevented,
+    };
+  });
+  expect(outcomes.results).toEqual([
+    { direction: "right", pointerType: "touch", distance: 100 },
+    { direction: "left", pointerType: "pen", distance: 100 },
+  ]);
+  expect(outcomes.beforeDisable).toBe(2);
+  expect(outcomes.enabled).toBe(false);
+  expect(outcomes.notPrevented).toBe(true);
+});
+
 test("dispose removes the mounted interface", async ({ page }) => {
   await page.evaluate(() => window.toolbar.dispose());
   await expect(page.getByRole("toolbar")).toHaveCount(0);

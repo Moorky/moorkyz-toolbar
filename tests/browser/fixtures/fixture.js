@@ -1,4 +1,4 @@
-import { createToolbar } from "/toolbar/index.js";
+import { createGestureManager, createToolbar } from "/toolbar/index.js";
 import { createShortcutManager } from "/toolbar/input.js";
 
 const target = document.querySelector("#target");
@@ -90,6 +90,19 @@ window.mountOfflineToolbar = () => {
   );
   if (!outcome.ok) throw new Error(outcome.error.message);
   window.offlineToolbar = offlineToolbar;
+};
+
+window.mountGestureManager = (enabled) => {
+  const gestures = [];
+  const manager = createGestureManager(
+    document.querySelector("#gesture-target"),
+    {
+      enabled,
+      onGesture: (intent) => gestures.push(intent),
+    },
+  );
+  window.gestureManager = manager;
+  window.gestureResults = gestures;
 };
 
 window.mountShortcutManager = () => {
