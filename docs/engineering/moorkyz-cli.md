@@ -9,16 +9,20 @@ From the repository root in PowerShell:
 ```powershell
 .\moorkyz.cmd help
 .\moorkyz.cmd doctor
+.\moorkyz.cmd start
+.\moorkyz.cmd status
+.\moorkyz.cmd logs
+.\moorkyz.cmd stop
 .\moorkyz.cmd audit "task title"
 ```
 
 On macOS/Linux, use `sh ./moorkyz`. The `audit` command creates an unfilled report from `docs/audits/TEMPLATE.md`; fill in observed evidence before considering the task complete.
 
-## Commands gated on future scaffolding
+`moorkyz.config.json` selects `packages/portal` as the default project, using its `dev` script for `start` and its `start` script for `start --prod`. The portal is served at `http://localhost:3000` by default. The production command requires a prior portal build.
 
-The CLI also supports local `start`, `stop`, `restart`, `status`, `logs`, `verify`, `build`, `test`, `lint`, `typecheck`, `security`, and `run` commands. Lifecycle and package-check commands require a root `package.json` containing the requested scripts. This specification repository currently has no package manifest, so those commands are not yet usable here.
+The CLI also supports `restart`, `verify`, `build`, `test`, `lint`, `typecheck`, `security`, and `run`. Package-check commands require the selected package to define the requested script.
 
-Do not add a sample multi-app configuration until the actual workspace paths and scripts are approved and present. Without `moorkyz.config.json`, the helper assumes one package at the repository root.
+The workspace configuration is intentionally scoped to the portal. Use the named-project argument only if further projects are later added to this configuration.
 
 ## Safety
 

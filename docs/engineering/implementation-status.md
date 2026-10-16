@@ -24,7 +24,7 @@ This checklist tracks delivery against the approved milestone roadmap. A milesto
 - Baseline commit: `c888e53` (`docs: add Apache 2.0 license`)
 - Starting branch: `master`
 - Existing verification: `node --test tests/tooling/moorkyz-cli.test.cjs` — 3 tests passed.
-- Existing repository helper: `.\moorkyz.cmd help`, `doctor`, and `audit`; package lifecycle checks require a package manifest that did not exist at baseline.
+- Existing repository helper: `.\moorkyz.cmd help`, `doctor`, `start`, `status`, `logs`, `stop`, and `audit`; `moorkyz.config.json` targets the portal workspace. The public consumer CLI is a separate future deliverable.
 - Initial inspection found existing changes to `MANIFEST.json`, `README.md`, and `docs/engineering/repository-layout.md`, plus a new `LICENSE` and license audit. At baseline verification, commit `c888e53` contained the license and README change and the worktree was clean. Those existing changes were not authored or staged as implementation work here.
 
 Update this file at each milestone boundary with actual evidence, gaps, and the resulting commit. Do not mark a future release gate complete because code has been written.

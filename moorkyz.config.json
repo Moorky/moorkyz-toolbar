@@ -1,0 +1,11 @@
+{
+  "defaultProject": "portal",
+  "projects": {
+    "portal": {
+      "cwd": "packages/portal",
+      "dev": "dev",
+      "prod": "start",
+      "url": "http://localhost:3000"
+    }
+  }
+}

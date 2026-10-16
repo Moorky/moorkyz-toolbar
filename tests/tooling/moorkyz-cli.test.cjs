@@ -49,6 +49,15 @@ test("help works without package scaffolding", () => {
   assert.match(result.stdout, /moorkyz audit/);
 });
 
+test("default project is the portal workspace", () => {
+  const result = run(repoRoot, ["list"]);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(
+    result.stdout,
+    /portal \(default\): packages[\\/]portal — dev:dev prod:start/,
+  );
+});
+
 test("audit writes a task report and preserves replacement-like title text", () => {
   const folder = fixture();
   const audits = path.join(folder, "docs", "audits");

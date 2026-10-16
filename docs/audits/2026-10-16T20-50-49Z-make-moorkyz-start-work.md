@@ -1,0 +1,76 @@
+# Development Audit: Make moorkyz start work
+
+> Fill in with observed evidence. Never mark an unexecuted check as PASS.
+
+| Field | Value |
+|---|---|
+| Audit ID | `2026-10-16T20-50-49Z-make-moorkyz-start-work` |
+| Created (UTC) | `2026-10-16T20:50:49.061Z` |
+| Task / issue | Make moorkyz start work |
+| Auditor | Copilot self-audit |
+| Branch / baseline commit | `master` / `cde4bd6` |
+| Final commit | Report in task completion; do not edit this audit after committing |
+| Scope reviewed | Moorkyz portal selection, focused CLI regression test, and related maintainer documentation |
+| Outcome | `PASS` |
+
+## 1. Request and outcome
+
+- Requested behavior: Make the repository-local `moorkyz start` workflow work.
+- Implemented behavior: Added `moorkyz.config.json` with `packages/portal` as the default project, bound to the existing `dev` and `start` scripts and localhost:3000.
+- Acceptance criteria and evidence: Prior to the change, `.\moorkyz.cmd start` failed because the root manifest lacked `dev`. Afterward, the command started the portal, `Invoke-WebRequest` received HTTP 200 from `http://localhost:3000/`, `status` reported RUNNING, and `stop` reported STOPPED with port 3000 closed. The existing port 3100 listener remained untouched.
+- Intentional exclusions: No CLI process-management implementation, package scripts, dependency manifests, consumer CLI, or portal runtime behavior changed.
+- Relevant decisions/contracts: Q37/Q38/Q54 specify an independent portal and modular pnpm workspace; `docs/engineering/moorkyz-cli.md` defines the local maintainer CLI as separate from the public consumer CLI.
+
+## 2. Change inventory
+
+| Path | Change | Risk |
+|---|---|---|
+| `moorkyz.config.json` | Select portal workspace as the default managed project | Low |
+| `tests/tooling/moorkyz-cli.test.cjs` | Assert the configured default project is discoverable | Low |
+| `docs/engineering/moorkyz-cli.md` | Document the active portal lifecycle commands and configuration | Low |
+| `docs/engineering/implementation-status.md` | Update the maintainer-helper capability line | Low |
+| `docs/engineering/repository-layout.md` | Clarify the portal maintainer command | Low |
+| `docs/audits/2026-10-16T20-50-49Z-make-moorkyz-start-work.md` | Record scope and evidence | Low |
+
+## 3. Verification evidence
+
+Use `PASS`, `FAIL`, `NOT RUN` (with reason), or `N/A`. Record exact commands and results.
+
+| Check | Result | Exact command / method | Evidence / notes |
+|---|---|---|---|
+| Formatting / lint | PASS | `pnpm exec prettier --check moorkyz.config.json tests/tooling/moorkyz-cli.test.cjs` | Both changed machine-readable/code files passed Prettier. |
+| Typecheck | N/A | Not run | No TypeScript code changed. |
+| Unit / integration tests | PASS | `node --test tests/tooling/moorkyz-cli.test.cjs`; `.\moorkyz.cmd start`, HTTP GET, `.\moorkyz.cmd status`, `.\moorkyz.cmd stop` | 4/4 CLI tests passed; managed portal returned HTTP 200, then stopped and released port 3000. |
+| Browser / accessibility | N/A | Not run | No UI or accessibility behavior changed. |
+| Build / consumer fixture | PASS | Portal startup via `.\moorkyz.cmd start` | Existing portal dev script built the toolbar dependency and served the portal successfully. |
+| Security / dependency review | N/A | Not run | No executable CLI logic, dependencies, permissions, or data handling changed. |
+| Performance (if relevant) | N/A | Not run | No runtime implementation changed. |
+| `git diff --check` | PASS | `git diff --cached --check` | Staged task-owned files passed with no whitespace errors. |
+
+## 4. Risk and quality review
+
+- Public contract, feature-default, and compatibility impact: No public API change; config changes only the default target of this repository-local helper to the existing portal.
+- Security, privacy, permissions, and secrets: No credentials or sensitive data; server was accessed only on localhost. The existing manager's project path containment and process tracking remain unchanged.
+- Accessibility, keyboard, and reduced motion: No UI changes.
+- Disabled-feature work/resource/network behavior: No optional feature behavior changed.
+- Error handling, cleanup, and recovery: The CLI reported successful start/stop; verified that it released port 3000. No managed state remains for the portal.
+- Dependency, performance, and regression exposure: No dependency change; target path and script names validated by `doctor`, `list`, and the regression test.
+
+## 5. Findings and residual risks
+
+| ID | Severity | Finding and evidence | Mitigation / owner | Status |
+|---|---|---|---|---|
+| None | — | No task-related finding observed in the scoped change. | — | Closed |
+
+- Known gaps / checks not run: Production-mode `start --prod` was not exercised; it requires a production build and is not the requested development startup path. Full repository check suite not run.
+- Required approvals: None.
+- Rollback or recovery: Remove `moorkyz.config.json` and the related test/documentation changes to restore root-default behavior.
+- Release readiness: `NOT APPLICABLE`
+
+## 6. Completion record
+
+- Audit created before the task commit and included in that commit, or reason not committed: Created before commit; task files only will be staged.
+- Final commit hash: `PENDING`
+- External actions: `NOT AUTHORIZED` unless separately approved.
+
+**Limitations:** An agent self-audit is not an independent security review, accessibility certification, or release approval.
