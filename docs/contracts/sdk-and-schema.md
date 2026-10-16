@@ -126,5 +126,11 @@ Disabling the flag removes the feature UI and clears its in-memory snapshot; dis
 
 The caller supplies an `AbortSignal`; providers must cooperate with cancellation. The library has no built-in endpoint, cache, telemetry, or network call, and it does not navigate selected results. Host code owns provider data access, freshness, permission policy, result presentation, and host-command mapping. A built-in toolbar search panel and AI integration are not implemented in this slice.
 
+## M6 host-authorized AI adapter draft
+
+`createHostAuthorizedAIAdapter(provider, policy)` requires an explicit provider, an `isEnabled()` gate, a host authorization callback, and an `AbortSignal` for each completion. The feature gate is evaluated before authorization or provider execution; authorization is evaluated for each request. The `ai` feature default remains false. Prompt input is trimmed and limited to 8,000 characters; provider responses must be plain text, non-empty, and no more than 20,000 characters. Provider failures, cancellation, invalid data, disabled state, and denial return structured diagnostics. Providers must cooperatively honor cancellation.
+
+The adapter does not select or augment prompts with host context, render model output, persist prompts/responses, retry, log usage, or contact a default AI service. Host code owns provider/network choice, authorization, sensitive-data handling, and safe text presentation. This is a headless adapter only; interactive AI UI and broader data policy documentation remain future work.
+
 ## Schema validation gate
 Schema definitions must be the shared source for typed validation, Studio controls, CLI validation, generator, reference docs and representative consumer fixtures. The code generator must not independently invent a second config interpretation.

@@ -136,4 +136,21 @@ const outcome = await search.search("keyboard shortcuts", controller.signal);
 
 The coordinator preserves provider order, returns partial results with per-provider diagnostics, and exposes result IDs/text only—no navigable URLs or executable callbacks. The host decides how to present results and how a selected result maps to its own commands. Query/result caps are documented in the draft contract. A built-in search panel is not part of this coordinator slice.
 
+## Host-authorized AI adapter
+
+AI remains disabled by default. `createHostAuthorizedAIAdapter()` requires a host-supplied provider plus an explicit feature gate and authorization callback; the library has no bundled model, remote endpoint, automatic retry, cache, or telemetry.
+
+```ts
+import { createHostAuthorizedAIAdapter } from "@moorkyz/toolbar";
+
+const ai = createHostAuthorizedAIAdapter(hostAIProvider, {
+  isEnabled: () => currentFeatures.ai,
+  authorize: () => hostPolicy.canUseAI(),
+});
+const controller = new AbortController();
+const outcome = await ai.complete(userPrompt, controller.signal);
+```
+
+The provider receives only the explicit prompt and signal. It must honor cancellation cooperatively and return bounded plain text. The host owns context selection, data handling, provider/network policy, and safe text presentation.
+
 Feature flags and configuration diagnostics are draft contracts. Recognizing a feature flag does not mean that the feature module is implemented or activated. See the repository [implementation status](../../docs/engineering/implementation-status.md) and [SDK/schema contract](../../docs/contracts/sdk-and-schema.md).

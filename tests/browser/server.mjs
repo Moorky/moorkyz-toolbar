@@ -9,6 +9,7 @@ const repositoryRoot = resolve(
 const packageRoot = resolve(repositoryRoot, "packages/toolbar/dist");
 const fixtureRoot = resolve(repositoryRoot, "tests/browser/fixtures");
 const packageFiles = new Map([
+  ["/toolbar/ai.js", "ai.js"],
   ["/toolbar/index.js", "index.js"],
   ["/toolbar/capabilities.js", "capabilities.js"],
   ["/toolbar/commands.js", "commands.js"],
