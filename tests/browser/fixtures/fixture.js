@@ -1,4 +1,5 @@
 import { createToolbar } from "/toolbar/index.js";
+import { createShortcutManager } from "/toolbar/input.js";
 
 const target = document.querySelector("#target");
 const result = document.querySelector("#action-result");
@@ -52,4 +53,30 @@ window.mountPlacementToolbar = (mode) => {
   );
   if (!outcome.ok) throw new Error(outcome.error.message);
   window.placementToolbar = placementToolbar;
+};
+
+window.mountShortcutManager = () => {
+  let activeScope = "app:editor";
+  const shortcutManager = createShortcutManager(target, {
+    getActiveScope: () => activeScope,
+    authorize: (shortcut) => shortcut.scope === activeScope,
+    onDiagnostic: () => {},
+    onError: (error) => {
+      throw error;
+    },
+  });
+  const registration = shortcutManager.register({
+    id: "app:search",
+    key: "k",
+    ctrlKey: true,
+    scope: "app:editor",
+    execute: () => {
+      result.textContent = "shortcut";
+    },
+  });
+  if (!registration.ok) throw new Error(registration.error.message);
+  window.shortcutManager = shortcutManager;
+  window.setShortcutScope = (scope) => {
+    activeScope = scope;
+  };
 };

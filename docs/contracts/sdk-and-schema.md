@@ -102,7 +102,9 @@ Executable draft coverage is in [`capabilities.test.js`](../../packages/toolbar/
 
 The configuration now accepts `placement.mode` values `viewport` (default), `container`, and `fullscreen`, with a fixed `bottom` anchor. Container/fullscreen mounting stays inside the host-selected target; the SDK does not change host layout or invoke the Fullscreen API. The host must provide a positioned container; for fullscreen mode the mount target should be the host's fullscreen root. Narrow action rows keep native scrolling and show direction-aware labeled start/end controls plus fades only while content overflows. A mounted instance observes its action row for size changes and releases its observer/resize fallback and scroll listener on update/disposal. Reduced-motion preferences disable nonessential transitions and smooth scrolling.
 
-The placement names and exact composition are still proposed. Spatial coordination remains independently disabled and no page scanning or host-padding mutation is performed.
+`createShortcutManager(target, policy)` provides opt-in, root-scoped keyboard shortcuts. The host authorizes registrations and each dispatch; reserved browser/OS combinations, unmodified keys, editable fields, and already-prevented events are left alone. Equal-scope/priority collisions emit a diagnostic instead of selecting a registration by order. The key listener is installed only while registrations exist and is removed after the last unregister or disposal.
+
+The placement names and exact composition are still proposed. Spatial coordination remains independently disabled and no page scanning or host-padding mutation is performed. Advanced pointer/touch gestures and numeric performance budgets remain open.
 
 ## Schema validation gate
 Schema definitions must be the shared source for typed validation, Studio controls, CLI validation, generator, reference docs and representative consumer fixtures. The code generator must not independently invent a second config interpretation.
