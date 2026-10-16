@@ -150,5 +150,11 @@ This is a local recorder primitive, not the developer Inspector UI. The host is 
 
 The coordinator only signals host callbacks. It does not pause or cancel host-owned commands, install automatically from `createToolbar()`, or decide what work is essential. Hosts own selective suspension, authorization, and BFCache reconciliation policy.
 
+## M6 cooperative spatial placement draft
+
+`createSpatialCoordinator(enabled = false)` accepts explicit, host-provided exclusion rectangles only. When disabled, registration and resolution return `SPATIAL_DISABLED` before inspecting input; disabling clears registered zones. When enabled, the coordinator accepts at most 64 uniquely identified zones, validates finite bounded coordinates, and resolves a dock rectangle against the host-provided viewport, safe-area insets, and dock size. It tries the preferred anchor first, then a deterministic candidate order (`bottom-center`, `bottom-start`, `bottom-end`, `top-center`, `top-start`, `top-end`), avoiding registered rectangles with an 8px collision gap. No safe placement returns a structured result; the coordinator never hides or collapses the toolbar.
+
+The utility does not scan the DOM, install observers, mutate host layout/padding, inject CSS, or automatically apply the calculated rectangle. Host code owns zone freshness, coordinate spaces, and how an accepted rectangle is applied. This is a pure placement contract helper; integration with the mounted toolbar and broader spatial feedback-loop testing remain future work.
+
 ## Schema validation gate
 Schema definitions must be the shared source for typed validation, Studio controls, CLI validation, generator, reference docs and representative consumer fixtures. The code generator must not independently invent a second config interpretation.

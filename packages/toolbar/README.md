@@ -136,6 +136,30 @@ const outcome = await search.search("keyboard shortcuts", controller.signal);
 
 The coordinator preserves provider order, returns partial results with per-provider diagnostics, and exposes result IDs/text only—no navigable URLs or executable callbacks. The host decides how to present results and how a selected result maps to its own commands. Query/result caps are documented in the draft contract. A built-in search panel is not part of this coordinator slice.
 
+## Host-coordinated spatial placement
+
+Spatial coordination is opt-in. `createSpatialCoordinator()` starts disabled and accepts only explicit host-provided exclusion rectangles; it never scans the page, observes geometry, inserts DOM, or changes host padding. When enabled, it returns a deterministic safe anchor/rectangle for the host to apply through its own placement policy.
+
+```ts
+import { createSpatialCoordinator } from "@moorkyz/toolbar";
+
+const spatial = createSpatialCoordinator(currentFeatures.spatialCoordination);
+spatial.registerZone({
+  id: "app:virtual-keyboard",
+  x: 0,
+  y: window.innerHeight - keyboardHeight,
+  width: window.innerWidth,
+  height: keyboardHeight,
+});
+const placement = spatial.resolve(
+  { width: window.innerWidth, height: window.innerHeight },
+  { width: 360, height: 72 },
+  "bottom-center",
+);
+```
+
+The host owns zone freshness and applying or rejecting the returned placement. Disabling coordination clears zones; an unsuccessful calculation does not collapse or move the toolbar.
+
 ## Host-authorized AI adapter
 
 AI remains disabled by default. `createHostAuthorizedAIAdapter()` requires a host-supplied provider plus an explicit feature gate and authorization callback; the library has no bundled model, remote endpoint, automatic retry, cache, or telemetry.
