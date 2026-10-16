@@ -144,5 +144,11 @@ New or changed snapshots do not open the notification panel, create toasts, anno
 
 This is a local recorder primitive, not the developer Inspector UI. The host is responsible for selecting safe diagnostic messages, rendering the snapshot in a dev-only surface, and avoiding exposure in production. No remote reporting is implemented.
 
+## M6 host-coordinated lifecycle draft
+
+`createLifecycleCoordinator(document, callbacks)` is explicit and instance-scoped. It observes `visibilitychange`, `pagehide`, and `pageshow`, transitions between `active` and `suspended` only when effective visibility changes, exposes the current state, supports host-triggered `reconcile()`, and removes all listeners on `dispose()`. A document not currently `visible` initializes in `suspended` state without invoking a callback; the host can inspect the state and reconcile. Callback exceptions propagate to the event caller after the new state is set; handlers should therefore be idempotent.
+
+The coordinator only signals host callbacks. It does not pause or cancel host-owned commands, install automatically from `createToolbar()`, or decide what work is essential. Hosts own selective suspension, authorization, and BFCache reconciliation policy.
+
 ## Schema validation gate
 Schema definitions must be the shared source for typed validation, Studio controls, CLI validation, generator, reference docs and representative consumer fixtures. The code generator must not independently invent a second config interpretation.
