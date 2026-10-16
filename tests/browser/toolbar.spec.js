@@ -160,7 +160,7 @@ test("supports scoped Light DOM styling and passes axe checks", async ({
   await expect(
     page.getByRole("toolbar", { name: "Light mode toolbar" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Search" }).click();
+  await page.locator('[data-toolbar-control="action:search"]').click();
   await expect(page.locator("#action-result")).toHaveText("search");
 
   const { violations } = await new AxeBuilder({ page }).analyze();
@@ -513,6 +513,27 @@ test("advanced gestures stay opt-in, ignore scrolling and edge gestures, and do 
   expect(outcomes.beforeDisable).toBe(2);
   expect(outcomes.enabled).toBe(false);
   expect(outcomes.notPrevented).toBe(true);
+});
+
+test("search panel is keyboard-usable and dispatches local results only through the host", async ({
+  page,
+}) => {
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  const panel = page.getByRole("region", { name: "Search" });
+  await expect(panel).toBeVisible();
+  const input = page.getByRole("searchbox", {
+    name: "Search toolbar actions and content",
+  });
+  await input.fill("projects");
+  await page.keyboard.press("Enter");
+  await expect(panel).toContainText("Projects");
+
+  const { violations } = await new AxeBuilder({ page }).analyze();
+  expect(violations).toEqual([]);
+
+  await panel.getByRole("button", { name: "Projects", exact: true }).click();
+  await expect(page.locator("#action-result")).toHaveText("projects");
+  await expect(panel).toBeHidden();
 });
 
 test("dispose removes the mounted interface", async ({ page }) => {

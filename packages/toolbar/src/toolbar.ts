@@ -20,6 +20,11 @@ import {
   type ToolbarConnectivityStatus,
 } from "./offline.js";
 import { createToolbarPreferenceStore } from "./preferences.js";
+import type {
+  FederatedSearchCoordinator,
+  FederatedSearchOutcome,
+  ToolbarSearchResult,
+} from "./search.js";
 import { THEME_NAMES, type ToolbarColorScheme } from "./themes.js";
 import {
   validateTaskSnapshot,
@@ -32,6 +37,17 @@ export interface ToolbarHost {
   readonly onActionError?: (error: unknown, actionId: string) => void;
   readonly preferenceStore?: ToolbarPreferenceStore;
   readonly onPreferenceError?: (diagnostic: PreferenceDiagnostic) => void;
+  readonly searchCoordinator?: FederatedSearchCoordinator;
+  readonly onSearchResult?: (
+    providerId: string,
+    resultId: string,
+  ) => void | Promise<void>;
+  readonly onSearchResultError?: (
+    error: unknown,
+    providerId: string,
+    resultId: string,
+  ) => void;
+  readonly onSearchError?: (error: unknown, query: string) => void;
 }
 
 export type ToolbarErrorCode =
@@ -89,6 +105,12 @@ export interface ToolbarController {
 }
 
 type RenderRoot = HTMLElement | ShadowRoot;
+type SearchDisplayResult =
+  | { readonly kind: "action"; readonly id: string; readonly title: string }
+  | { readonly kind: "provider"; readonly result: ToolbarSearchResult };
+
+const MAX_SEARCH_DISPLAY_RESULTS = 50;
+const MAX_SEARCH_QUERY = 256;
 
 function orderActions(
   actions: ToolbarConfiguration["actions"],
@@ -131,6 +153,22 @@ function connectivityLabel(status: ToolbarConnectivityStatus): string {
   if (status === "online") return "Online";
   if (status === "offline") return "Offline";
   return "Connection status unknown";
+}
+
+function searchOutcomeMessage(outcome: FederatedSearchOutcome): string {
+  if (!outcome.ok) {
+    if (outcome.error.code === "SEARCH_DISABLED") {
+      return "Search is disabled by host policy.";
+    }
+    if (outcome.error.code === "SEARCH_CANCELLED") {
+      return "Search was cancelled.";
+    }
+    return "Search is unavailable.";
+  }
+  if (outcome.diagnostics.length > 0) {
+    return "Some search sources were unavailable.";
+  }
+  return outcome.results.length === 0 ? "No results." : "Search complete.";
 }
 
 function failure(
@@ -183,7 +221,8 @@ class ToolbarControllerImpl implements ToolbarController {
   private pendingPreferenceDiagnostic: PreferenceDiagnostic | null = null;
   private memoryPreferenceStore: ToolbarPreferenceStore | null = null;
   private editing = false;
-  private statusKind: "action" | "customization" | "preference" | null = null;
+  private statusKind:
+    "action" | "customization" | "preference" | "search" | null = null;
   private taskItems: readonly ToolbarTask[] = Object.freeze([]);
   private taskPanelOpen = false;
   private taskPanelElement: HTMLElement | null = null;
@@ -194,6 +233,20 @@ class ToolbarControllerImpl implements ToolbarController {
   private notificationButtonElement: HTMLButtonElement | null = null;
   private connectivityStatus: ToolbarConnectivityStatus = "unknown";
   private connectivityElement: HTMLSpanElement | null = null;
+  private searchPanelOpen = false;
+  private searchButtonElement: HTMLButtonElement | null = null;
+  private searchPanelElement: HTMLElement | null = null;
+  private searchFormElement: HTMLFormElement | null = null;
+  private searchInputElement: HTMLInputElement | null = null;
+  private searchStatusElement: HTMLParagraphElement | null = null;
+  private searchResultsElement: HTMLUListElement | null = null;
+  private searchSubmitHandler: ((event: SubmitEvent) => void) | null = null;
+  private searchKeydownHandler: ((event: KeyboardEvent) => void) | null = null;
+  private searchResultsClickHandler: ((event: MouseEvent) => void) | null =
+    null;
+  private searchAbortController: AbortController | null = null;
+  private searchRequestVersion = 0;
+  private searchResults: readonly SearchDisplayResult[] = Object.freeze([]);
 
   constructor(configuration: ToolbarConfiguration, host: ToolbarHost) {
     this.configuration = configuration;
@@ -385,6 +438,7 @@ class ToolbarControllerImpl implements ToolbarController {
     if (!this.configuration.features.offline) {
       this.connectivityStatus = "unknown";
     }
+    if (!this.configuration.features.search) this.resetSearchState();
     if (!this.configuration.features.customize) this.editing = false;
     if (this.toolbarElement !== null) {
       this.render();
@@ -532,6 +586,7 @@ class ToolbarControllerImpl implements ToolbarController {
     this.collapsed = true;
     this.taskPanelOpen = false;
     this.notificationPanelOpen = false;
+    this.resetSearchState();
     const persistenceResult = this.persistCurrentPreferences();
     this.render();
     return persistenceResult;
@@ -563,6 +618,8 @@ class ToolbarControllerImpl implements ToolbarController {
 
   private clearMountReferences(): void {
     this.clearOverflowMonitoring();
+    this.detachSearchPanelHandlers();
+    this.cancelSearchRequest();
     this.mountTarget = null;
     this.hostElement = null;
     this.renderRoot = null;
@@ -578,6 +635,17 @@ class ToolbarControllerImpl implements ToolbarController {
     this.notificationPanelOpen = false;
     this.connectivityStatus = "unknown";
     this.connectivityElement = null;
+    this.searchButtonElement = null;
+    this.searchPanelElement = null;
+    this.searchFormElement = null;
+    this.searchInputElement = null;
+    this.searchStatusElement = null;
+    this.searchResultsElement = null;
+    this.searchSubmitHandler = null;
+    this.searchKeydownHandler = null;
+    this.searchResultsClickHandler = null;
+    this.searchPanelOpen = false;
+    this.searchResults = Object.freeze([]);
     this.keydownHandler = null;
     this.clickHandler = null;
   }
@@ -807,6 +875,19 @@ class ToolbarControllerImpl implements ToolbarController {
     collapseButton.tabIndex = -1;
 
     const controls: HTMLElement[] = [scrollStart, actionViewport, scrollEnd];
+    if (this.configuration.features.search) {
+      const searchButton = document.createElement("button");
+      searchButton.className = "mzk-toolbar__search";
+      searchButton.type = "button";
+      searchButton.textContent = "Search";
+      searchButton.setAttribute("data-toolbar-control", "search");
+      searchButton.setAttribute("aria-expanded", String(this.searchPanelOpen));
+      searchButton.tabIndex = -1;
+      this.searchButtonElement = searchButton;
+      controls.push(searchButton);
+    } else {
+      this.searchButtonElement = null;
+    }
     if (this.configuration.features.tasks) {
       const tasksButton = document.createElement("button");
       tasksButton.className = "mzk-toolbar__tasks";
@@ -898,10 +979,22 @@ class ToolbarControllerImpl implements ToolbarController {
       this.notificationPanelElement?.remove();
       this.notificationPanelElement = null;
     }
+    if (this.configuration.features.search) {
+      this.ensureSearchPanel(root, document);
+    } else {
+      this.detachSearchPanelHandlers();
+      this.searchPanelElement?.remove();
+      this.searchPanelElement = null;
+      this.searchFormElement = null;
+      this.searchInputElement = null;
+      this.searchStatusElement = null;
+      this.searchResultsElement = null;
+    }
     this.updateTaskButton();
     this.renderTaskCenter();
     this.updateNotificationButton();
     this.renderNotificationCenter();
+    this.renderSearchPanel();
     this.actionsElement = actions;
     this.startOverflowMonitoring();
     this.updateOverflowControls();
@@ -976,6 +1069,17 @@ class ToolbarControllerImpl implements ToolbarController {
     }
 
     const control = button.getAttribute("data-toolbar-control");
+    if (control === "search") {
+      if (this.searchPanelOpen) {
+        this.resetSearchState();
+      } else {
+        this.searchPanelOpen = true;
+        this.updateSearchButton();
+        this.renderSearchPanel();
+        this.searchInputElement?.focus();
+      }
+      return;
+    }
     if (control === "tasks") {
       this.taskPanelOpen = !this.taskPanelOpen;
       this.notificationPanelOpen = false;
@@ -1211,6 +1315,315 @@ class ToolbarControllerImpl implements ToolbarController {
       list.appendChild(item);
     }
     panel.appendChild(list);
+  }
+
+  private ensureSearchPanel(root: RenderRoot, document: Document): void {
+    if (this.searchPanelElement !== null) return;
+    const panel = document.createElement("section");
+    panel.className = "mzk-toolbar__search-panel";
+    panel.setAttribute("role", "region");
+    panel.setAttribute("aria-label", "Search");
+    panel.hidden = true;
+
+    const heading = document.createElement("h2");
+    heading.textContent = "Search";
+    const form = document.createElement("form");
+    form.className = "mzk-toolbar__search-form";
+    form.setAttribute("role", "search");
+    form.setAttribute("aria-label", "Search toolbar and content");
+    const label = document.createElement("label");
+    label.textContent = "Search toolbar actions and content";
+    const input = document.createElement("input");
+    input.type = "search";
+    input.maxLength = MAX_SEARCH_QUERY;
+    input.autocomplete = "off";
+    input.setAttribute("data-toolbar-search-input", "");
+    label.appendChild(input);
+
+    const submit = document.createElement("button");
+    submit.type = "submit";
+    submit.textContent = "Submit search";
+    const status = document.createElement("p");
+    status.className = "mzk-toolbar__search-status";
+    status.setAttribute("role", "status");
+    status.setAttribute("aria-live", "polite");
+    const results = document.createElement("ul");
+    results.className = "mzk-toolbar__search-results";
+    form.append(label, submit);
+    panel.append(heading, form, status, results);
+    root.insertBefore(panel, this.statusElement);
+
+    this.searchPanelElement = panel;
+    this.searchFormElement = form;
+    this.searchInputElement = input;
+    this.searchStatusElement = status;
+    this.searchResultsElement = results;
+    this.searchSubmitHandler = (event) => {
+      event.preventDefault();
+      void this.submitSearch();
+    };
+    this.searchKeydownHandler = (event) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      this.resetSearchState();
+      this.searchButtonElement?.focus();
+    };
+    this.searchResultsClickHandler = (event) =>
+      this.handleSearchResultClick(event);
+    form.addEventListener("submit", this.searchSubmitHandler);
+    panel.addEventListener("keydown", this.searchKeydownHandler);
+    panel.addEventListener("click", this.searchResultsClickHandler);
+  }
+
+  private detachSearchPanelHandlers(): void {
+    if (this.searchFormElement !== null && this.searchSubmitHandler !== null) {
+      this.searchFormElement.removeEventListener(
+        "submit",
+        this.searchSubmitHandler,
+      );
+    }
+    if (
+      this.searchPanelElement !== null &&
+      this.searchKeydownHandler !== null
+    ) {
+      this.searchPanelElement.removeEventListener(
+        "keydown",
+        this.searchKeydownHandler,
+      );
+    }
+    if (
+      this.searchPanelElement !== null &&
+      this.searchResultsClickHandler !== null
+    ) {
+      this.searchPanelElement.removeEventListener(
+        "click",
+        this.searchResultsClickHandler,
+      );
+    }
+    this.searchSubmitHandler = null;
+    this.searchKeydownHandler = null;
+    this.searchResultsClickHandler = null;
+  }
+
+  private updateSearchButton(): void {
+    this.searchButtonElement?.setAttribute(
+      "aria-expanded",
+      String(this.searchPanelOpen),
+    );
+  }
+
+  private renderSearchPanel(): void {
+    const panel = this.searchPanelElement;
+    if (panel === null) return;
+    panel.hidden = !this.searchPanelOpen;
+    panel.dataset.theme = this.configuration.theme;
+    panel.dataset.colorScheme = this.configuration.colorScheme;
+    this.updateSearchButton();
+    this.renderSearchResults();
+  }
+
+  private renderSearchResults(): void {
+    const list = this.searchResultsElement;
+    if (list === null) return;
+    list.replaceChildren();
+    for (const [index, result] of this.searchResults.entries()) {
+      const item = list.ownerDocument.createElement("li");
+      let title: string;
+      let summary: string | undefined;
+      const isSelectable =
+        result.kind === "action"
+          ? this.host.dispatchAction !== undefined
+          : this.host.onSearchResult !== undefined;
+      if (result.kind === "action") {
+        title = result.title;
+      } else {
+        title = result.result.title;
+        summary = result.result.summary;
+      }
+
+      if (isSelectable) {
+        const button = list.ownerDocument.createElement("button");
+        button.type = "button";
+        button.className = "mzk-toolbar__search-result";
+        button.setAttribute("data-search-result-index", String(index));
+        button.textContent =
+          summary === undefined ? title : `${title}: ${summary}`;
+        item.appendChild(button);
+      } else {
+        const text = list.ownerDocument.createElement("span");
+        text.textContent =
+          summary === undefined ? title : `${title}: ${summary}`;
+        item.appendChild(text);
+      }
+      list.appendChild(item);
+    }
+  }
+
+  private cancelSearchRequest(): void {
+    this.searchRequestVersion += 1;
+    this.searchAbortController?.abort();
+    this.searchAbortController = null;
+  }
+
+  private resetSearchState(): void {
+    this.cancelSearchRequest();
+    this.searchPanelOpen = false;
+    this.searchResults = Object.freeze([]);
+    if (this.searchInputElement !== null) this.searchInputElement.value = "";
+    if (this.searchStatusElement !== null) {
+      this.searchStatusElement.textContent = "";
+    }
+    this.updateSearchButton();
+    this.renderSearchPanel();
+  }
+
+  private async submitSearch(): Promise<void> {
+    const input = this.searchInputElement;
+    const status = this.searchStatusElement;
+    if (
+      input === null ||
+      status === null ||
+      !this.searchPanelOpen ||
+      !this.configuration.features.search
+    ) {
+      return;
+    }
+    this.cancelSearchRequest();
+    const rawQuery = input.value;
+    if (rawQuery.trim().length === 0) {
+      this.searchResults = Object.freeze([]);
+      status.textContent = "Enter a search term.";
+      this.renderSearchResults();
+      return;
+    }
+    if (rawQuery.length > MAX_SEARCH_QUERY) {
+      this.searchResults = Object.freeze([]);
+      status.textContent = "Search query is too long.";
+      this.renderSearchResults();
+      return;
+    }
+    const query = rawQuery.trim();
+    const version = this.searchRequestVersion;
+    const localResults: SearchDisplayResult[] = this.configuration.actions
+      .filter(({ id, label }) =>
+        `${label} ${id}`.toLowerCase().includes(query.toLowerCase()),
+      )
+      .slice(0, MAX_SEARCH_DISPLAY_RESULTS)
+      .map(({ id, label }) => ({
+        kind: "action" as const,
+        id,
+        title: label,
+      }));
+    this.searchResults = Object.freeze(localResults);
+    const coordinator = this.host.searchCoordinator;
+    if (coordinator === undefined) {
+      status.textContent =
+        localResults.length === 0
+          ? "No results."
+          : `${localResults.length} matching toolbar actions.`;
+      this.renderSearchResults();
+      return;
+    }
+
+    const abortController = new AbortController();
+    this.searchAbortController = abortController;
+    status.textContent = "Searching…";
+    this.renderSearchResults();
+    try {
+      let outcome: FederatedSearchOutcome;
+      try {
+        outcome = await coordinator.search(query, abortController.signal);
+      } catch (cause) {
+        if (
+          version !== this.searchRequestVersion ||
+          abortController.signal.aborted ||
+          !this.searchPanelOpen
+        ) {
+          return;
+        }
+        status.textContent = "Search could not be completed.";
+        this.host.onSearchError?.(cause, query);
+        return;
+      }
+      if (
+        version !== this.searchRequestVersion ||
+        abortController.signal.aborted ||
+        !this.searchPanelOpen
+      ) {
+        return;
+      }
+      if (outcome.ok) {
+        const providerResults: SearchDisplayResult[] = outcome.results.map(
+          (result) => ({
+            kind: "provider",
+            result,
+          }),
+        );
+        this.searchResults = Object.freeze(
+          [...localResults, ...providerResults].slice(
+            0,
+            MAX_SEARCH_DISPLAY_RESULTS,
+          ),
+        );
+      }
+      status.textContent = searchOutcomeMessage(outcome);
+      this.renderSearchResults();
+      if (!outcome.ok && outcome.error.code !== "SEARCH_CANCELLED") {
+        this.host.onSearchError?.(outcome.error, query);
+      }
+    } finally {
+      if (this.searchAbortController === abortController) {
+        this.searchAbortController = null;
+      }
+    }
+  }
+
+  private handleSearchResultClick(event: MouseEvent): void {
+    const list = this.searchResultsElement;
+    if (list === null) return;
+    const button = Array.from(
+      list.querySelectorAll<HTMLButtonElement>(
+        "button[data-search-result-index]",
+      ),
+    ).find((candidate) => event.composedPath().includes(candidate));
+    if (button === undefined || button.disabled) return;
+    const index = Number(button.getAttribute("data-search-result-index"));
+    if (!Number.isSafeInteger(index) || index < 0) return;
+    const result = this.searchResults[index];
+    if (result === undefined) return;
+
+    this.resetSearchState();
+    this.searchButtonElement?.focus();
+    if (result.kind === "action") {
+      const action = this.configuration.actions.find(
+        ({ id }) => id === result.id,
+      );
+      if (action !== undefined) this.dispatchAction(action.id, action.label);
+      return;
+    }
+    const callback = this.host.onSearchResult;
+    if (callback === undefined) return;
+    try {
+      void Promise.resolve(
+        callback(result.result.providerId, result.result.id),
+      ).catch((cause: unknown) =>
+        this.reportSearchResultFailure(result.result, cause),
+      );
+    } catch (cause) {
+      this.reportSearchResultFailure(result.result, cause);
+    }
+  }
+
+  private reportSearchResultFailure(
+    result: ToolbarSearchResult,
+    cause: unknown,
+  ): void {
+    if (this.statusElement !== null) {
+      this.statusElement.textContent = "Could not open the search result.";
+      this.statusElement.hidden = false;
+      this.statusKind = "search";
+    }
+    this.host.onSearchResultError?.(cause, result.providerId, result.id);
   }
 
   private startOverflowMonitoring(): void {

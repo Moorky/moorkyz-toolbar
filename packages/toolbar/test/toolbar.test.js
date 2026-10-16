@@ -46,7 +46,7 @@ test("mounts a semantic Shadow DOM toolbar with a local stylesheet", (t) => {
     shadow.querySelector('[role="toolbar"]').getAttribute("aria-label"),
     "Application toolbar",
   );
-  assert.equal(shadow.querySelectorAll("button").length, 6);
+  assert.equal(shadow.querySelectorAll("button").length, 8);
   assert.equal(
     shadow.querySelectorAll('[data-toolbar-control^="action:"][disabled]')
       .length,
@@ -735,4 +735,121 @@ test("disabled offline status rejects before inspecting non-string inputs", (t) 
     ),
     null,
   );
+});
+
+test("search panel combines local actions with host results and selects only through host callbacks", async (t) => {
+  const dispatched = [];
+  const selectedResults = [];
+  const current = fixture(
+    {
+      actions: [
+        { id: "settings", label: "Settings" },
+        { id: "home", label: "Home" },
+      ],
+    },
+    {
+      dispatchAction: (id) => dispatched.push(id),
+      searchCoordinator: {
+        async search(query, signal) {
+          assert.equal(signal.aborted, false);
+          return {
+            ok: true,
+            query,
+            results: [
+              {
+                providerId: "app:docs",
+                id: "guide",
+                title: "Search guide",
+                summary: "Federated documentation",
+              },
+            ],
+            diagnostics: [],
+          };
+        },
+      },
+      onSearchResult: (providerId, resultId) =>
+        selectedResults.push([providerId, resultId]),
+    },
+  );
+  t.after(() => disposeFixture(current));
+  assert.equal(current.toolbar.mount(current.target).ok, true);
+
+  const shadow = current.target.firstElementChild.shadowRoot;
+  const searchButton = shadow.querySelector('[data-toolbar-control="search"]');
+  const panel = shadow.querySelector(".mzk-toolbar__search-panel");
+  assert.ok(searchButton);
+  assert.ok(panel);
+  assert.equal(panel.hidden, true);
+
+  searchButton.click();
+  assert.equal(panel.hidden, false);
+  const input = panel.querySelector('input[type="search"]');
+  input.value = "setting";
+  panel.querySelector("form").dispatchEvent(
+    new current.window.Event("submit", {
+      bubbles: true,
+      cancelable: true,
+    }),
+  );
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.match(panel.querySelector("ul").textContent, /Settings/);
+  assert.match(panel.querySelector("ul").textContent, /Search guide/);
+
+  panel.querySelector('[data-search-result-index="0"]').click();
+  assert.deepEqual(dispatched, ["settings"]);
+  assert.equal(panel.hidden, true);
+  assert.deepEqual(selectedResults, []);
+
+  searchButton.click();
+  input.value = "guide";
+  panel.querySelector("form").dispatchEvent(
+    new current.window.Event("submit", {
+      bubbles: true,
+      cancelable: true,
+    }),
+  );
+  await new Promise((resolve) => setImmediate(resolve));
+  const providerResult = panel.querySelector('[data-search-result-index="0"]');
+  assert.ok(providerResult);
+  assert.match(providerResult.textContent, /Federated documentation/);
+  providerResult.click();
+  assert.deepEqual(selectedResults, [["app:docs", "guide"]]);
+});
+
+test("disabling search clears its UI and aborts active provider work", (t) => {
+  const signals = [];
+  const current = fixture(
+    {},
+    {
+      searchCoordinator: {
+        search: (_query, signal) => {
+          signals.push(signal);
+          return new Promise(() => {});
+        },
+      },
+    },
+  );
+  t.after(() => disposeFixture(current));
+  assert.equal(current.toolbar.mount(current.target).ok, true);
+
+  const shadow = current.target.firstElementChild.shadowRoot;
+  shadow.querySelector('[data-toolbar-control="search"]').click();
+  const panel = shadow.querySelector(".mzk-toolbar__search-panel");
+  panel.querySelector('input[type="search"]').value = "query";
+  panel.querySelector("form").dispatchEvent(
+    new current.window.Event("submit", {
+      bubbles: true,
+      cancelable: true,
+    }),
+  );
+  assert.equal(signals.length, 1);
+  assert.equal(signals[0].aborted, false);
+
+  assert.equal(
+    current.toolbar.update({ features: { search: false } }).ok,
+    true,
+  );
+  assert.equal(signals[0].aborted, true);
+  assert.equal(shadow.querySelector('[data-toolbar-control="search"]'), null);
+  assert.equal(shadow.querySelector(".mzk-toolbar__search-panel"), null);
 });

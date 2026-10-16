@@ -313,7 +313,8 @@
 }
 
 .mzk-toolbar__task-center,
-.mzk-toolbar__notification-center {
+.mzk-toolbar__notification-center,
+.mzk-toolbar__search-panel {
   position: absolute;
   z-index: 3;
   inset-inline-end: 0;
@@ -332,23 +333,27 @@
 }
 
 .mzk-toolbar__task-center[hidden],
-.mzk-toolbar__notification-center[hidden] {
+.mzk-toolbar__notification-center[hidden],
+.mzk-toolbar__search-panel[hidden] {
   display: none !important;
 }
 
 .mzk-toolbar__task-center h2,
-.mzk-toolbar__notification-center h2 {
+.mzk-toolbar__notification-center h2,
+.mzk-toolbar__search-panel h2 {
   margin: 0 0 0.75rem;
   font-size: 1rem;
 }
 
 .mzk-toolbar__task-center p,
-.mzk-toolbar__notification-center p {
+.mzk-toolbar__notification-center p,
+.mzk-toolbar__search-panel p {
   margin: 0;
 }
 
 .mzk-toolbar__task-center ul,
-.mzk-toolbar__notification-center ul {
+.mzk-toolbar__notification-center ul,
+.mzk-toolbar__search-panel ul {
   display: grid;
   gap: 0.5rem;
   margin: 0;
@@ -383,22 +388,90 @@
   font-weight: 600;
 }
 
+.mzk-toolbar__search-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 0.5rem;
+  margin-block-end: 0.75rem;
+}
+
+.mzk-toolbar__search-form label {
+  display: grid;
+  min-width: 0;
+  gap: 0.3rem;
+  font-size: 0.875rem;
+}
+
+.mzk-toolbar__search-form input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid currentColor;
+  border-radius: 0.6rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.mzk-toolbar__search-form button,
+.mzk-toolbar__search-result {
+  min-height: 2.75rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid currentColor;
+  border-radius: 0.6rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.mzk-toolbar__search-result {
+  width: 100%;
+  text-align: start;
+}
+
+.mzk-toolbar__search-form input:focus-visible,
+.mzk-toolbar__search-panel button:focus-visible {
+  outline: 3px solid #315bd6;
+  outline-offset: 2px;
+}
+
+.mzk-toolbar__search-panel[data-theme="midnight"] input:focus-visible,
+.mzk-toolbar__search-panel[data-theme="midnight"] button:focus-visible {
+  outline-color: #afc6ff;
+}
+
+.mzk-toolbar__search-panel[data-theme="warm-minimal"] input:focus-visible,
+.mzk-toolbar__search-panel[data-theme="warm-minimal"] button:focus-visible {
+  outline-color: #7d4019;
+}
+
+.mzk-toolbar__search-panel[data-theme="high-contrast"] input:focus-visible,
+.mzk-toolbar__search-panel[data-theme="high-contrast"] button:focus-visible {
+  outline-color: #005fcc;
+}
+
 .mzk-toolbar__task-center[data-theme="midnight"],
-.mzk-toolbar__notification-center[data-theme="midnight"] {
+.mzk-toolbar__notification-center[data-theme="midnight"],
+.mzk-toolbar__search-panel[data-theme="midnight"] {
   border-color: #536079;
   background: #161c2a;
   color: #f4f6fc;
 }
 
 .mzk-toolbar__task-center[data-theme="warm-minimal"],
-.mzk-toolbar__notification-center[data-theme="warm-minimal"] {
+.mzk-toolbar__notification-center[data-theme="warm-minimal"],
+.mzk-toolbar__search-panel[data-theme="warm-minimal"] {
   border-color: #b9a98c;
   background: #fff8ec;
   color: #302317;
 }
 
 .mzk-toolbar__task-center[data-theme="high-contrast"],
-.mzk-toolbar__notification-center[data-theme="high-contrast"] {
+.mzk-toolbar__notification-center[data-theme="high-contrast"],
+.mzk-toolbar__search-panel[data-theme="high-contrast"] {
   border: 2px solid #000000;
   background: #ffffff;
   color: #000000;
@@ -414,6 +487,14 @@
 }
 
 .mzk-toolbar__notification-center[data-color-scheme="dark"]:not(
+    [data-theme="midnight"]
+  ):not([data-theme="warm-minimal"]):not([data-theme="high-contrast"]) {
+  border-color: #435046;
+  background: #1d2432;
+  color: #f1f4fb;
+}
+
+.mzk-toolbar__search-panel[data-color-scheme="dark"]:not(
     [data-theme="midnight"]
   ):not([data-theme="warm-minimal"]):not([data-theme="high-contrast"]) {
   border-color: #435046;
@@ -456,6 +537,14 @@
     background: #1d2432;
     color: #f1f4fb;
   }
+
+  .mzk-toolbar__search-panel[data-color-scheme="system"]:not(
+      [data-theme="midnight"]
+    ):not([data-theme="warm-minimal"]):not([data-theme="high-contrast"]) {
+    border-color: #435046;
+    background: #1d2432;
+    color: #f1f4fb;
+  }
 }
 
 .mzk-toolbar button:focus-visible {
@@ -480,7 +569,8 @@
   }
 
   .mzk-toolbar__task-center,
-  .mzk-toolbar__notification-center {
+  .mzk-toolbar__notification-center,
+  .mzk-toolbar__search-panel {
     border: 1px solid CanvasText;
     background: Canvas;
     color: CanvasText;
@@ -488,7 +578,9 @@
     forced-color-adjust: auto;
   }
 
-  .mzk-toolbar button:focus-visible {
+  .mzk-toolbar button:focus-visible,
+  .mzk-toolbar__search-panel input:focus-visible,
+  .mzk-toolbar__search-panel button:focus-visible {
     outline-color: Highlight;
   }
 }

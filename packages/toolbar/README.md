@@ -134,7 +134,9 @@ const controller = new AbortController();
 const outcome = await search.search("keyboard shortcuts", controller.signal);
 ```
 
-The coordinator preserves provider order, returns partial results with per-provider diagnostics, and exposes result IDs/text only—no navigable URLs or executable callbacks. The host decides how to present results and how a selected result maps to its own commands. Query/result caps are documented in the draft contract. A built-in search panel is not part of this coordinator slice.
+The coordinator preserves provider order, returns partial results with per-provider diagnostics, and exposes result IDs/text only—no navigable URLs or executable callbacks. The host decides how a selected result maps to its own commands. Query/result caps are documented in the draft contract.
+
+When `features.search` is enabled (the current default), the toolbar provides a keyboard-accessible, user-opened Search panel. It locally matches configured action labels/IDs and uses an optional host `searchCoordinator` only after query submission. Provider results are selectable only through the host's `onSearchResult` callback. Closing the panel, disabling search, or disposing the toolbar aborts in-flight work and clears the displayed query/results; search state is never persisted.
 
 ## Opt-in pointer gestures
 
