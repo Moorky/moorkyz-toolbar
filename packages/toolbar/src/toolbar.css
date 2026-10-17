@@ -302,6 +302,38 @@
   font-size: 1.1rem;
 }
 
+@media (max-width: 32rem) {
+  .mzk-toolbar .mzk-toolbar__scroll,
+  .mzk-toolbar .mzk-toolbar__collapse {
+    box-sizing: border-box;
+    flex: 0 0 44px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 8px;
+  }
+
+  .mzk-toolbar .mzk-toolbar__scroll {
+    font-size: 18px;
+  }
+
+  .mzk-toolbar .mzk-toolbar__collapse {
+    font-size: 0;
+    line-height: 1;
+  }
+
+  .mzk-toolbar .mzk-toolbar__collapse::before {
+    font-size: 18px;
+  }
+
+  .mzk-toolbar .mzk-toolbar__collapse[aria-expanded="true"]::before {
+    content: "−";
+  }
+
+  .mzk-toolbar .mzk-toolbar__collapse[aria-expanded="false"]::before {
+    content: "+";
+  }
+}
+
 .mzk-toolbar button:hover:not(:disabled) {
   background: var(--dock-hover, rgb(32 52 86 / 9%));
 }

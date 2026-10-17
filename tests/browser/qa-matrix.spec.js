@@ -13,6 +13,25 @@ async function waitForViewportPaint(page) {
   );
 }
 
+async function expectNavigationCollapseFits(page, viewportWidth) {
+  const button = page.locator(
+    ".toolbar-mount > .mzk-toolbar-host .mzk-toolbar__collapse",
+  );
+  await expect(button).toHaveAccessibleName("Collapse toolbar");
+  const bounds = await button.boundingBox();
+  if (bounds === null)
+    throw new Error("The navigation collapse control is missing.");
+  expect(bounds.width).toBeGreaterThanOrEqual(44);
+  expect(bounds.height).toBeGreaterThanOrEqual(44);
+  expect(bounds.x + bounds.width).toBeLessThanOrEqual(viewportWidth);
+  if (viewportWidth <= 512) {
+    const icon = await button.evaluate(
+      (element) => getComputedStyle(element, "::before").content,
+    );
+    expect(icon).toBe('"−"');
+  }
+}
+
 async function readPageOverflowState(page) {
   return page.evaluate(() => {
     const viewportWidth = window.innerWidth;
@@ -116,6 +135,7 @@ for (const route of ["/", "/studio", "/contributing"]) {
             return state.fits ? true : state;
           })
           .toBe(true);
+        await expectNavigationCollapseFits(page, width);
         await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
         await expect(page.locator("body")).toHaveAttribute("data-theme", theme);
         await waitForViewportPaint(page);
@@ -165,6 +185,7 @@ test("large text reflows without horizontal page overflow and keeps the search d
         return state.fits ? true : state;
       })
       .toBe(true);
+    await expectNavigationCollapseFits(page, 390);
     await page
       .getByRole("button", {
         name: "Search documentation and navigation",
