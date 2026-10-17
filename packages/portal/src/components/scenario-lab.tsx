@@ -4,7 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CopyButton } from "./copy-button";
 import { HydrationBoundary } from "./hydration-boundary";
 import { ToolbarMount } from "@moorkyz/toolbar/react";
-import { presetActions, type DemoPreset } from "./portal-shell";
+import {
+  presetActions,
+  usePortalSettings,
+  type DemoPreset,
+} from "./portal-shell";
 
 type ScenarioViewport = "wide" | "compact";
 
@@ -34,6 +38,7 @@ const CONTEXTS: readonly DemoPreset[] = [
 const VIEWPORTS: readonly ScenarioViewport[] = ["wide", "compact"];
 
 export function ScenarioLab() {
+  const { theme: colorScheme } = usePortalSettings();
   const [scenario, setScenario] = useState(INITIAL_SCENARIO);
   const [capturedScenario, setCapturedScenario] =
     useState<ScenarioDraft | null>(null);
@@ -49,12 +54,13 @@ export function ScenarioLab() {
   const configuration = useMemo(
     () => ({
       label: "Scenario Lab toolbar",
+      colorScheme,
       features: { search: false, customize: false },
       actions: previewActions,
       placement: { mode: "container" as const },
       renderMode: "light" as const,
     }),
-    [previewActions],
+    [previewActions, colorScheme],
   );
   const dispatchAction = useCallback((actionId: string) => {
     const activeScenario = scenarioRef.current;

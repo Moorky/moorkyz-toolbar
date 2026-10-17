@@ -1,26 +1,15 @@
-import { ComponentLab } from "../components/component-lab";
-import { EnvironmentExplorer } from "../components/environment-explorer";
-import { SiteHeader } from "../components/site-header";
-import { FunctionalPlayground } from "../components/functional-playground";
-import { ScenarioLab } from "../components/scenario-lab";
-import { ThemeStudio } from "../components/theme-studio";
-import { VisualConfigurator } from "../components/visual-configurator";
 import { headers } from "next/headers";
-import { DeveloperWorkbench } from "../components/developer-workbench";
+import { FunctionalPlayground } from "../components/functional-playground";
+import { SiteHeader } from "../components/site-header";
+import {
+  ArchitectureExplorer,
+  CapabilityExplorer,
+  StudioShowcase,
+} from "../components/website-explorers";
 import { VersionedDocs } from "../components/versioned-docs";
-import { StarterStudio } from "../components/starter-studio";
-import { ExtensionStudio } from "../components/extension-studio";
+import { SiteFooter } from "../components/site-footer";
 
 const repository = "https://github.com/Moorky/moorkyz-toolbar";
-
-const studioCapabilities = [
-  ["Visual configuration", "Available preview"],
-  ["Component Lab", "Available preview"],
-  ["Scenario Lab", "Available preview"],
-  ["Theme Design Studio", "Available preview"],
-  ["Extension Studio", "Trusted recipe preview"],
-  ["Code and starter generation", "Local Vanilla preview"],
-];
 
 export default async function HomePage() {
   const nonce = (await headers()).get("x-nonce") ?? "";
@@ -30,7 +19,6 @@ export default async function HomePage() {
         Skip to content
       </a>
       <SiteHeader />
-
       <main id="main-content" tabIndex={-1}>
         <section className="hero section-shell" id="home" tabIndex={-1}>
           <div className="hero-copy">
@@ -47,435 +35,164 @@ export default async function HomePage() {
               <a className="button button-primary" href="#playground">
                 Try the Playground <span aria-hidden="true">↓</span>
               </a>
-              <a
-                className="button button-secondary"
-                href={repository}
-                target="_blank"
-                rel="noreferrer"
-              >
+              <a className="button button-secondary" href={repository}>
                 View on GitHub <span aria-hidden="true">↗</span>
               </a>
             </div>
             <p className="draft-note">
-              The package is in active development and is not yet published.
+              SDK 0.1.0 preview · no account, tracking or external demo services
+              · not yet published
             </p>
           </div>
         </section>
-
         <FunctionalPlayground nonce={nonce} />
-
         <section
-          className="section-shell environment-section"
+          className="section-shell website-section"
           id="environments"
           tabIndex={-1}
+          aria-labelledby="capabilities-heading"
         >
-          <div className="section-heading">
-            <p className="eyebrow">A TOOLBAR THAT FITS YOUR PRODUCT</p>
-            <h2>
-              Keep the anchors.
-              <br />
-              Change the context.
-            </h2>
+          <div className="compact-section-heading">
+            <p className="eyebrow">CAPABILITY EXPLORER</p>
+            <h2 id="capabilities-heading">Less ceremony. More control.</h2>
             <p>
-              Choose a page context to update the real dock. This demo uses the
-              SDK&apos;s current action configuration and host dispatch APIs—not
-              a visual stand-in.
+              One shared demonstration area. Every live example uses the actual
+              SDK; links open the corresponding working tool.
             </p>
           </div>
-          <EnvironmentExplorer />
-          <p className="section-footnote">
-            Context changes are deliberate. The dock won&apos;t change just
-            because you scrolled into another section.
-          </p>
-        </section>
-
-        <section
-          className="section-shell configurator-section"
-          id="configurator"
-          tabIndex={-1}
-        >
-          <div className="section-heading">
-            <p className="eyebrow">VISUAL CONFIGURATOR · LOCAL PREVIEW</p>
-            <h2>
-              Tune the draft.
-              <br />
-              Keep every action explicit.
-            </h2>
-            <p>
-              Edit supported configuration fields, validate against the package
-              schema, and apply a real toolbar preview. Drafts stay in memory
-              unless you explicitly save or export them. Nothing is uploaded.
-            </p>
-          </div>
-          <VisualConfigurator />
-          <DeveloperWorkbench />
-        </section>
-
-        <section
-          className="section-shell component-lab-section"
-          id="component-lab"
-          tabIndex={-1}
-        >
-          <div className="section-heading">
-            <p className="eyebrow">COMPONENT LAB · REAL SDK STATES</p>
-            <h2>
-              Try the controls.
-              <br />
-              See the state change.
-            </h2>
-            <p>
-              Switch between repeatable component scenarios, test native
-              overflow controls, open local search, or collapse the live
-              toolbar. Every preview uses the workspace library.
-            </p>
-          </div>
-          <ComponentLab />
-        </section>
-
-        <section
-          className="section-shell scenario-lab-section"
-          id="scenario-lab"
-          tabIndex={-1}
-        >
-          <div className="section-heading">
-            <p className="eyebrow">SCENARIO LAB · DETERMINISTIC SIMULATION</p>
-            <h2>
-              Change the context.
-              <br />
-              Replay the outcome.
-            </h2>
-            <p>
-              Simulate viewport, time, host authorization, and action failures
-              against a real toolbar. Snapshots stay in memory and copied JSON
-              never executes.
-            </p>
-          </div>
-          <ScenarioLab />
-        </section>
-
-        <section
-          className="section-shell theme-studio-section"
-          id="theme-studio"
-          tabIndex={-1}
-        >
-          <div className="section-heading">
-            <p className="eyebrow">THEME DESIGN STUDIO · VALIDATED TOKENS</p>
-            <h2>
-              Inspect the palette.
-              <br />
-              Check the contrast.
-            </h2>
-            <p>
-              Browse the built-in themes, inspect their actual SDK tokens,
-              author custom tokens, validate contrast, and import or copy a
-              versioned token file. Custom styles are scoped to this preview
-              under the portal&apos;s nonce-based CSP.
-            </p>
-          </div>
-          <ThemeStudio nonce={nonce} />
-        </section>
-
-        <section
-          className="section-shell"
-          id="versioned-docs"
-          aria-labelledby="versioned-docs-heading"
-        >
-          <h2 id="versioned-docs-heading">Versioned SDK reference</h2>
-          <VersionedDocs />
+          <span id="themes" tabIndex={-1} />
+          <CapabilityExplorer nonce={nonce} />
         </section>
         <section
-          className="section-shell"
-          id="starter-gallery"
-          aria-labelledby="starter-gallery-heading"
-        >
-          <h2 id="starter-gallery-heading">Local starter gallery</h2>
-          <StarterStudio />
-        </section>
-        <section
-          className="section-shell"
-          id="extension-studio"
-          aria-labelledby="extension-studio-heading"
-        >
-          <h2 id="extension-studio-heading">Trusted Extension Studio</h2>
-          <ExtensionStudio />
-        </section>
-
-        <section
-          className="section-shell engineering-section"
-          id="engineering"
-          tabIndex={-1}
-        >
-          <div className="engineering-heading">
-            <p className="eyebrow">BUILT AROUND CONTROL</p>
-            <h2>
-              Useful by default.
-              <br />
-              No hidden authority.
-            </h2>
-          </div>
-          <div className="principle-list">
-            <article className="principle-row">
-              <span className="principle-number">01</span>
-              <h3>Framework independent</h3>
-              <p>
-                A TypeScript package with no React or Next.js runtime
-                dependency. This portal is a separate consumer.
-              </p>
-            </article>
-            <article className="principle-row">
-              <span className="principle-number">02</span>
-              <h3>Host-controlled actions</h3>
-              <p>
-                The SDK dispatches an action ID; your application retains
-                navigation, data access, and permission authority.
-              </p>
-            </article>
-            <article className="principle-row">
-              <span className="principle-number">03</span>
-              <h3>Accessible foundations</h3>
-              <p>
-                Semantic toolbar controls, keyboard navigation, visible focus,
-                manual collapse, and reduced-motion styling are in the current
-                implementation.
-              </p>
-            </article>
-            <article className="principle-row">
-              <span className="principle-number">04</span>
-              <h3>Optional work stays optional</h3>
-              <p>
-                Search and spatial coordination are not activated by this
-                preview. There are no analytics or remote service calls.
-              </p>
-            </article>
-          </div>
-          <a
-            className="text-link engineering-link"
-            href={`${repository}/blob/master/docs/architecture/security-and-trust.md`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Read the security and trust model <span aria-hidden="true">↗</span>
-          </a>
-        </section>
-
-        <section
-          className="section-shell theme-section"
-          id="themes"
-          tabIndex={-1}
-        >
-          <div className="theme-copy">
-            <p className="eyebrow">YOUR CANVAS, YOUR PREFERENCE</p>
-            <h2>
-              Light by default.
-              <br />
-              Dark when you want it.
-            </h2>
-            <p>
-              Switch the portal between light and dark. The dock is the same
-              library instance, mounted in its supported light-DOM mode so its
-              presentation follows this site.
-            </p>
-            <p className="section-footnote">
-              The SDK includes built-in token families and contrast validation.
-              Custom theme authoring is available in the local Theme Studio.
-            </p>
-          </div>
-          <div className="theme-sample" aria-hidden="true">
-            <div className="sample-bar">
-              <span />
-              <span />
-              <span />
-            </div>
-            <div className="sample-line sample-line-short" />
-            <div className="sample-line" />
-            <div className="sample-block">
-              <span />
-              <span />
-            </div>
-            <div className="sample-caption">
-              <span>PORTAL APPEARANCE</span>
-              <strong>Quiet by design.</strong>
-            </div>
-          </div>
-        </section>
-
-        <section
-          className="section-shell studio-section"
+          className="section-shell website-section"
           id="studio"
           tabIndex={-1}
+          aria-labelledby="studio-heading"
         >
-          <div className="studio-copy">
+          <div className="compact-section-heading">
             <p className="eyebrow">DEVELOPMENT STUDIO</p>
-            <h2>
-              A local workspace
-              <br />
-              for real SDK experiments.
-            </h2>
-            <p>
-              Configuration, components, deterministic scenario replay, theme
-              authoring, trusted extension recipes, local diagnostics and
-              Vanilla starter generation use the actual package. Arbitrary
-              user-authored JavaScript is not executed.
-            </p>
-            <a
-              className="button button-primary"
-              href={`${repository}/blob/master/docs/engineering/roadmap.md`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              View development roadmap <span aria-hidden="true">↗</span>
-            </a>
-            <a className="text-link" href="#configurator">
-              Try the local configurator <span aria-hidden="true">↓</span>
-            </a>
-            <a className="text-link" href="#component-lab">
-              Explore the Component Lab <span aria-hidden="true">↓</span>
-            </a>
-            <a className="text-link" href="#scenario-lab">
-              Try the Scenario Lab <span aria-hidden="true">↓</span>
-            </a>
-            <a className="text-link" href="#theme-studio">
-              Inspect built-in themes <span aria-hidden="true">↓</span>
-            </a>
+            <h2 id="studio-heading">A little deeper, when you need it.</h2>
           </div>
-          <div className="studio-status">
-            <div className="studio-status-head">
-              <span>STUDIO MODULES</span>
-              <span className="status-pill">IN PROGRESS</span>
-            </div>
-            <ul>
-              {studioCapabilities.map(([capability, status]) => (
-                <li key={capability}>
-                  <span>{capability}</span>
-                  <span>{status}</span>
-                </li>
-              ))}
-            </ul>
-            <p>
-              Drafts and exports stay local. All APIs remain development
-              previews; release authorization and manual acceptance are separate
-              gates.
-            </p>
-          </div>
+          <StudioShowcase />
         </section>
-
-        <section className="section-shell docs-section" id="docs" tabIndex={-1}>
-          <div className="section-heading">
-            <p className="eyebrow">FOLLOW THE WORK</p>
-            <h2>Documentation that tells you what exists.</h2>
+        <section
+          className="section-shell website-section"
+          id="docs"
+          tabIndex={-1}
+          aria-labelledby="docs-heading"
+        >
+          <div className="compact-section-heading">
+            <p className="eyebrow">DOCUMENTATION & LEARNING</p>
+            <h2 id="docs-heading">A clear path from first mount.</h2>
             <p>
-              The public contracts are still drafts. Browse the source of truth
-              and follow implementation as the SDK takes shape.
+              Current preview contracts, real feature defaults and tested
+              consumer recipes. There is no stable release to select yet.
             </p>
           </div>
-          <div className="doc-links">
+          <div className="docs-entry-links">
+            <a href="#quick-start">Getting started</a>
+            <a href={`${repository}/tree/master/examples`}>
+              Framework fixtures
+            </a>
             <a
               href={`${repository}/blob/master/docs/contracts/sdk-and-schema.md`}
-              target="_blank"
-              rel="noreferrer"
             >
-              <span>01</span>
-              <strong>SDK and schema draft</strong>
-              <span aria-hidden="true">↗</span>
+              API & schema
             </a>
             <a
-              href={`${repository}/blob/master/docs/architecture/product-and-system.md`}
-              target="_blank"
-              rel="noreferrer"
+              href={`${repository}/blob/master/docs/design/interaction-and-visual-system.md`}
             >
-              <span>02</span>
-              <strong>Product architecture</strong>
-              <span aria-hidden="true">↗</span>
+              Customization & accessibility
             </a>
             <a
-              href={`${repository}/blob/master/docs/engineering/implementation-status.md`}
-              target="_blank"
-              rel="noreferrer"
+              href={`${repository}/blob/master/docs/architecture/security-and-trust.md`}
             >
-              <span>03</span>
-              <strong>Implementation status</strong>
-              <span aria-hidden="true">↗</span>
+              Security
+            </a>
+            <a
+              href={`${repository}/blob/master/docs/engineering/open-validations.md`}
+            >
+              Troubleshooting & limitations
             </a>
           </div>
+          <div id="versioned-docs">
+            <VersionedDocs />
+          </div>
+          <p className="section-footnote">
+            Interactive courses, historical stable-version documentation and
+            additional framework generators are future capabilities, not hidden
+            features.
+          </p>
         </section>
-
         <section
-          className="section-shell open-source-section"
+          className="section-shell website-section"
+          id="engineering"
+          tabIndex={-1}
+          aria-labelledby="architecture-heading"
+        >
+          <div className="compact-section-heading">
+            <p className="eyebrow">ARCHITECTURE & ENGINEERING</p>
+            <h2 id="architecture-heading">Small core. Explicit boundaries.</h2>
+            <p>
+              Explore the implementation that powers this page. One
+              published-package design, optional subpaths and host-owned
+              authority.
+            </p>
+          </div>
+          <ArchitectureExplorer />
+          <p className="section-footnote">
+            M10/M11 remain on hold for manual device/assistive-technology
+            acceptance, approved performance/platform scope, distribution and
+            independent review, container evidence and explicit release
+            authorization.{" "}
+            <a
+              href={`${repository}/blob/master/docs/engineering/release-readiness.md`}
+            >
+              Read the release dossier.
+            </a>
+          </p>
+        </section>
+        <section
+          className="section-shell website-section minimal-open-source"
           id="open-source"
           tabIndex={-1}
         >
           <div>
             <p className="eyebrow">OPEN SOURCE · APACHE-2.0</p>
-            <h2>
-              Built in the open.
-              <br />
-              Released with care.
-            </h2>
-          </div>
-          <div className="open-source-copy">
+            <h2>Built in the open. Released with care.</h2>
             <p>
-              The code and development decisions are public. This repository is
-              a work in progress; no package or website release is implied.
+              Moorkyz Toolbar is an independent, local-first SDK and developer
+              website. No fabricated metrics, accounts or community promises.
             </p>
-            <div className="open-source-links">
-              <a href={repository} target="_blank" rel="noreferrer">
-                Repository ↗
-              </a>
-              <a
-                href={`${repository}/blob/master/LICENSE`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Apache-2.0 license ↗
-              </a>
-              <a href={`${repository}/issues`} target="_blank" rel="noreferrer">
-                Issues and discussion ↗
-              </a>
-            </div>
           </div>
+          <nav aria-label="Open source resources">
+            <a href={repository}>GitHub repository ↗</a>
+            <a href={`${repository}/blob/master/LICENSE`}>
+              Apache-2.0 license ↗
+            </a>
+            <a href="/contributing">Contribution guidelines ↗</a>
+            <a href="#docs">Documentation</a>
+          </nav>
         </section>
-
         <section
-          className="section-shell final-section"
+          className="section-shell website-section final-cta"
           id="finish"
           tabIndex={-1}
         >
-          <p className="eyebrow">MOORKYZ TOOLBAR</p>
-          <h2>
-            Make your interface
-            <br />
-            more capable.
-          </h2>
-          <p>Start with a toolbar. Build an experience.</p>
+          <p className="eyebrow">YOUR NEXT STEP</p>
+          <h2>Make it belong to your interface.</h2>
+          <p>Your saved design stays with you as you explore.</p>
           <div className="hero-actions">
-            <a className="button button-primary" href="#quick-start">
-              Explore the SDK <span aria-hidden="true">↑</span>
+            <a className="button button-primary" href="#playground">
+              Design a Toolbar
             </a>
-            <a
-              className="button button-secondary"
-              href={repository}
-              target="_blank"
-              rel="noreferrer"
-            >
-              View on GitHub <span aria-hidden="true">↗</span>
+            <a className="button button-secondary" href="#quick-start">
+              Start Building
             </a>
           </div>
         </section>
       </main>
-
-      <footer className="site-footer">
-        <a className="footer-brand" href="#home">
-          moorkyz toolbar
-        </a>
-        <span>Easy to start. Easy to use. Powerful to master.</span>
-        <a
-          href={`${repository}/blob/master/LICENSE`}
-          target="_blank"
-          rel="noreferrer"
-        >
-          Apache-2.0
-        </a>
-      </footer>
+      <SiteFooter />
     </>
   );
 }

@@ -14,28 +14,42 @@ import {
 import { ToolbarMount } from "@moorkyz/toolbar/react";
 import { CopyButton } from "./copy-button";
 import { HydrationBoundary } from "./hydration-boundary";
+import { usePortalSettings } from "./portal-shell";
 
 export function ThemeStudio({ nonce }: { readonly nonce: string }) {
+  const { theme: colorScheme } = usePortalSettings();
   const [theme, setTheme] = useState<ToolbarThemeName>("signature");
   const [status, setStatus] = useState(
     "Built-in themes are previewed locally; no theme is applied to the portal.",
   );
-  const [customTokens, setCustomTokens] = useState<ThemeTokens | null>(null);
-  const [appliedTokens, setAppliedTokens] = useState<ThemeTokens | null>(null);
+  const [customVariants, setCustomVariants] = useState<
+    Record<"light" | "dark", ThemeTokens | null>
+  >({ light: null, dark: null });
+  const [appliedVariants, setAppliedVariants] = useState<
+    Record<"light" | "dark", ThemeTokens | null>
+  >({ light: null, dark: null });
+  const customTokens = customVariants[colorScheme];
+  const appliedTokens = appliedVariants[colorScheme];
+  const setCustomTokens = (value: ThemeTokens | null) =>
+    setCustomVariants((variants) => ({ ...variants, [colorScheme]: value }));
+  const setAppliedTokens = (value: ThemeTokens | null) =>
+    setAppliedVariants((variants) => ({ ...variants, [colorScheme]: value }));
   const [importSource, setImportSource] = useState("");
-  const tokens = customTokens ?? BUILT_IN_THEMES[theme];
+  const tokens =
+    customTokens ??
+    BUILT_IN_THEMES[colorScheme === "dark" ? "midnight" : theme];
   const validation = useMemo(() => validateThemeTokens(tokens), [tokens]);
   const configuration = useMemo(
     () => ({
       label: `${theme} theme preview`,
       theme,
-      colorScheme: "system" as const,
+      colorScheme,
       features: { search: false, customize: false },
       actions: [{ id: "docs", label: "Documentation" }],
       placement: { mode: "container" as const },
       renderMode: "light" as const,
     }),
-    [theme],
+    [theme, colorScheme],
   );
   const dispatchAction = useCallback((actionId: string) => {
     setStatus(`The local preview received "${actionId}".`);

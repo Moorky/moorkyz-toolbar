@@ -15,6 +15,7 @@ import { ToolbarMount } from "@moorkyz/toolbar/react";
 import { createDockInspector } from "@moorkyz/toolbar/inspector";
 import { CopyButton } from "./copy-button";
 import { HydrationBoundary } from "./hydration-boundary";
+import { usePortalSettings } from "./portal-shell";
 
 const initial = validateConfiguration({
   label: "Development Studio toolbar",
@@ -27,7 +28,12 @@ if (!initial.ok) throw new Error("Invalid built-in Studio configuration.");
 const INITIAL_CONFIGURATION = initial.value;
 
 export function DeveloperWorkbench() {
+  const { theme: portalTheme } = usePortalSettings();
   const [configuration, setConfiguration] = useState(INITIAL_CONFIGURATION);
+  const liveConfiguration = useMemo(
+    () => ({ ...configuration, colorScheme: portalTheme }),
+    [configuration, portalTheme],
+  );
   const [source, setSource] = useState(
     JSON.stringify(INITIAL_CONFIGURATION, null, 2),
   );
@@ -372,7 +378,7 @@ export function DeveloperWorkbench() {
           <div className="configurator-preview-surface">
             <ToolbarMount
               className="configurator-preview-mount"
-              configuration={configuration}
+              configuration={liveConfiguration}
               host={host}
               onController={onController}
               onMountError={onMountError}

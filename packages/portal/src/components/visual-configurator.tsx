@@ -12,6 +12,7 @@ import {
 import { ToolbarMount } from "@moorkyz/toolbar/react";
 import { CopyButton } from "./copy-button";
 import { HydrationBoundary } from "./hydration-boundary";
+import { usePortalSettings } from "./portal-shell";
 
 interface ConfiguratorDraft {
   readonly label: string;
@@ -168,6 +169,7 @@ function parseSavedDraft(raw: string): SavedDraftResult {
 }
 
 export function VisualConfigurator() {
+  const { theme: portalTheme } = usePortalSettings();
   const [draft, setDraft] = useState(INITIAL_DRAFT);
   const [appliedConfiguration, setAppliedConfiguration] =
     useState<ToolbarConfigurationInput>(() =>
@@ -175,6 +177,10 @@ export function VisualConfigurator() {
     );
   const [previewMessage, setPreviewMessage] = useState(
     "Apply a valid draft to update the preview.",
+  );
+  const liveConfiguration = useMemo(
+    () => ({ ...appliedConfiguration, colorScheme: portalTheme }),
+    [appliedConfiguration, portalTheme],
   );
   const [storageMessage, setStorageMessage] = useState(
     "Drafts are stored only when you choose Save draft locally.",
@@ -529,7 +535,7 @@ export function VisualConfigurator() {
             <div className="configurator-preview-surface">
               <ToolbarMount
                 className="configurator-preview-mount"
-                configuration={appliedConfiguration}
+                configuration={liveConfiguration}
                 host={host}
                 onMountError={onMountError}
                 role="region"

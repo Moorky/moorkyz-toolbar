@@ -71,6 +71,7 @@ function ToolbarNavigation({
   readonly preset: DemoPreset;
   readonly theme: "light" | "dark";
 }) {
+  const { toggleTheme } = usePortalSettings();
   const toolbar = useRef<ToolbarController | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -96,6 +97,14 @@ function ToolbarNavigation({
   const dispatchAction = useCallback((actionId: string) => {
     const target = document.getElementById(actionId);
     if (!(target instanceof HTMLElement)) {
+      if (
+        Object.values(presets).some((actions) =>
+          actions.some(({ id }) => id === actionId),
+        )
+      ) {
+        window.location.assign(`/#${encodeURIComponent(actionId)}`);
+        return;
+      }
       throw new Error(`No portal section is registered for "${actionId}".`);
     }
     const reducedMotion = window.matchMedia(
@@ -161,6 +170,16 @@ function ToolbarNavigation({
         host={host}
         onController={onController}
         onMountError={onMountError}
+        onClickCapture={(event) => {
+          if (
+            event.target instanceof Element &&
+            event.target.closest('[data-toolbar-control="cycle-color-scheme"]')
+          ) {
+            event.preventDefault();
+            event.stopPropagation();
+            toggleTheme();
+          }
+        }}
       />
       {error !== null && (
         <p className="toolbar-error" role="alert">

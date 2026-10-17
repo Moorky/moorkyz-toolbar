@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { InputHTMLAttributes } from "react";
 import { validateThemeTokens, type ToolbarController } from "@moorkyz/toolbar";
 import { ToolbarMount } from "@moorkyz/toolbar/react";
 import type { GeneratedProject } from "@moorkyz/toolbar/generator";
@@ -43,6 +44,71 @@ interface History {
 }
 const initialConfiguration = sdkConfiguration(INITIAL_DESIGN, "light");
 type Pending = "save" | "restore" | "reset" | "autosave" | null;
+
+function DraftInput({
+  value,
+  onValue,
+  ...props
+}: Omit<InputHTMLAttributes<HTMLInputElement>, "value" | "onChange"> & {
+  readonly value: string;
+  readonly onValue: (value: string) => void;
+}) {
+  const [text, setText] = useState(value);
+  useEffect(() => setText(value), [value]);
+  return (
+    <input
+      {...props}
+      value={text}
+      onChange={(event) => {
+        setText(event.currentTarget.value);
+        onValue(event.currentTarget.value);
+      }}
+      onBlur={() => setText(value)}
+    />
+  );
+}
+
+function GeometryInput({
+  value,
+  min,
+  max,
+  width,
+  onValue,
+  onInvalid,
+  ...props
+}: {
+  readonly value: number;
+  readonly min: number;
+  readonly max: number;
+  readonly width: boolean;
+  readonly onValue: (value: number) => void;
+  readonly onInvalid: () => void;
+  readonly disabled: boolean;
+  readonly "aria-label": string;
+}) {
+  return (
+    <DraftInput
+      {...props}
+      type="number"
+      step="any"
+      min={min}
+      max={max}
+      value={String(value)}
+      onValue={(raw) => {
+        const number = Number(raw);
+        if (
+          raw.trim() &&
+          Number.isFinite(number) &&
+          number >= min &&
+          number <= max &&
+          (!width || number === 0 || number >= 320)
+        )
+          onValue(number);
+        else onInvalid();
+      }}
+    />
+  );
+}
 
 export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
   const { theme } = usePortalSettings();
@@ -92,11 +158,13 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
   const workspace = useRef<HTMLDivElement>(null);
   const application = useRef<ApplicationHost>(null);
   const imported = useRef<PlaygroundDesign | null>(null);
+  const importRequest = useRef(0);
   const drag = useRef<{
     type: "move" | "resize" | "sidebar" | "sheet";
     x: number;
     y: number;
     design: PlaygroundDesign;
+    latest: PlaygroundDesign | null;
     width: number;
     sheet: number;
   } | null>(null);
@@ -137,7 +205,7 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
         application.current.dispatch(action.command);
       },
       onActionError: (_cause: unknown, id: string) =>
-        setError(`The host rejected action "${id}".`),
+        setStatus(`The host rejected action "${id}".`),
     }),
     [],
   );
@@ -157,8 +225,20 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
     [],
   );
   const appStatus = useCallback((message: string) => setStatus(message), []);
+  useEffect(
+    () => () => {
+      importRequest.current++;
+    },
+    [],
+  );
+  useEffect(() => {
+    if (!editMode) {
+      drag.current = null;
+      setDragDesign(null);
+    }
+  }, [editMode]);
 
-  function commit(design: PlaygroundDesign) {
+  function commit(design: PlaygroundDesign, discardBuffers = false) {
     const valid = validateDesign(design);
     if (!valid.ok) {
       setStatus(valid.message);
@@ -175,7 +255,7 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
     );
     setSource(null);
     setPending(null);
-    setTokenDraft(null);
+    if (discardBuffers) setTokenDraft(null);
   }
   function patch(value: Partial<PlaygroundDesign>) {
     commit({ ...current, ...value });
@@ -206,7 +286,6 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
             future: state.future.slice(1),
           };
     });
-    setTokenDraft(null);
     setPending(null);
     setStatus(
       "Design history restored. Application commands are never replayed.",
@@ -417,7 +496,7 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
         setPending(null);
         return;
       }
-      commit(parsed.value);
+      commit(parsed.value, true);
       setStatus("Saved design restored. Undo returns to your previous design.");
     } catch {
       setPending(null);
@@ -467,12 +546,14 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
     event: React.PointerEvent<HTMLButtonElement>,
     type: "move" | "resize" | "sidebar" | "sheet",
   ) {
+    if (source !== null && (type === "move" || type === "resize")) return;
     event.currentTarget.setPointerCapture(event.pointerId);
     drag.current = {
       type,
       x: event.clientX,
       y: event.clientY,
       design: current,
+      latest: null,
       width:
         type === "resize"
           ? (mount.current
@@ -495,8 +576,8 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
       setSheetHeight(
         clamp(start.sheet - (dy / window.innerHeight) * 100, 35, 85),
       );
-    else
-      setDragDesign({
+    else {
+      const next = {
         ...start.design,
         geometry: {
           ...start.design.geometry,
@@ -508,24 +589,33 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
             : {
                 width: clamp(
                   (start.design.geometry.width || start.width) + dx,
-                  180,
+                  320,
                   1100,
                 ),
               }),
         },
-      });
+      };
+      start.latest = next;
+      setDragDesign(next);
+    }
   }
   function endDrag(event: React.PointerEvent<HTMLButtonElement>) {
+    moveDrag(event);
+    const finalDesign = drag.current?.latest;
+    drag.current = null;
+    if (finalDesign) commit(finalDesign);
+    setDragDesign(null);
     if (event.currentTarget.hasPointerCapture(event.pointerId))
       event.currentTarget.releasePointerCapture(event.pointerId);
-    if (dragDesign) commit(dragDesign);
-    drag.current = null;
-    setDragDesign(null);
   }
   const dragEvents = {
     onPointerMove: moveDrag,
     onPointerUp: endDrag,
     onPointerCancel: () => {
+      drag.current = null;
+      setDragDesign(null);
+    },
+    onLostPointerCapture: () => {
       drag.current = null;
       setDragDesign(null);
     },
@@ -617,7 +707,8 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
                   : pending === "autosave"
                     ? "Replace unreadable autosave with the current design? Export the unreadable data first if needed."
                     : "Reset this design? Undo preserves your current design."}{" "}
-              Unapplied JSON edits will be discarded.
+              {(pending === "reset" || pending === "restore") &&
+                "Unapplied JSON and color edits will be discarded."}
             </p>
             <button
               type="button"
@@ -629,7 +720,7 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
                   setCanAutosave(true);
                   setPending(null);
                 } else {
-                  commit(INITIAL_DESIGN);
+                  commit(INITIAL_DESIGN, true);
                   setStatus("Defaults restored. Undo is available.");
                 }
               }}
@@ -852,14 +943,22 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
                                         action.label === old.label
                                           ? replacement.label
                                           : action.label;
+                                      const labelStart = action.accessibleName
+                                        .toLowerCase()
+                                        .indexOf(action.label.toLowerCase());
                                       return {
                                         ...action,
                                         command: replacement.command,
                                         label,
                                         accessibleName:
-                                          action.accessibleName === action.label
-                                            ? label
-                                            : `${label} — ${action.accessibleName}`,
+                                          action.accessibleName.slice(
+                                            0,
+                                            labelStart,
+                                          ) +
+                                          label +
+                                          action.accessibleName.slice(
+                                            labelStart + action.label.length,
+                                          ),
                                         tooltip:
                                           action.tooltip === old.tooltip
                                             ? replacement.tooltip
@@ -924,6 +1023,7 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
                         Edit theme variant
                         <select
                           value={variant}
+                          disabled={tokenDraft !== null}
                           onChange={(event) => {
                             setVariant(
                               event.currentTarget.value === "dark"
@@ -969,16 +1069,34 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
                           colorError !== null
                         }
                         onClick={() =>
-                          patch({
-                            appearance: {
-                              ...current.appearance,
-                              [variant]: colorCandidate,
+                          commit(
+                            {
+                              ...current,
+                              appearance: {
+                                ...current.appearance,
+                                [variant]: colorCandidate,
+                              },
                             },
-                          })
+                            true,
+                          )
                         }
                       >
                         Apply variant colors
                       </button>
+                      <button
+                        type="button"
+                        disabled={tokenDraft === null}
+                        onClick={() => setTokenDraft(null)}
+                      >
+                        Discard color edits
+                      </button>
+                      {tokenDraft !== null && (
+                        <p>
+                          Color edits are not applied or autosaved yet. Apply or
+                          discard them before switching the edited variant;
+                          other design edits preserve this buffer.
+                        </p>
+                      )}
                       {(
                         [
                           "opacity",
@@ -1034,6 +1152,7 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
                         <input
                           type="checkbox"
                           checked={editMode}
+                          disabled={source !== null}
                           onChange={(event) =>
                             setEditMode(event.currentTarget.checked)
                           }
@@ -1043,8 +1162,11 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
                       <p>
                         Outside Edit Mode, toolbar actions work normally.
                         Numeric controls and drag handles share the same
-                        geometry. Width 0 means intrinsic; Y offset 0 attaches
-                        to the bottom.
+                        geometry. Width 0 means automatic (full width for docked
+                        styles); explicit width is 320–1100px. Responsive
+                        offsets and gaps keep controls reachable without
+                        overwriting your design. Y offset 0 attaches to the
+                        bottom.
                       </p>
                       {(
                         [
@@ -1058,8 +1180,7 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
                       ).map((key) => (
                         <label key={key}>
                           {key}
-                          <input
-                            type="number"
+                          <GeometryInput
                             aria-label={`Toolbar ${key}`}
                             min={
                               key === "height"
@@ -1082,11 +1203,17 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
                                         : 120
                             }
                             value={preview.geometry[key]}
+                            width={key === "width"}
                             disabled={source !== null}
-                            onChange={(event) =>
+                            onValue={(value) =>
                               geometry({
-                                [key]: Number(event.currentTarget.value),
+                                [key]: value,
                               })
+                            }
+                            onInvalid={() =>
+                              setStatus(
+                                "Numeric edit is outside the supported limits; the preview and autosave retain the last valid geometry.",
+                              )
                             }
                           />
                         </label>
@@ -1147,39 +1274,41 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
                           </legend>
                           <label>
                             Label
-                            <input
+                            <DraftInput
                               aria-label={`Label for ${action.id}`}
                               maxLength={80}
                               value={action.label}
                               disabled={source !== null}
-                              onChange={(event) =>
+                              onValue={(value) =>
                                 actionPatch(i, {
-                                  label: event.currentTarget.value,
-                                  accessibleName: event.currentTarget.value,
+                                  label: value,
+                                  accessibleName: value,
                                 })
                               }
                             />
                           </label>
                           <label>
                             Accessible name
-                            <input
+                            <DraftInput
+                              maxLength={160}
                               value={action.accessibleName}
                               disabled={source !== null}
-                              onChange={(event) =>
+                              onValue={(value) =>
                                 actionPatch(i, {
-                                  accessibleName: event.currentTarget.value,
+                                  accessibleName: value,
                                 })
                               }
                             />
                           </label>
                           <label>
                             Tooltip
-                            <input
+                            <DraftInput
+                              maxLength={160}
                               value={action.tooltip}
                               disabled={source !== null}
-                              onChange={(event) =>
+                              onValue={(value) =>
                                 actionPatch(i, {
-                                  tooltip: event.currentTarget.value,
+                                  tooltip: value,
                                 })
                               }
                             />
@@ -1408,6 +1537,8 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
                           onChange={(event) => {
                             const file = event.currentTarget.files?.[0];
                             if (!file) return;
+                            const request = ++importRequest.current;
+                            imported.current = null;
                             if (file.size > 65536) {
                               setStatus("Design exceeds 64 KiB.");
                               return;
@@ -1415,6 +1546,7 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
                             void file
                               .text()
                               .then((raw) => {
+                                if (request !== importRequest.current) return;
                                 const parsed = parseDesign(raw);
                                 if (!parsed.ok) {
                                   setStatus(parsed.message);
@@ -1422,12 +1554,13 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
                                 }
                                 imported.current = parsed.value;
                                 setStatus(
-                                  "Valid import ready. Confirm below to replace the current design; Undo is available.",
+                                  `Valid import ${file.name.slice(0, 100)} ready. Confirm below to replace the current design and unapplied edits; Undo is available.`,
                                 );
                               })
-                              .catch(() =>
-                                setStatus("Could not read the design file."),
-                              );
+                              .catch(() => {
+                                if (request === importRequest.current)
+                                  setStatus("Could not read the design file.");
+                              });
                             event.currentTarget.value = "";
                           }}
                         />
@@ -1439,7 +1572,7 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
                             setStatus("Choose a valid design file first.");
                             return;
                           }
-                          commit(imported.current);
+                          commit(imported.current, true);
                           imported.current = null;
                           setStatus(
                             "Validated imported design applied. Undo is available.",
@@ -1460,9 +1593,10 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
                           rows={14}
                           maxLength={65536}
                           value={sourceText}
-                          onChange={(event) =>
-                            setSource(event.currentTarget.value)
-                          }
+                          onChange={(event) => {
+                            setSource(event.currentTarget.value);
+                            setEditMode(false);
+                          }}
                         />
                       </label>
                       <p className="playground-validation" role="status">
@@ -1474,7 +1608,7 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
                         type="button"
                         disabled={!validation.ok || source === null}
                         onClick={() => {
-                          if (validation.ok) commit(validation.value);
+                          if (validation.ok) commit(validation.value, true);
                         }}
                       >
                         Apply Playground JSON
@@ -1549,6 +1683,7 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
                   <button
                     key={type}
                     type="button"
+                    disabled={source !== null}
                     onPointerDown={(event) => startDrag(event, type)}
                     {...dragEvents}
                     onKeyDown={(event) => {
@@ -1565,7 +1700,7 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
                       if (type === "resize")
                         geometry({
                           width: Math.max(
-                            180,
+                            320,
                             Math.min(
                               1100,
                               Math.round(
@@ -1698,7 +1833,6 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
                 "toolbar.config.js",
                 "app.js",
                 "style.css",
-                "presentation.js",
                 "playground.design.json",
                 "index.html",
                 "README.md",

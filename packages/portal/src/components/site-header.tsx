@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ThemeToggle } from "./portal-shell";
+import { PortalSearch } from "./portal-search";
 
-export function SiteHeader() {
+export function SiteHeader({ homePath = "" }: { readonly homePath?: string }) {
   const header = useRef<HTMLElement>(null);
   const [hidden, setHidden] = useState(false);
 
@@ -30,7 +31,7 @@ export function SiteHeader() {
       data-hidden={hidden}
       onFocusCapture={() => setHidden(false)}
     >
-      <a className="brand" href="#home">
+      <a className="brand" href={`${homePath}#home`}>
         <img src="/favicon-32x32.png" width={28} height={28} alt="" />
         <span>
           <strong>moorkyz</strong>{" "}
@@ -38,9 +39,9 @@ export function SiteHeader() {
         </span>
       </a>
       <nav className="header-links" aria-label="Main navigation">
-        <a href="#playground">Playground</a>
-        <a href="#studio">Studio</a>
-        <a href="#docs">Docs</a>
+        <a href={`${homePath}#playground`}>Playground</a>
+        <a href="/studio">Studio</a>
+        <a href={`${homePath}#docs`}>Docs</a>
         <a
           href="https://github.com/Moorky/moorkyz-toolbar"
           target="_blank"
@@ -48,6 +49,7 @@ export function SiteHeader() {
         >
           GitHub
         </a>
+        <PortalSearch />
         <ThemeToggle />
       </nav>
     </header>

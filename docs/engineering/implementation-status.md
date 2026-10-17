@@ -10,6 +10,15 @@ M10 blockers and M11 authorization hold. It supersedes the M6–M11 rows in the
 pre-task snapshot below. The full release gates are not marked complete merely
 because the implementation and automated tests pass.
 
+## Website and functional Playground MVP
+
+The subsequent portal work delivers four stateful applications, ten structural
+presets, private versioned design data, manual theme variants, geometry/actions,
+local autosave/recovery and actual generated-server Vanilla integration.
+The landing page, local search/explorers and dedicated Studio are tracked in the
+[MVP plan](website-mvp.md) with task-scoped verification audits. These additions
+do not close any manual, distribution or authorization milestone exit below.
+
 ## Pre-task milestone snapshot
 
 | Milestone                                               | Status      | Evidence / remaining exit criteria                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |

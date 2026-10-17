@@ -6,13 +6,21 @@ Moorkyz application. Public contracts remain drafts.
 
 ## Current milestone outcome
 
-The subsequent website/Playground first vertical slice adds an actual SDK-backed
-Modern Workspace and personalized Vanilla exports, not a completed website MVP.
-Its scoped checks and residual work are recorded separately in its task audit
-and the [portal README](../../packages/portal/README.md). The M10/M11 acceptance
+Subsequent website/Playground work adds four real application templates, ten
+structural presets, complete supported design editing, local recovery, a
+Playground-first website and a dedicated Studio. Its scoped checks and MVP
+hardening evidence are recorded separately in task audits and the
+[portal README](../../packages/portal/README.md). The M10/M11 acceptance
 and authorization holds in this dossier remain unchanged; earlier milestone
 test totals below describe that earlier slice, not current whole-workspace
 certification.
+
+The completed local website/Playground acceptance is documented in the
+[MVP acceptance audit](../audits/2026-10-17T06-04-23Z-website-mvp-acceptance.md):
+198 Node tests, 183 three-engine browser cases, all build/type/lint/format gates,
+SDK coverage thresholds, bundle isolation and bounded dependency/source checks
+passed. It adds no distribution authorization and does not close the manual
+or independent M10/M11 holds below.
 
 | Milestone | Delivered in this slice | Remaining acceptance |
 |---|---|---|

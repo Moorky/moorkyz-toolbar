@@ -1,4 +1,8 @@
-import { readFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+import { Worker } from "node:worker_threads";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
@@ -82,6 +86,15 @@ test("all four applications execute real host commands and preserve local state 
     playground.getByRole("heading", { name: "$12,800" }),
   ).toBeVisible();
   await app(playground, "Project Board");
+  await toolbar.getByRole("button", { name: "New card", exact: true }).click();
+  await expect(playground.getByLabel("New card title")).toBeFocused();
+  await playground.getByLabel("New card title").fill("A real board card");
+  await playground
+    .getByRole("button", { name: "Add card", exact: true })
+    .click();
+  await expect(
+    playground.getByRole("radio", { name: "A real board card" }),
+  ).toBeVisible();
   await expect(
     toolbar.getByRole("button", { name: "Advance selected" }),
   ).toBeDisabled();
@@ -105,6 +118,25 @@ test("ten structural styles, independent template selection, search and favorite
   page,
 }) => {
   const playground = await open(page);
+  await panel(playground, "Actions");
+  await playground
+    .locator(".action-editor")
+    .first()
+    .getByLabel("Accessible name", { exact: true })
+    .fill("New task — focus creation");
+  await app(playground, "Document Editor");
+  await expect(
+    playground.getByRole("toolbar").getByRole("button", {
+      name: "Add heading — focus creation",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await app(playground, "Modern Workspace");
+  await expect(
+    playground
+      .getByRole("toolbar")
+      .getByRole("button", { name: "New task — focus creation", exact: true }),
+  ).toBeVisible();
   await playground
     .getByRole("button", { name: "Toolbar Style", exact: true })
     .click();
@@ -195,6 +227,40 @@ test("geometry has bottom-attached zero, bounded edit handles and coherent histo
   await expect(
     toolbar.getByRole("button", { name: "New task", exact: true }),
   ).toBeEnabled();
+  const width = playground.getByLabel("Toolbar width", { exact: true });
+  await width.fill("");
+  await width.pressSequentially("320");
+  await expect(width).toHaveValue("320");
+  await expect
+    .poll(async () => Math.round((await toolbar.boundingBox()).width))
+    .toBe(320);
+  await playground.getByLabel("Edit Mode", { exact: true }).check();
+  const move = playground.getByRole("button", {
+    name: "Move toolbar",
+    exact: true,
+  });
+  await move.hover();
+  const bounds = await move.boundingBox();
+  await page.mouse.down();
+  await page.mouse.move(
+    bounds.x + bounds.width / 2 + 16,
+    bounds.y + bounds.height / 2 - 16,
+    { steps: 3 },
+  );
+  await page.mouse.up();
+  await expect(
+    playground.getByLabel("Toolbar offsetX", { exact: true }),
+  ).toHaveValue("16");
+  await expect(
+    playground.getByLabel("Toolbar offsetY", { exact: true }),
+  ).toHaveValue("24");
+  await playground.getByRole("button", { name: "Undo", exact: true }).click();
+  await expect(
+    playground.getByLabel("Toolbar offsetX", { exact: true }),
+  ).toHaveValue("0");
+  await expect(
+    playground.getByLabel("Toolbar offsetY", { exact: true }),
+  ).toHaveValue("8");
 });
 
 test("action operations affect SDK controls, permissions, icons and collapse recovery", async ({
@@ -232,6 +298,17 @@ test("action operations affect SDK controls, permissions, icons and collapse rec
   await action.getByLabel("Enabled", { exact: true }).uncheck();
   await expect(button).toBeDisabled();
   await playground
+    .getByRole("button", { name: "Reset sample tasks", exact: true })
+    .focus();
+  await page.keyboard.press("Tab");
+  await expect
+    .poll(() =>
+      playground
+        .getByRole("toolbar")
+        .evaluate((element) => element.contains(document.activeElement)),
+    )
+    .toBe(true);
+  await playground
     .getByRole("toolbar")
     .getByRole("button", { name: "Collapse toolbar", exact: true })
     .click();
@@ -259,6 +336,16 @@ test("manual theme variants synchronize without destroying custom settings or ac
   await playground
     .getByLabel("light background color", { exact: true })
     .fill("#f5f0ff");
+  await panel(playground, "Actions");
+  await playground
+    .locator(".action-editor")
+    .first()
+    .getByLabel("Tooltip", { exact: true })
+    .fill("Preserve my color draft");
+  await panel(playground, "Appearance");
+  await expect(
+    playground.getByLabel("light background color", { exact: true }),
+  ).toHaveValue("#f5f0ff");
   await playground
     .getByRole("button", { name: "Apply variant colors" })
     .click();
@@ -310,6 +397,10 @@ test("validated JSON preserves the last working design and refuses hostile comma
   await panel(playground, "Appearance");
   await expect(
     playground.getByRole("button", { name: "Apply variant colors" }),
+  ).toBeDisabled();
+  await panel(playground, "Geometry & Position");
+  await expect(
+    playground.getByLabel("Edit Mode", { exact: true }),
   ).toBeDisabled();
   await playground
     .getByRole("button", { name: "Return to Code & Export" })
@@ -428,6 +519,54 @@ test("storage failures are explicit and do not prevent real toolbar actions", as
   await expect(playground.getByLabel("New task title")).toBeFocused();
 });
 
+test("design file import is confirmed, undoable and cannot grant another application authority", async ({
+  page,
+}) => {
+  const playground = await open(page);
+  await panel(playground, "Code & Export");
+  const design = JSON.parse(
+    await playground.getByLabel("Playground configuration JSON").inputValue(),
+  );
+  design.geometry.radius = 12;
+  design.actions[0].command = "board-archive";
+  await panel(playground, "Advanced Settings");
+  await playground.getByLabel("Import Playground design").setInputFiles({
+    name: "design.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(design)),
+  });
+  await expect(playground.locator(".playground-status")).toContainText(
+    "Valid import design.json ready",
+  );
+  await expect(playground.getByRole("toolbar")).toHaveCSS(
+    "border-radius",
+    "32px",
+  );
+  await playground
+    .getByRole("button", { name: "Confirm design import" })
+    .click();
+  const toolbar = playground.getByRole("toolbar");
+  await expect(toolbar).toHaveCSS("border-radius", "12px");
+  const action = toolbar.getByRole("button", { name: "New task", exact: true });
+  await expect(action).toBeDisabled();
+  await action.evaluate((button) => {
+    button.disabled = false;
+    button.click();
+  });
+  await expect(playground.locator(".playground-status")).toContainText(
+    "host rejected",
+  );
+  await expect(playground.locator(".mzk-toolbar__status")).toContainText(
+    "Could not complete New task",
+  );
+  await expect(playground.getByRole("checkbox")).toHaveCount(3);
+  await playground.getByRole("button", { name: "Undo", exact: true }).click();
+  await expect(toolbar).toHaveCSS("border-radius", "32px");
+  await expect(
+    toolbar.getByRole("button", { name: "New task", exact: true }),
+  ).toBeEnabled();
+});
+
 test("mobile preview-first sheet, code view, keyboard resizing and fullscreen preserve state", async ({
   page,
 }) => {
@@ -479,7 +618,6 @@ test("mobile preview-first sheet, code view, keyboard resizing and fullscreen pr
 
 test("personalized export executes actual SDK presentation and disposes its resources", async ({
   page,
-  baseURL,
 }) => {
   const playground = await open(page);
   await panel(playground, "Actions");
@@ -506,43 +644,77 @@ test("personalized export executes actual SDK presentation and disposes its reso
   expect(JSON.parse(files.get("playground.design.json")).geometry.radius).toBe(
     8,
   );
-  await page.route(`${baseURL}/personalized/**`, (route) => {
-    const name = new URL(route.request().url()).pathname.split("/").at(-1);
-    const body = files.get(name || "index.html");
-    return route.fulfill(
-      body === undefined
-        ? { status: 404 }
-        : {
-            body,
-            contentType: name.endsWith(".js")
-              ? "text/javascript"
-              : name.endsWith(".css")
-                ? "text/css"
-                : "text/html",
-          },
-    );
-  });
-  await page.route(`${baseURL}/vendor/**`, (route) =>
-    route.continue({
-      url: `${baseURL}${new URL(route.request().url()).pathname.replace("/vendor/", "/toolbar/")}`,
-    }),
+  const directory = await mkdtemp(
+    join(tmpdir(), "moorkyz-playground-consumer-"),
   );
-  await page.goto(`${baseURL}/personalized/index.html`);
-  const toolbar = page.getByRole("toolbar", {
-    name: "Modern Workspace toolbar",
-  });
-  const button = toolbar.getByRole("button", {
-    name: "Exported task",
-    exact: true,
-  });
-  await button.click();
-  await expect(page.locator("#status")).toHaveText("Selected: add-task");
-  await expect(button).toHaveAttribute("data-icon", "+");
-  await expect
-    .poll(() =>
-      toolbar.evaluate((element) => getComputedStyle(element).borderRadius),
-    )
-    .toBe("8px");
-  await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
-  await expect(toolbar).toHaveCount(0);
+  let worker;
+  try {
+    for (const [path, content] of files) {
+      expect(path).toMatch(/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/);
+      await writeFile(resolve(directory, path), content, { flag: "wx" });
+    }
+    worker = new Worker(pathToFileURL(resolve(directory, "server.mjs")), {
+      argv: ["--sdk-path", resolve("packages", "toolbar"), "--port", "0"],
+      stdout: true,
+      stderr: true,
+    });
+    const consumerURL = await new Promise((resolveReady, reject) => {
+      let output = "";
+      const timer = setTimeout(
+        () =>
+          reject(new Error(`Generated server did not become ready: ${output}`)),
+        15000,
+      );
+      worker.stderr.on("data", (chunk) => {
+        output += chunk;
+      });
+      worker.stdout.on("data", (chunk) => {
+        output += chunk;
+        const match = output.match(/Starter: (http:\/\/127\.0\.0\.1:\d+)/);
+        if (match) {
+          clearTimeout(timer);
+          resolveReady(match[1]);
+        }
+      });
+      worker.on("error", (cause) => {
+        clearTimeout(timer);
+        reject(cause);
+      });
+      worker.on("exit", (code) => {
+        clearTimeout(timer);
+        reject(new Error(`Generated server exited (${code}): ${output}`));
+      });
+    });
+    const failures = [];
+    page.on("response", (response) => {
+      if (
+        response.url().startsWith(`${consumerURL}/`) &&
+        response.status() >= 400 &&
+        !response.url().endsWith("/favicon.ico")
+      )
+        failures.push(response.url());
+    });
+    await page.goto(consumerURL);
+    const toolbar = page.getByRole("toolbar", {
+      name: "Modern Workspace toolbar",
+    });
+    const button = toolbar.getByRole("button", {
+      name: "Exported task",
+      exact: true,
+    });
+    await button.click();
+    await expect(page.locator("#status")).toHaveText("Selected: add-task");
+    await expect(button).toHaveAttribute("data-icon", "+");
+    await expect
+      .poll(() =>
+        toolbar.evaluate((element) => getComputedStyle(element).borderRadius),
+      )
+      .toBe("8px");
+    expect(failures).toEqual([]);
+    await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
+    await expect(toolbar).toHaveCount(0);
+  } finally {
+    if (worker) await worker.terminate();
+    await rm(directory, { recursive: true, force: true });
+  }
 });

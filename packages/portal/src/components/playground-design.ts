@@ -147,7 +147,7 @@ export const STYLES = [
     radius: 0,
     height: 64,
     gap: 4,
-    width: 1100,
+    width: 0,
   },
   {
     id: "glass",
@@ -183,7 +183,7 @@ export const STYLES = [
     radius: 0,
     height: 56,
     gap: 0,
-    width: 1100,
+    width: 0,
   },
   {
     id: "angular",
@@ -342,6 +342,7 @@ export function validateDesign(value: unknown): DesignResult {
       "position",
     ]) ||
     !numberIn(g.width, 0, 1100) ||
+    (g.width !== 0 && g.width < 320) ||
     !numberIn(g.height, 56, 96) ||
     !numberIn(g.gap, 0, 24) ||
     !numberIn(g.radius, 0, 48) ||
@@ -570,6 +571,10 @@ export function applyStyle(
     },
     appearance: {
       ...design.appearance,
+      opacity:
+        id === "glass"
+          ? Math.min(94, design.appearance.opacity)
+          : design.appearance.opacity,
       blur: id === "glass" ? 20 : 0,
       shadow: id === "edge" ? 0 : 16,
     },
@@ -589,34 +594,39 @@ export function presentationCSS(
       ? "polygon(4% 0,96% 0,100% 100%,0 100%)"
       : "polygon(14px 0,calc(100% - 14px) 0,100% 14px,100% calc(100% - 14px),calc(100% - 14px) 100%,14px 100%,0 calc(100% - 14px),0 14px)";
   const shaped = design.style === "trapezoid" || design.style === "faceted";
+  const border = shaped ? 0 : a.borderWidth;
+  const verticalBorder = design.style === "edge" ? a.borderWidth : border * 2;
+  const padding = Math.min(6, (g.height - 44 - verticalBorder) / 2);
+  const buttonHeight = g.height - padding * 2 - verticalBorder;
   return `${scope} .mzk-toolbar-host[data-placement="container"] {
     top: ${g.position === "top" ? `${64 + g.offsetY}px` : "auto"};
     bottom: ${g.position === "bottom" ? `max(${g.offsetY}px, env(safe-area-inset-bottom, 0px))` : "auto"};
-    inset-inline-start: ${12 + Math.max(0, g.offsetX)}px;
-    inset-inline-end: ${12 + Math.max(0, -g.offsetX)}px;
+    inset-inline-start: max(12px, min(${12 + Math.max(0, g.offsetX)}px, calc(100% - 332px)));
+    inset-inline-end: max(12px, min(${12 + Math.max(0, -g.offsetX)}px, calc(100% - 332px)));
     padding-inline: 0; justify-content: ${g.align === "start" ? "flex-start" : g.align === "end" ? "flex-end" : "center"};
   }
   ${selector} {
     --mzk-toolbar-background: ${t.background}; --mzk-toolbar-foreground: ${t.foreground};
     --mzk-toolbar-border: ${t.border}; --mzk-toolbar-hover: ${t.hover};
     --mzk-toolbar-focus: ${t.focus}; --mzk-toolbar-disabled: ${t.foreground};
-    width: ${g.width === 0 ? "max-content" : `min(100%, ${g.width}px)`};
-    max-width: 100%; min-height: ${g.height}px; gap: ${g.gap}px;
-    padding: 6px ${shaped ? 24 : 6}px; border-radius: ${g.radius}px;
-    border: ${a.borderWidth}px ${design.style === "angular" ? "dashed" : "solid"} ${t.border};
+    width: ${g.width === 0 ? (design.style === "full" || design.style === "edge" ? "100%" : "max-content") : `min(100%, ${g.width}px)`};
+    min-width: 0; max-width: 100%; min-height: ${g.height}px; gap: ${g.gap}px;
+    padding: ${padding}px ${shaped ? 24 : 6}px; border-radius: ${g.radius}px;
+    border: ${border}px ${design.style === "angular" ? "dashed" : "solid"} ${t.border};
     background: ${shaped ? "transparent" : `color-mix(in srgb, ${t.background} ${a.opacity}%, transparent)`};
     color: ${t.foreground}; backdrop-filter: blur(${a.blur}px);
     box-shadow: 0 ${a.shadow / 2}px ${a.shadow * 2}px #00000026;
     font-family: "DM Sans", system-ui, sans-serif;
     transition-duration: ${design.motion ? 180 : 0}ms; isolation: isolate;
   }
-  ${selector} button { min-height: ${Math.max(44, g.height - 14)}px; min-width: 44px; font-size: ${a.fontSize}px; border-radius: ${Math.min(g.radius, 20)}px; }
+  ${selector} button { box-sizing: border-box; border: 0; padding-block: 6px; line-height: 1; white-space: nowrap; min-height: ${buttonHeight}px; min-width: 44px; font-size: ${a.fontSize}px; border-radius: ${Math.min(g.radius, 20)}px; }
   ${selector} .mzk-toolbar__actions { gap: ${g.gap}px; }
   ${selector} .mzk-toolbar__action::before { content: attr(data-icon); font-size: ${a.iconSize}px; margin-inline-end: 4px; }
   ${selector} button:focus-visible { outline: 3px solid ${t.focus}; outline-offset: -3px; }
-  ${design.style === "segmented" ? `${selector} .mzk-toolbar__action-item { border: 1px solid ${t.border}; border-radius: ${g.radius}px; background: ${t.hover}; }` : ""}
-  ${design.style === "edge" ? `${selector} { border-inline: 0; border-bottom: 0; border-top-width: 3px; }` : ""}
-  ${shaped ? `${selector}::before { content:""; position:absolute; inset:0; z-index:-1; background:${t.background}; clip-path:${polygon}; }` : ""}
+  ${design.style === "segmented" ? `${selector} .mzk-toolbar__action-item { box-shadow: inset 0 0 0 1px ${t.border}; border-radius: ${g.radius}px; background: ${t.hover}; }` : ""}
+  ${design.style === "edge" ? `${selector} { border-inline: 0; border-bottom: 0; border-top-width: ${a.borderWidth}px; }` : ""}
+  ${shaped ? `${selector}::before { content:""; position:absolute; inset:0; z-index:-1; box-sizing:border-box; border:${a.borderWidth}px solid ${t.border}; background:color-mix(in srgb, ${t.background} ${a.opacity}%, transparent); clip-path:${polygon}; }` : ""}
+  @media (max-width:700px) { ${selector} { gap:min(${g.gap}px, 2px); padding-inline:${shaped ? 10 : 6}px; } }
   @media (prefers-reduced-motion: reduce) { ${selector} { transition: none; } }`;
 }
 
@@ -626,6 +636,8 @@ export function decorateToolbar(
   allowed: readonly string[],
   editing = false,
 ): void {
+  const focused = root.ownerDocument.activeElement;
+  let restoreFocus = false;
   for (const action of design.actions) {
     const button = root.querySelector<HTMLButtonElement>(
       `[data-toolbar-control="action:${action.id}"]`,
@@ -635,10 +647,22 @@ export function decorateToolbar(
     button.dataset.icon = ICONS[action.icon];
     button.disabled =
       editing || !action.enabled || !allowed.includes(action.command);
+    if (button.disabled) {
+      button.tabIndex = -1;
+      restoreFocus ||= button === focused;
+    }
     button.title = button.disabled
       ? `${action.tooltip} — unavailable in the current host context`
       : action.tooltip;
   }
+  const enabled = [
+    ...root.querySelectorAll<HTMLButtonElement>(
+      '[role="toolbar"] button:not(:disabled)',
+    ),
+  ];
+  if (!enabled.some((button) => button.tabIndex === 0) && enabled[0])
+    enabled[0].tabIndex = 0;
+  if (restoreFocus) enabled.find((button) => button.tabIndex === 0)?.focus();
 }
 
 export async function generateDesignProject(
@@ -657,10 +681,12 @@ export async function generateDesignProject(
   const allowed = COMMANDS.filter(
     ({ application }) => application === design.application,
   ).map(({ id }) => id);
-  const presentation = `import design from "./playground.design.js";
+  const presentation = `const design = ${JSON.stringify(design)};
 const allowed = ${JSON.stringify(allowed)};
-export function present(root) {
+function present(root) {
   function refresh() {
+  const focused = document.activeElement;
+  let restoreFocus = false;
   for (const action of design.actions) {
     const button = [...root.querySelectorAll("[data-toolbar-control]")].find(button => button.getAttribute("data-toolbar-control") === "action:" + action.id);
     if (!button) continue;
@@ -668,7 +694,14 @@ export function present(root) {
     button.title = action.tooltip;
     button.dataset.icon = ${JSON.stringify(ICONS)}[action.icon];
     button.disabled = !action.enabled || !allowed.includes(action.command);
+    if (button.disabled) {
+      button.tabIndex = -1;
+      restoreFocus ||= button === focused;
+    }
   }
+  const enabled = [...root.querySelectorAll('[role="toolbar"] button:not(:disabled)')];
+  if (!enabled.some(button => button.tabIndex === 0) && enabled[0]) enabled[0].tabIndex = 0;
+  if (restoreFocus) enabled.find(button => button.tabIndex === 0)?.focus();
   }
   refresh();
   const observer = new MutationObserver(refresh);
@@ -682,31 +715,29 @@ export function present(root) {
       if (file.path === "style.css")
         return {
           ...file,
-          content: `${file.content}\n#toolbar { position:relative; min-height:200px; }\n${presentationCSS(design, "#toolbar", scheme)}\n`,
+          content: `${file.content}\n#toolbar { position:relative; min-height:${Math.max(200, design.geometry.height + design.geometry.offsetY + 96)}px; }\n${presentationCSS(design, "#toolbar", scheme)}\n`,
         };
-      if (file.path === "app.js")
+      if (file.path === "app.js") {
+        if (!file.content.includes("  return toolbar;"))
+          throw new Error(
+            "Unsupported generator lifecycle template. Presentation export was not produced.",
+          );
         return {
           ...file,
-          content: `import { present } from "./presentation.js";\n${file.content.replace("  return toolbar;", "  present(target);\n  return toolbar;")}`,
+          content: `${presentation}\n${file.content.replace("  return toolbar;", "  present(target);\n  return toolbar;")}`,
         };
+      }
       if (file.path === "README.md")
         return {
           ...file,
-          content: `${file.content}\n## Playground design\n\nplayground.design.json is the portable portal design (not the SDK configuration).\nstyle.css and presentation.js reproduce its validated geometry, colors, labels and icons.\nThe starter demonstrates host dispatch; the four Playground sample applications are not included.\nThe host must authorize real commands. Disabled/incompatible commands stay disabled.\nKeep custom presentation files and the integrity manifest when reviewing an upgrade.\n`,
+          content: `${file.content}\n## Playground design\n\nplayground.design.json is the portable portal design (not the SDK configuration).\nstyle.css and presentation code in app.js reproduce validated geometry, colors, labels and icons.\nPresentation is inlined to preserve the generator server's narrow public-file allowlist.\nThe starter demonstrates host dispatch; the four Playground sample applications are not included.\nThe host must authorize real commands. Disabled/incompatible commands stay disabled.\nKeep custom presentation files and the integrity manifest when reviewing an upgrade.\nThe CSS names DM Sans with a system fallback. For identical typography, copy the portal's separately OFL-licensed fonts and notices into your host and declare local font faces.\n`,
         };
       return file;
     });
-  files.push(
-    {
-      path: "playground.design.json",
-      content: JSON.stringify(design, null, 2),
-    },
-    {
-      path: "playground.design.js",
-      content: `export default ${JSON.stringify(design, null, 2)};\n`,
-    },
-    { path: "presentation.js", content: presentation },
-  );
+  files.push({
+    path: "playground.design.json",
+    content: JSON.stringify(design, null, 2),
+  });
   const integrity = Object.fromEntries(
     await Promise.all(
       files.map(async (file) => [

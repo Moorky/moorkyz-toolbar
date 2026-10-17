@@ -14,6 +14,14 @@ generator/consumer CLI. **It is not release-ready:** public contracts, manual
 acceptance and release authorization remain open. See the
 [current evidence and blockers](docs/engineering/release-readiness.md).
 
+The website/Playground MVP adds four local applications, ten structural toolbar
+styles, manual light/dark design variants, geometry/action editing, browser-local
+autosave/recovery, responsive sheet/fullscreen workspaces and personalized
+Vanilla exports. The complete landing page links to a dedicated `/studio` with
+the existing real SDK labs. See the [portal guide](packages/portal/README.md) and
+[MVP implementation plan](docs/engineering/website-mvp.md). The separately
+licensed DM font assets include their SIL OFL notices; no CDN is required.
+
 ## Local development
 
 ```sh

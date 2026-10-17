@@ -30,6 +30,7 @@ export default defineConfig({
   testDir: "./tests/browser",
   testMatch: "**/*.spec.js",
   fullyParallel: true,
+  workers: process.env.CI ? 3 : undefined,
   reporter: [
     ["list"],
     ["json", { outputFile: "test-results/browser-results.json" }],

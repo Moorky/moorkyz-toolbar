@@ -5,14 +5,15 @@ const port =
   process.env.MOORKYZ_TOOLBAR_PORTAL_PORT ??
   process.env.PORTAL_TEST_PORT ??
   "4174";
-const url = `http://127.0.0.1:${port}`;
+const origin = `http://127.0.0.1:${port}`;
+const url = `${origin}/studio`;
 
 test("Studio synchronizes flags and JSON, confirms replacements and clears optional UI", async ({
   page,
 }) => {
   const external = [];
   page.on("request", (request) => {
-    if (!request.url().startsWith(`${url}/`)) external.push(request.url());
+    if (!request.url().startsWith(`${origin}/`)) external.push(request.url());
   });
   await page.goto(url);
   const workbench = page.locator(".developer-workbench");

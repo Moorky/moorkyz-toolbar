@@ -241,15 +241,20 @@ export const PlaygroundApplications = forwardRef<
                 );
                 return;
               }
+              const id =
+                application === "workspace"
+                  ? nextTask.current++
+                  : nextCard.current++;
+              const itemTitle = title.trim();
               if (application === "workspace")
                 setTasks((value) => [
                   ...value,
-                  { id: nextTask.current++, title: title.trim(), done: false },
+                  { id, title: itemTitle, done: false },
                 ]);
               else
                 setCards((value) => [
                   ...value,
-                  { id: nextCard.current++, title: title.trim(), stage: 0 },
+                  { id, title: itemTitle, stage: 0 },
                 ]);
               setTitle("");
               input.current?.focus();

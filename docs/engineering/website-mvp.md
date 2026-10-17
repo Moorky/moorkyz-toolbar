@@ -6,10 +6,10 @@ MVP in the product specification, not its advanced-platform phases 4–6.
 | Slice | Acceptance | Status |
 |---|---|---|
 | Foundation | Real SDK Workspace, shared theme, history, local drafts, Vanilla generation | Implemented in `02f9601` |
-| Functional Playground | Four applications; ten structural styles; manual light/dark tokens; geometry/edit mode; action editing; validated portable design; autosave recovery | Implemented; 30 three-engine browser cases and 7 model tests pass |
-| Complete website | Ordered landing sections; local DM fonts; real capability/architecture explorers and search; dedicated working Studio; responsive sheet/fullscreen workspace; footer | Pending; depends on Playground |
-| Hardening | Full automated gates, executed generated consumers, keyboard/axe, responsive/visual tests, dependency/source/bundle/performance evidence | Pending; depends on website |
-| Acceptance audit | Evidence and known limitations, focused commits, unchanged M10/M11 holds | Pending; depends on hardening |
+| Functional Playground | Four applications; ten structural styles; manual light/dark tokens; geometry/edit mode; action editing; validated portable design; autosave recovery | Implemented in `537fb64`, with final recovery/presentation hardening in the website acceptance commit |
+| Complete website | Ordered landing sections; local DM fonts; real capability/architecture explorers and search; dedicated working Studio; responsive sheet/fullscreen workspace; footer | Implemented and verified locally |
+| Hardening | Full automated gates, executed generated consumers, keyboard/axe, responsive/visual tests, dependency/source/bundle/performance evidence | PASS: 198 Node tests, 183 browser cases, all typechecks/build/lint/format, SDK coverage, dependency/source and bundle checks |
+| Acceptance audit | Evidence and known limitations, focused commits, unchanged M10/M11 holds | Recorded in [final MVP audit](../audits/2026-10-17T06-04-23Z-website-mvp-acceptance.md); manual release gates remain on hold |
 
 ## Implementation boundaries
 
@@ -31,3 +31,18 @@ MVP in the product specification, not its advanced-platform phases 4–6.
 
 Exact commands, measurements, decisions and remaining work belong in each
 slice's task audit. Update this status from actual verification, not UI presence.
+
+## Delivered scope and remaining platform work
+
+The approved website/Playground MVP is implemented and has passed its local
+automated acceptance. This is **not** completion of every long-term item in the
+comprehensive specification. Its advanced phases explicitly remain outside this
+MVP: 16+ applications, 40+ styles, multi-project/personal style libraries,
+professional geometry/workflow/integration designers, arbitrary code sandboxes,
+additional framework generators, extensive learning and cloud/share features.
+The UI identifies those as future capabilities instead of advertising fake tools.
+
+Manual screen-reader/touch/device acceptance, independent security/release review,
+approved numerical/platform scope, distribution notices and container evidence
+are still required under M10. M11 still requires separate release authorization.
+No publishing, deployment or production-readiness claim follows from this plan.

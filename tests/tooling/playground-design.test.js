@@ -49,6 +49,7 @@ test("design boundaries reject escalation, CSS injection, inaccessible labels an
     { capabilities: ["admin"] },
     { geometry: { ...INITIAL_DESIGN.geometry, offsetY: -1 } },
     { geometry: { ...INITIAL_DESIGN.geometry, height: 20 } },
+    { geometry: { ...INITIAL_DESIGN.geometry, width: 319 } },
     {
       appearance: {
         ...INITIAL_DESIGN.appearance,
@@ -114,6 +115,10 @@ test("presentation and generated integration preserve geometry, theme and exact 
   assert.match(
     project.files.find(({ path }) => path === "app.js").content,
     /present\(target\)/,
+  );
+  assert.doesNotMatch(
+    project.files.find(({ path }) => path === "app.js").content,
+    /from "\.\/presentation\.js"|from "\.\/playground\.design\.js"/,
   );
   for (const file of project.files.filter(
     ({ path }) => path !== "moorkyz.manifest.json",

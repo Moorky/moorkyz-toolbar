@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { PortalShell } from "../components/portal-shell";
 import "./globals.css";
 import "./playground.css";
+import "./website.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://toolbar.moorkyz.com"),
@@ -71,6 +72,22 @@ export default function RootLayout({
 }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="en" data-theme="light">
+      <head>
+        <link
+          rel="preload"
+          href="/fonts/DMSans.ttf"
+          as="font"
+          type="font/ttf"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/fonts/DMMono-Regular.ttf"
+          as="font"
+          type="font/ttf"
+          crossOrigin="anonymous"
+        />
+      </head>
       <body>
         <PortalShell>{children}</PortalShell>
       </body>

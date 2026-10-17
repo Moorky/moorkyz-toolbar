@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import type { ToolbarController } from "@moorkyz/toolbar";
 import { ToolbarMount } from "@moorkyz/toolbar/react";
+import { usePortalSettings } from "./portal-shell";
 
 const scenarios = {
   default: {
@@ -41,8 +42,13 @@ const narrowActions = [
   { id: "account", label: "Account" },
 ] as const;
 
-export function ComponentLab() {
-  const [scenario, setScenario] = useState<ComponentScenario>("default");
+export function ComponentLab({
+  initialScenario = "default",
+}: {
+  readonly initialScenario?: ComponentScenario;
+}) {
+  const { theme: colorScheme } = usePortalSettings();
+  const [scenario, setScenario] = useState<ComponentScenario>(initialScenario);
   const [toolbar, setToolbar] = useState<ToolbarController | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   const [status, setStatus] = useState(
@@ -52,12 +58,13 @@ export function ComponentLab() {
   const configuration = useMemo(
     () => ({
       label: "Component lab toolbar",
+      colorScheme,
       features: { search: scenario === "search", customize: false },
       actions: scenario === "narrow" ? narrowActions : baseActions,
       placement: { mode: "container" as const },
       renderMode: "light" as const,
     }),
-    [scenario],
+    [scenario, colorScheme],
   );
   const dispatchAction = useCallback((actionId: string) => {
     setStatus(`The host received action "${actionId}".`);

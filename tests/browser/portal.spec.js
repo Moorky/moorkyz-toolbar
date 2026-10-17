@@ -34,7 +34,10 @@ test("portal mounts the actual library and updates its actions by context", asyn
   await expect(toolbar).toBeVisible();
   await expect(toolbar.getByRole("button", { name: "Explore" })).toBeVisible();
 
-  await page.getByRole("button", { name: "Dashboard" }).click();
+  await page
+    .locator(".environment-demo")
+    .getByRole("button", { name: "Dashboard" })
+    .click();
   await expect(
     page.getByRole("button", { name: "Built for control" }),
   ).toBeVisible();
@@ -69,7 +72,7 @@ test("portal theme persists locally and updates the mounted dock tokens", async 
 test("visual configurator validates drafts before applying a real preview", async ({
   page,
 }) => {
-  await page.goto(portalUrl);
+  await page.goto(`${portalUrl}/studio`);
   expect(
     await page.evaluate(() =>
       localStorage.getItem("moorkyz-toolbar:portal:visual-configurator:v1"),
@@ -119,7 +122,7 @@ test("visual configurator saves only explicit versioned local drafts", async ({
   page,
 }) => {
   const storageKey = "moorkyz-toolbar:portal:visual-configurator:v1";
-  await page.goto(portalUrl);
+  await page.goto(`${portalUrl}/studio`);
   await page.getByLabel("Action label").fill("Saved docs");
   await page.getByLabel("Theme", { exact: true }).selectOption("warm-minimal");
   expect(
@@ -188,7 +191,7 @@ test("visual configurator rejects invalid local drafts without replacing current
       }),
     );
   }, storageKey);
-  await page.goto(portalUrl);
+  await page.goto(`${portalUrl}/studio`);
 
   await page.getByRole("button", { name: "Restore local draft" }).click();
   await expect(page.locator(".configurator-storage-status")).toContainText(
@@ -213,7 +216,7 @@ test("visual configurator rejects invalid local drafts without replacing current
 test("component lab runs real overflow, search, and collapse states", async ({
   page,
 }) => {
-  await page.goto(portalUrl);
+  await page.goto(`${portalUrl}/studio`);
   const lab = page.locator("#component-lab");
   const preview = lab.getByRole("toolbar", { name: "Component lab toolbar" });
 
@@ -251,7 +254,7 @@ test("component lab runs real overflow, search, and collapse states", async ({
 test("Scenario Lab replays deterministic permission, fault, time, and viewport snapshots", async ({
   page,
 }) => {
-  await page.goto(portalUrl);
+  await page.goto(`${portalUrl}/studio`);
   const lab = page.locator("#scenario-lab");
   const toolbar = lab.getByRole("toolbar", { name: "Scenario Lab toolbar" });
   const permission = lab.getByLabel("Host allows navigation");
@@ -307,7 +310,7 @@ test("Scenario Lab replays deterministic permission, fault, time, and viewport s
 test("Theme Studio inspects built-in tokens and exports versioned validated data", async ({
   page,
 }) => {
-  await page.goto(portalUrl);
+  await page.goto(`${portalUrl}/studio`);
   const studio = page.locator("#theme-studio");
   const selection = studio.getByLabel("Built-in theme");
 

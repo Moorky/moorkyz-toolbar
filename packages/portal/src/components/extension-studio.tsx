@@ -6,6 +6,7 @@ import { ToolbarMount } from "@moorkyz/toolbar/react";
 import type { ToolbarActionDescriptor } from "@moorkyz/toolbar";
 import { validateConfiguration } from "@moorkyz/toolbar";
 import { HydrationBoundary } from "./hydration-boundary";
+import { usePortalSettings } from "./portal-shell";
 
 const RECIPE = {
   schemaVersion: "1.0",
@@ -15,6 +16,7 @@ const RECIPE = {
 };
 
 export function ExtensionStudio() {
+  const { theme: colorScheme } = usePortalSettings();
   const [source, setSource] = useState(JSON.stringify(RECIPE, null, 2));
   const [actions, setActions] = useState<readonly ToolbarActionDescriptor[]>(
     [],
@@ -32,12 +34,13 @@ export function ExtensionStudio() {
   const configuration = useMemo(
     () => ({
       label: "Trusted extension preview",
+      colorScheme,
       actions,
       features: { search: false, customize: false },
       placement: { mode: "container" as const },
       renderMode: "light" as const,
     }),
-    [actions],
+    [actions, colorScheme],
   );
   const dispatchAction = useCallback(async (id: string) => {
     const active = registry.current;
