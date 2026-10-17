@@ -76,8 +76,11 @@ test("Playground retains its original responsive gutters while other sections st
       .poll(async () => (await page.locator("#playground").boundingBox()).x)
       .toBeCloseTo(gutter, 1);
     await expect
-      .poll(() => readPageOverflowState(page))
-      .toMatchObject({ fits: true });
+      .poll(async () => {
+        const state = await readPageOverflowState(page);
+        return state.fits ? true : state;
+      })
+      .toBe(true);
   }
 });
 
@@ -108,8 +111,11 @@ for (const route of ["/", "/studio", "/contributing"]) {
         await page.setViewportSize({ width, height: 900 });
         await waitForViewportPaint(page);
         await expect
-          .poll(() => readPageOverflowState(page))
-          .toMatchObject({ fits: true });
+          .poll(async () => {
+            const state = await readPageOverflowState(page);
+            return state.fits ? true : state;
+          })
+          .toBe(true);
         await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
         await expect(page.locator("body")).toHaveAttribute("data-theme", theme);
         await waitForViewportPaint(page);
@@ -154,8 +160,11 @@ test("large text reflows without horizontal page overflow and keeps the search d
     });
     await waitForViewportPaint(page);
     await expect
-      .poll(() => readPageOverflowState(page))
-      .toMatchObject({ fits: true });
+      .poll(async () => {
+        const state = await readPageOverflowState(page);
+        return state.fits ? true : state;
+      })
+      .toBe(true);
     await page
       .getByRole("button", {
         name: "Search documentation and navigation",

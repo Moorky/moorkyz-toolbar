@@ -73,8 +73,11 @@ test("header uses the supplied logo at the current size without clipping respons
         parent.y + parent.height + 1,
       );
       await expect
-        .poll(() => readPageOverflowState(page))
-        .toMatchObject({ fits: true });
+        .poll(async () => {
+          const state = await readPageOverflowState(page);
+          return state.fits ? true : state;
+        })
+        .toBe(true);
       await expect(
         header.getByRole("link", { name: "Playground", exact: true }),
       ).toBeVisible();
