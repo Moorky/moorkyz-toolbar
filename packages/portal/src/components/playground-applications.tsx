@@ -8,6 +8,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type ReactNode,
 } from "react";
 import {
   APPLICATIONS,
@@ -44,9 +45,10 @@ export const PlaygroundApplications = forwardRef<
     readonly contextual: boolean;
     readonly onStatus: (message: string) => void;
     readonly onAvailable: (commands: readonly string[]) => void;
+    readonly children?: ReactNode;
   }
 >(function PlaygroundApplications(
-  { application, contextual, onStatus, onAvailable },
+  { application, contextual, onStatus, onAvailable, children },
   ref,
 ) {
   const [tasks, setTasks] = useState(INITIAL_TASKS);
@@ -244,225 +246,234 @@ export const PlaygroundApplications = forwardRef<
         </span>
         <span>Interactive local sample</span>
       </div>
-      <div className="workspace-app-content">
-        {application === "workspace" && (
-          <>
-            <p className="eyebrow">TODAY&apos;S FOCUS</p>
-            <h3>A little room to do good work.</h3>
-            <p>
-              {tasks.filter(({ done }) => !done).length} open tasks · local
-              sample data
-            </p>
-          </>
-        )}
-        {application === "board" && (
-          <>
-            <p className="eyebrow">A SMALL TEAM, CLEAR NEXT STEPS</p>
-            <h3>Make progress visible.</h3>
-            <p>Select a card to enable its contextual toolbar command.</p>
-          </>
-        )}
-        {(application === "workspace" || application === "board") && (
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (!title.trim()) {
-                onStatus("Enter a title before adding an item.");
-                return;
-              }
-              if ((application === "workspace" ? tasks : cards).length >= 50) {
+      <div className="playground-stage">
+        <div className="workspace-app-content">
+          {application === "workspace" && (
+            <>
+              <p className="eyebrow">TODAY&apos;S FOCUS</p>
+              <h3>A little room to do good work.</h3>
+              <p>
+                {tasks.filter(({ done }) => !done).length} open tasks · local
+                sample data
+              </p>
+            </>
+          )}
+          {application === "board" && (
+            <>
+              <p className="eyebrow">A SMALL TEAM, CLEAR NEXT STEPS</p>
+              <h3>Make progress visible.</h3>
+              <p>Select a card to enable its contextual toolbar command.</p>
+            </>
+          )}
+          {(application === "workspace" || application === "board") && (
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (!title.trim()) {
+                  onStatus("Enter a title before adding an item.");
+                  return;
+                }
+                if (
+                  (application === "workspace" ? tasks : cards).length >= 50
+                ) {
+                  onStatus(
+                    "This local demonstration supports up to 50 items. Archive completed work or reset the sample.",
+                  );
+                  return;
+                }
+                const id =
+                  application === "workspace"
+                    ? nextTask.current++
+                    : nextCard.current++;
+                const itemTitle = title.trim();
+                if (application === "workspace")
+                  setTasks((value) => [
+                    ...value,
+                    { id, title: itemTitle, done: false },
+                  ]);
+                else
+                  setCards((value) => [
+                    ...value,
+                    { id, title: itemTitle, stage: 0 },
+                  ]);
+                setTitle("");
+                input.current?.focus();
                 onStatus(
-                  "This local demonstration supports up to 50 items. Archive completed work or reset the sample.",
-                );
-                return;
-              }
-              const id =
-                application === "workspace"
-                  ? nextTask.current++
-                  : nextCard.current++;
-              const itemTitle = title.trim();
-              if (application === "workspace")
-                setTasks((value) => [
-                  ...value,
-                  { id, title: itemTitle, done: false },
-                ]);
-              else
-                setCards((value) => [
-                  ...value,
-                  { id, title: itemTitle, stage: 0 },
-                ]);
-              setTitle("");
-              input.current?.focus();
-              onStatus(
-                "Item added to the local application. Application contents are not persisted.",
-              );
-            }}
-          >
-            <label className="sr-only" htmlFor="workspace-task">
-              {application === "workspace"
-                ? "New task title"
-                : "New card title"}
-            </label>
-            <input
-              ref={input}
-              id="workspace-task"
-              value={title}
-              placeholder="What needs your attention?"
-              maxLength={100}
-              onChange={(event) => setTitle(event.currentTarget.value)}
-            />
-            <button type="submit">
-              {application === "workspace" ? "Add task" : "Add card"}
-            </button>
-          </form>
-        )}
-        {application === "workspace" && (
-          <>
-            <ul className="workspace-tasks" aria-label="Workspace tasks">
-              {tasks
-                .filter(({ done }) => showCompleted || !done)
-                .map((task) => (
-                  <li key={task.id}>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={task.done}
-                        onChange={() =>
-                          setTasks((value) =>
-                            value.map((entry) =>
-                              entry.id === task.id
-                                ? { ...entry, done: !entry.done }
-                                : entry,
-                            ),
-                          )
-                        }
-                      />
-                      <span className={task.done ? "task-complete" : undefined}>
-                        {task.title}
-                      </span>
-                    </label>
-                    <span>{task.done ? "Done" : "To do"}</span>
-                  </li>
-                ))}
-            </ul>
-            {tasks.filter(({ done }) => showCompleted || !done).length ===
-              0 && (
-              <p>No tasks in this view. Add a task or show completed work.</p>
-            )}
-          </>
-        )}
-        {application === "document" && (
-          <>
-            <p className="eyebrow">DOCUMENT / DRAFT</p>
-            <h3>Good tools stay out of your way.</h3>
-            <label htmlFor="playground-document">Document content</label>
-            <textarea
-              ref={documentInput}
-              id="playground-document"
-              rows={9}
-              value={documentText}
-              maxLength={10000}
-              onChange={(event) => {
-                updateDocument(event.currentTarget.value);
-                setSelection({
-                  start: event.currentTarget.selectionStart,
-                  end: event.currentTarget.selectionEnd,
-                });
-              }}
-              onSelect={(event) => {
-                const { selectionStart: start, selectionEnd: end } =
-                  event.currentTarget;
-                setSelection((current) =>
-                  current.start === start && current.end === end
-                    ? current
-                    : { start, end },
+                  "Item added to the local application. Application contents are not persisted.",
                 );
               }}
-            />
-            <p>
-              {selection.end - selection.start} characters selected.{" "}
-              {contextual
-                ? "Uppercase selection is disabled until text is selected."
-                : "Context gating is off: uppercase applies to the whole document if nothing is selected."}
-            </p>
-          </>
-        )}
-        {application === "analytics" && (
-          <>
-            <p className="eyebrow">REVENUE / {period.toUpperCase()}</p>
-            <h3>{currency.format(total)}</h3>
-            <p>
-              {enterprise ? "Enterprise segment" : "All segments"} ·{" "}
-              {descending ? "Revenue, high to low" : "Name, A–Z"}
-            </p>
-            <svg
-              className="analytics-chart"
-              viewBox="0 0 440 120"
-              role="img"
-              aria-label={`Revenue chart for ${period}; ${rows.length} products`}
             >
-              {rows.map((row, index) => (
-                <g key={row.name}>
-                  <rect
-                    x={index * 106 + 10}
-                    y={108 - row[period] / 100}
-                    width={72}
-                    height={row[period] / 100}
-                    rx={4}
-                  />
-                  <text x={index * 106 + 10} y={119}>
-                    {row.name}
-                  </text>
-                </g>
-              ))}
-            </svg>
-            <table>
-              <caption>Local sample revenue</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Product</th>
-                  <th scope="col">Segment</th>
-                  <th scope="col">Revenue</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr key={row.name}>
-                    <th scope="row">{row.name}</th>
-                    <td>{row.segment}</td>
-                    <td>{currency.format(row[period])}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </>
-        )}
-        {application === "board" && (
-          <div className="project-board">
-            {STAGES.map((stage, index) => (
-              <section key={stage} aria-label={stage}>
-                <h4>{stage}</h4>
-                {cards
-                  .filter((card) => card.stage === index)
-                  .map((card) => (
-                    <label className="board-card" key={card.id}>
-                      <input
-                        type="radio"
-                        name="selected-card"
-                        checked={selectedCard === card.id}
-                        onChange={() => setSelectedCard(card.id)}
-                      />
-                      <span>{card.title}</span>
-                    </label>
+              <label className="sr-only" htmlFor="workspace-task">
+                {application === "workspace"
+                  ? "New task title"
+                  : "New card title"}
+              </label>
+              <input
+                ref={input}
+                id="workspace-task"
+                value={title}
+                placeholder="What needs your attention?"
+                maxLength={100}
+                onChange={(event) => setTitle(event.currentTarget.value)}
+              />
+              <button type="submit">
+                {application === "workspace" ? "Add task" : "Add card"}
+              </button>
+            </form>
+          )}
+          {application === "workspace" && (
+            <>
+              <ul className="workspace-tasks" aria-label="Workspace tasks">
+                {tasks
+                  .filter(({ done }) => showCompleted || !done)
+                  .map((task) => (
+                    <li key={task.id}>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={task.done}
+                          onChange={() =>
+                            setTasks((value) =>
+                              value.map((entry) =>
+                                entry.id === task.id
+                                  ? { ...entry, done: !entry.done }
+                                  : entry,
+                              ),
+                            )
+                          }
+                        />
+                        <span
+                          className={task.done ? "task-complete" : undefined}
+                        >
+                          {task.title}
+                        </span>
+                      </label>
+                      <span>{task.done ? "Done" : "To do"}</span>
+                    </li>
                   ))}
-                {cards.every((card) => card.stage !== index) && <p>No cards</p>}
-              </section>
-            ))}
-          </div>
-        )}
-        <button type="button" className="workspace-reset" onClick={reset}>
-          Reset sample {application === "workspace" ? "tasks" : "application"}
-        </button>
+              </ul>
+              {tasks.filter(({ done }) => showCompleted || !done).length ===
+                0 && (
+                <p>No tasks in this view. Add a task or show completed work.</p>
+              )}
+            </>
+          )}
+          {application === "document" && (
+            <>
+              <p className="eyebrow">DOCUMENT / DRAFT</p>
+              <h3>Good tools stay out of your way.</h3>
+              <label htmlFor="playground-document">Document content</label>
+              <textarea
+                ref={documentInput}
+                id="playground-document"
+                rows={9}
+                value={documentText}
+                maxLength={10000}
+                onChange={(event) => {
+                  updateDocument(event.currentTarget.value);
+                  setSelection({
+                    start: event.currentTarget.selectionStart,
+                    end: event.currentTarget.selectionEnd,
+                  });
+                }}
+                onSelect={(event) => {
+                  const { selectionStart: start, selectionEnd: end } =
+                    event.currentTarget;
+                  setSelection((current) =>
+                    current.start === start && current.end === end
+                      ? current
+                      : { start, end },
+                  );
+                }}
+              />
+              <p>
+                {selection.end - selection.start} characters selected.{" "}
+                {contextual
+                  ? "Uppercase selection is disabled until text is selected."
+                  : "Context gating is off: uppercase applies to the whole document if nothing is selected."}
+              </p>
+            </>
+          )}
+          {application === "analytics" && (
+            <>
+              <p className="eyebrow">REVENUE / {period.toUpperCase()}</p>
+              <h3>{currency.format(total)}</h3>
+              <p>
+                {enterprise ? "Enterprise segment" : "All segments"} ·{" "}
+                {descending ? "Revenue, high to low" : "Name, A–Z"}
+              </p>
+              <svg
+                className="analytics-chart"
+                viewBox="0 0 440 120"
+                role="img"
+                aria-label={`Revenue chart for ${period}; ${rows.length} products`}
+              >
+                {rows.map((row, index) => (
+                  <g key={row.name}>
+                    <rect
+                      x={index * 106 + 10}
+                      y={108 - row[period] / 100}
+                      width={72}
+                      height={row[period] / 100}
+                      rx={4}
+                    />
+                    <text x={index * 106 + 10} y={119}>
+                      {row.name}
+                    </text>
+                  </g>
+                ))}
+              </svg>
+              <table>
+                <caption>Local sample revenue</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Product</th>
+                    <th scope="col">Segment</th>
+                    <th scope="col">Revenue</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row) => (
+                    <tr key={row.name}>
+                      <th scope="row">{row.name}</th>
+                      <td>{row.segment}</td>
+                      <td>{currency.format(row[period])}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
+          {application === "board" && (
+            <div className="project-board">
+              {STAGES.map((stage, index) => (
+                <section key={stage} aria-label={stage}>
+                  <h4>{stage}</h4>
+                  {cards
+                    .filter((card) => card.stage === index)
+                    .map((card) => (
+                      <label className="board-card" key={card.id}>
+                        <input
+                          type="radio"
+                          name="selected-card"
+                          checked={selectedCard === card.id}
+                          onChange={() => setSelectedCard(card.id)}
+                        />
+                        <span>{card.title}</span>
+                      </label>
+                    ))}
+                  {cards.every((card) => card.stage !== index) && (
+                    <p>No cards</p>
+                  )}
+                </section>
+              ))}
+            </div>
+          )}
+          <button type="button" className="workspace-reset" onClick={reset}>
+            Reset sample {application === "workspace" ? "tasks" : "application"}
+          </button>
+        </div>
+        {children}
       </div>
     </>
   );

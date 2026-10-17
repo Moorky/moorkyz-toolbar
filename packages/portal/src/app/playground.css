@@ -254,6 +254,13 @@ body:has(#playground-workspace[data-focus="true"]) {
   border-end-end-radius: 0.75rem;
   background: var(--surface-muted);
   color: var(--ink);
+  overflow: clip;
+}
+.playground-stage {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
 }
 
 .workspace-app-header {
@@ -274,8 +281,7 @@ body:has(#playground-workspace[data-focus="true"]) {
   width: 100%;
   max-width: 50rem;
   overflow-y: auto;
-  padding: clamp(1rem, 2vw, 1.5rem) clamp(1rem, 3vw, 2.5rem)
-    var(--preview-toolbar-space, 7rem);
+  padding: clamp(1rem, 2vw, 1.5rem) clamp(1rem, 3vw, 2.5rem) 1rem;
   margin-inline: auto;
 }
 
@@ -353,10 +359,17 @@ body:has(#playground-workspace[data-focus="true"]) {
   position: static;
 }
 .playground-toolbar[data-anchor="bottom"] {
+  position: relative;
+  height: var(--preview-toolbar-space, 6rem);
+  flex-shrink: 0;
+}
+.playground-toolbar[data-anchor="bottom"][data-sticky="true"] {
   position: sticky;
   bottom: max(5.5rem, calc(5rem + env(safe-area-inset-bottom, 0px)));
-  height: 0;
-  flex-shrink: 0;
+}
+.playground-toolbar[data-visible="false"] {
+  visibility: hidden;
+  pointer-events: none;
 }
 .playground-application[data-toolbar-position="top"] .workspace-app-content {
   padding-block-start: var(--preview-toolbar-space, 7rem);

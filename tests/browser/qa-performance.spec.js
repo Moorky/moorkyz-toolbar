@@ -113,6 +113,11 @@ test("record local web-vital, payload and user-journey observations without fiel
   }
   await page.goto(origin);
   const playground = page.locator("#playground");
+  await page
+    .locator("#playground-canvas")
+    .evaluate((element) =>
+      element.scrollIntoView({ block: "start", behavior: "instant" }),
+    );
   await expect(playground.getByRole("toolbar")).toBeVisible();
   async function journey(name, action) {
     const start = await page.evaluate(() => performance.now());

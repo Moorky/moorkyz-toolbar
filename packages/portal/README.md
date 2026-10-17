@@ -85,13 +85,23 @@ Explorer, open source, final CTAs and two-tier footer. The adaptive header and
 working SDK page-navigation dock remain keyboard reachable. Ctrl/Cmd K opens
 local reference/navigation search without overriding inputs/editors or reserved
 modified shortcuts.
-The header logo renders at 56px square using the existing 192px branding asset
-for sharp display; the image's fixed dimensions reserve its layout space.
+The header uses the supplied 512px artwork in a fixed 112x56px frame. Centered
+cover rendering trims the image's empty top/bottom canvas so the mark itself is
+larger, without stretching the artwork or making the header unnecessarily tall.
 
 The Playground retains its original responsive outer gutters; the rest of the
-website retains its shared content alignment. Its bottom toolbar stays clear of the page dock while
-scrolling, without changing saved geometry. Top-anchor movement and centered X
+website retains its shared content alignment. Its bottom toolbar uses a real
+application footer, clipped to its own stage, and stays clear of the page dock
+while scrolling. A frame-coalesced visibility guard makes clipped controls inert,
+including short windows and delayed SDK mounts. These portal-only observers and
+listeners are released on unmount; saved geometry is not changed. Top-anchor movement and centered X
 offsets match their numeric values.
+
+Page-dock customization remains available independently of the Playground
+sidebar. The Next.js development indicator is disabled through the supported
+`devIndicators: false` setting: under strict CSP its unstyled development button
+could otherwise appear as a blank grey box. Compile/runtime diagnostics remain
+available; no CSP permission has been loosened.
 
 Only the expanded editor panel acquires controls. Code generation has a separate
 memoized lifecycle, visible errors and explicit retry. Blocked clipboard or

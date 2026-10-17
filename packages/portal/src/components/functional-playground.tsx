@@ -14,6 +14,7 @@ import { validateThemeTokens, type ToolbarController } from "@moorkyz/toolbar";
 import { ToolbarMount } from "@moorkyz/toolbar/react";
 import { PersonalizedQuickStart } from "./personalized-quickstart";
 import { downloadJSON } from "./download-json";
+import { usePreviewDockVisibility } from "./use-preview-dock-visibility";
 import { usePortalSettings } from "./portal-shell";
 import { HydrationBoundary } from "./hydration-boundary";
 import {
@@ -268,6 +269,7 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
     [],
   );
   const appStatus = useCallback((message: string) => setStatus(message), []);
+  const dock = usePreviewDockVisibility(mount, preview.geometry, focus);
   useLayoutEffect(() => {
     const panel = sidebar.current;
     const selected = panel?.querySelector<HTMLButtonElement>(
@@ -1761,89 +1763,93 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
               contextual={current.contextual}
               onStatus={appStatus}
               onAvailable={onAvailable}
-            />
-            {editMode && (
-              <div className="geometry-handles">
-                <p>Edit Mode · commands paused</p>
-                {(["move", "resize"] as const).map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    disabled={source !== null}
-                    onPointerDown={(event) => startDrag(event, type)}
-                    {...dragEvents}
-                    onKeyDown={(event) => {
-                      if (
-                        ![
-                          "ArrowLeft",
-                          "ArrowRight",
-                          "ArrowUp",
-                          "ArrowDown",
-                        ].includes(event.key)
-                      )
-                        return;
-                      event.preventDefault();
-                      if (type === "resize")
-                        geometry({
-                          width: Math.max(
-                            320,
-                            Math.min(
-                              1100,
-                              Math.round(
-                                current.geometry.width ||
-                                  mount.current
-                                    ?.querySelector(".mzk-toolbar")
-                                    ?.getBoundingClientRect().width ||
-                                  400,
-                              ) + (event.key === "ArrowLeft" ? -16 : 16),
+            >
+              {editMode && (
+                <div className="geometry-handles">
+                  <p>Edit Mode · commands paused</p>
+                  {(["move", "resize"] as const).map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      disabled={source !== null}
+                      onPointerDown={(event) => startDrag(event, type)}
+                      {...dragEvents}
+                      onKeyDown={(event) => {
+                        if (
+                          ![
+                            "ArrowLeft",
+                            "ArrowRight",
+                            "ArrowUp",
+                            "ArrowDown",
+                          ].includes(event.key)
+                        )
+                          return;
+                        event.preventDefault();
+                        if (type === "resize")
+                          geometry({
+                            width: Math.max(
+                              320,
+                              Math.min(
+                                1100,
+                                Math.round(
+                                  current.geometry.width ||
+                                    mount.current
+                                      ?.querySelector(".mzk-toolbar")
+                                      ?.getBoundingClientRect().width ||
+                                    400,
+                                ) + (event.key === "ArrowLeft" ? -16 : 16),
+                              ),
                             ),
-                          ),
-                        });
-                      else
-                        geometry({
-                          offsetX: Math.max(
-                            -128,
-                            Math.min(
-                              128,
-                              current.geometry.offsetX +
-                                (event.key === "ArrowLeft"
-                                  ? -8
-                                  : event.key === "ArrowRight"
-                                    ? 8
-                                    : 0),
+                          });
+                        else
+                          geometry({
+                            offsetX: Math.max(
+                              -128,
+                              Math.min(
+                                128,
+                                current.geometry.offsetX +
+                                  (event.key === "ArrowLeft"
+                                    ? -8
+                                    : event.key === "ArrowRight"
+                                      ? 8
+                                      : 0),
+                              ),
                             ),
-                          ),
-                          offsetY: Math.max(
-                            0,
-                            Math.min(
-                              120,
-                              current.geometry.offsetY +
-                                (event.key === "ArrowUp"
-                                  ? -8
-                                  : event.key === "ArrowDown"
-                                    ? 8
-                                    : 0) *
-                                  (current.geometry.position === "top"
-                                    ? 1
-                                    : -1),
+                            offsetY: Math.max(
+                              0,
+                              Math.min(
+                                120,
+                                current.geometry.offsetY +
+                                  (event.key === "ArrowUp"
+                                    ? -8
+                                    : event.key === "ArrowDown"
+                                      ? 8
+                                      : 0) *
+                                    (current.geometry.position === "top"
+                                      ? 1
+                                      : -1),
+                              ),
                             ),
-                          ),
-                        });
-                    }}
-                  >
-                    {type === "move" ? "Move toolbar" : "Resize toolbar"}
-                  </button>
-                ))}
-              </div>
-            )}
-            <ToolbarMount
-              className="playground-toolbar"
-              data-anchor={preview.geometry.position}
-              configuration={initialConfiguration}
-              host={host}
-              onController={onController}
-              onMountError={onMountError}
-            />
+                          });
+                      }}
+                    >
+                      {type === "move" ? "Move toolbar" : "Resize toolbar"}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <ToolbarMount
+                className="playground-toolbar"
+                data-anchor={preview.geometry.position}
+                data-sticky={dock.sticky}
+                data-visible={dock.visible}
+                inert={!dock.visible}
+                configuration={initialConfiguration}
+                host={host}
+                onController={onController}
+                onMountError={onMountError}
+              />
+            </PlaygroundApplications>
           </div>
         </div>
         {!focus && (

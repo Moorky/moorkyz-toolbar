@@ -16,6 +16,13 @@ body,
 body .mzk-toolbar-host {
   font-family: "DM Sans", system-ui, sans-serif;
 }
+.header-logo {
+  width: 112px;
+  height: 56px;
+  flex: 0 0 112px;
+  object-fit: cover;
+  object-position: center;
+}
 code,
 pre,
 kbd,

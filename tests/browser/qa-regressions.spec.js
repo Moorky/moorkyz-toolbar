@@ -57,6 +57,11 @@ test("unapplied JSON warns before reload and deliberate discard restores normal 
     .getByRole("button", { name: "Discard JSON edits", exact: true })
     .click();
   await page.reload();
+  await page
+    .locator("#playground-canvas")
+    .evaluate((element) =>
+      element.scrollIntoView({ block: "start", behavior: "instant" }),
+    );
   await expect(playground.getByRole("toolbar")).toBeVisible();
 });
 
@@ -93,6 +98,11 @@ async function open(page, width = 1440, height = 1000) {
   await page.setViewportSize({ width, height });
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto(origin);
+  await page
+    .locator("#playground-canvas")
+    .evaluate((element) =>
+      element.scrollIntoView({ block: "start", behavior: "instant" }),
+    );
   const playground = page.locator("#playground");
   await expect(
     playground.getByRole("button", { name: "Save locally" }),

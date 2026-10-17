@@ -17,6 +17,11 @@ const autoKey = `${designKey}:autosave`;
 async function open(page) {
   await page.goto(url);
   const playground = page.locator("#playground");
+  await page
+    .locator("#playground-canvas")
+    .evaluate((element) =>
+      element.scrollIntoView({ block: "start", behavior: "instant" }),
+    );
   await expect(playground.getByRole("toolbar")).toBeVisible();
   await expect(
     playground.getByRole("button", { name: "Save locally" }),
@@ -351,6 +356,11 @@ test("manual theme variants synchronize without destroying custom settings or ac
     .click();
   await page.getByRole("button", { name: "Switch to dark theme" }).focus();
   await page.getByRole("button", { name: "Switch to dark theme" }).click();
+  await page
+    .locator("#playground-canvas")
+    .evaluate((element) =>
+      element.scrollIntoView({ block: "start", behavior: "instant" }),
+    );
   await expect(playground.getByRole("toolbar")).toHaveAttribute(
     "data-color-scheme",
     "dark",
@@ -512,6 +522,11 @@ test("storage failures are explicit and do not prevent real toolbar actions", as
   await expect(playground.locator(".playground-status")).toContainText(
     "Could not save",
   );
+  await page
+    .locator("#playground-canvas")
+    .evaluate((element) =>
+      element.scrollIntoView({ block: "start", behavior: "instant" }),
+    );
   await playground
     .getByRole("toolbar")
     .getByRole("button", { name: "New task", exact: true })
@@ -593,6 +608,11 @@ test("mobile preview-first sheet, code view, keyboard resizing and fullscreen pr
   await playground
     .getByRole("button", { name: "preview", exact: true })
     .click();
+  await page
+    .locator("#playground-canvas")
+    .evaluate((element) =>
+      element.scrollIntoView({ block: "start", behavior: "instant" }),
+    );
   await playground
     .getByRole("button", { name: "Fullscreen preview", exact: true })
     .click();
@@ -607,6 +627,15 @@ test("mobile preview-first sheet, code view, keyboard resizing and fullscreen pr
   await expect(page.locator("#playground-workspace")).toHaveAttribute(
     "data-focus",
     "false",
+  );
+  await page
+    .locator("#playground-canvas")
+    .evaluate((element) =>
+      element.scrollIntoView({ block: "start", behavior: "instant" }),
+    );
+  await expect(playground.locator(".playground-toolbar")).toHaveAttribute(
+    "data-visible",
+    "true",
   );
   await expect
     .poll(() =>

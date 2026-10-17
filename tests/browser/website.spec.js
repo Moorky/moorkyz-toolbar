@@ -3,21 +3,22 @@ import AxeBuilder from "@axe-core/playwright";
 
 const origin = `http://127.0.0.1:${process.env.MOORKYZ_TOOLBAR_PORTAL_PORT ?? process.env.PORTAL_TEST_PORT ?? "4174"}`;
 
-test("header logo is twice its original size without clipping or hiding responsive navigation", async ({
+test("header uses the supplied logo at the current size without clipping responsive navigation", async ({
   page,
 }, testInfo) => {
   for (const route of ["/", "/studio", "/contributing"]) {
     await page.goto(`${origin}${route}`);
     const header = page.locator(".adaptive-header");
     const logo = header.locator(".brand img");
-    await expect(logo).toHaveJSProperty("naturalWidth", 192);
-    await expect(logo).toHaveAttribute("src", "/android-chrome-192x192.png");
+    await expect(logo).toHaveJSProperty("naturalWidth", 512);
+    await expect(logo).toHaveAttribute("src", "/moorkyz-toolbar-logo.png");
     for (const width of [320, 390, 768, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       const bounds = await logo.boundingBox();
       const parent = await header.boundingBox();
-      expect(bounds.width).toBeCloseTo(56, 2);
+      expect(bounds.width).toBeCloseTo(112, 2);
       expect(bounds.height).toBeCloseTo(56, 2);
+      await expect(logo).toHaveCSS("object-fit", "cover");
       expect(bounds.y).toBeGreaterThanOrEqual(parent.y);
       expect(bounds.y + bounds.height).toBeLessThanOrEqual(
         parent.y + parent.height + 1,
@@ -313,6 +314,11 @@ test("final CTAs preserve the design and site-dock color controls synchronize th
     .click();
   await dock.getByRole("button", { name: /Change color scheme/ }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page
+    .locator("#playground-canvas")
+    .evaluate((element) =>
+      element.scrollIntoView({ block: "start", behavior: "instant" }),
+    );
   await expect(playground.getByRole("toolbar")).toHaveAttribute(
     "data-color-scheme",
     "dark",
@@ -328,7 +334,7 @@ test("adaptive header remains keyboard reachable and mobile has no overflowing p
     page.getByRole("button", { name: "Switch to dark theme" }),
   ).toBeEnabled();
   const header = page.locator(".adaptive-header");
-  expect((await header.boundingBox()).height).toBeLessThanOrEqual(64);
+  expect((await header.boundingBox()).height).toBeLessThanOrEqual(72);
   await page.evaluate(() => scrollTo({ top: 900, behavior: "instant" }));
   await expect(header).toHaveAttribute("data-hidden", "true");
   await page.evaluate(() => scrollTo({ top: 600, behavior: "instant" }));

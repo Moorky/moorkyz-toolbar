@@ -190,8 +190,8 @@ test("local portal performance measurements are recorded without inventing appro
   for (let index = 0; index < 3; index++) {
     await page.goto(origin);
     await expect(
-      page.getByRole("toolbar", { name: "Modern Workspace toolbar" }),
-    ).toBeVisible();
+      page.locator('#playground-canvas [role="toolbar"]'),
+    ).toHaveCount(1);
     await page.evaluate(() => document.fonts.ready);
     samples.push(
       await page.evaluate(() => {
