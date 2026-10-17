@@ -4,6 +4,15 @@ import AxeBuilder from "@axe-core/playwright";
 const origin = `http://127.0.0.1:${process.env.MOORKYZ_TOOLBAR_PORTAL_PORT ?? process.env.PORTAL_TEST_PORT ?? "4174"}`;
 const widths = [320, 360, 390, 700, 701, 768, 900, 1024, 1440, 1920];
 
+async function waitForViewportPaint(page) {
+  await page.evaluate(
+    () =>
+      new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      ),
+  );
+}
+
 test("Playground retains its original responsive gutters while other sections stay aligned", async ({
   page,
 }) => {
@@ -67,6 +76,8 @@ for (const route of ["/", "/studio", "/contributing"]) {
           )
           .toBe(true);
         await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+        await expect(page.locator("body")).toHaveAttribute("data-theme", theme);
+        await waitForViewportPaint(page);
         if (width === 390 || width === 1440) {
           const scan = await new AxeBuilder({ page }).analyze();
           expect(scan.violations).toEqual([]);

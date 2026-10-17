@@ -115,8 +115,10 @@ html[data-theme="dark"] {
   --dock-hover: rgb(255 255 255 / 12%);
 }
 
-html[data-theme="dark"] body {
+html[data-theme="dark"] body,
+body[data-theme="dark"] {
   --ink: #f7f4fc;
+  color: #f7f4fc;
 }
 
 * {
@@ -125,6 +127,7 @@ html[data-theme="dark"] body {
 
 html {
   min-width: 320px;
+  overflow-x: clip;
   scroll-behavior: smooth;
   scroll-padding-top: 6rem;
 }

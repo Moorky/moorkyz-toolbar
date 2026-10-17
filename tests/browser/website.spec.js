@@ -319,10 +319,9 @@ test("final CTAs preserve the design and site-dock color controls synchronize th
     .evaluate((element) =>
       element.scrollIntoView({ block: "start", behavior: "instant" }),
     );
-  await expect(playground.getByRole("toolbar")).toHaveAttribute(
-    "data-color-scheme",
-    "dark",
-  );
+  await expect(
+    playground.locator(".playground-toolbar [role='toolbar']"),
+  ).toHaveAttribute("data-color-scheme", "dark");
 });
 
 test("adaptive header remains keyboard reachable and mobile has no overflowing panels", async ({
