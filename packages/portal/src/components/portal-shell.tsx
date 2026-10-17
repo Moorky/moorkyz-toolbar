@@ -48,6 +48,10 @@ export type DemoPreset = keyof typeof presets;
 interface PortalSettings {
   readonly preset: DemoPreset;
   readonly setPreset: (preset: DemoPreset) => void;
+  readonly theme: "light" | "dark";
+  readonly toggleTheme: () => void;
+  readonly themeReady: boolean;
+  readonly themeStorageWarning: boolean;
 }
 
 const PortalSettingsContext = createContext<PortalSettings | null>(null);
@@ -60,7 +64,13 @@ export function usePortalSettings(): PortalSettings {
   return settings;
 }
 
-function ToolbarNavigation({ preset }: { readonly preset: DemoPreset }) {
+function ToolbarNavigation({
+  preset,
+  theme,
+}: {
+  readonly preset: DemoPreset;
+  readonly theme: "light" | "dark";
+}) {
   const toolbar = useRef<ToolbarController | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -130,13 +140,16 @@ function ToolbarNavigation({ preset }: { readonly preset: DemoPreset }) {
   useEffect(() => {
     const instance = toolbar.current;
     if (instance === null) return;
-    const result = instance.update({ actions: presets[preset] });
+    const result = instance.update({
+      actions: presets[preset],
+      colorScheme: theme,
+    });
     if (!result.ok) {
       setError(result.error.message);
       return;
     }
     setError(null);
-  }, [preset]);
+  }, [preset, theme]);
 
   return (
     <>
@@ -160,43 +173,55 @@ function ToolbarNavigation({ preset }: { readonly preset: DemoPreset }) {
 
 export function PortalShell({ children }: Readonly<{ children: ReactNode }>) {
   const [preset, setPreset] = useState<DemoPreset>("website");
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [themeReady, setThemeReady] = useState(false);
+  const [themeStorageWarning, setThemeStorageWarning] = useState(false);
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem("moorkyz-portal-theme");
+      if (stored === "dark" || stored === "light") {
+        setTheme(stored);
+        document.documentElement.dataset.theme = stored;
+      }
+    } catch {
+      setThemeStorageWarning(true);
+    }
+    setThemeReady(true);
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    const next = theme === "light" ? "dark" : "light";
+    setTheme(next);
+    document.documentElement.dataset.theme = next;
+    try {
+      window.localStorage.setItem("moorkyz-portal-theme", next);
+      setThemeStorageWarning(false);
+    } catch {
+      setThemeStorageWarning(true);
+    }
+  }, [theme]);
 
   return (
-    <PortalSettingsContext.Provider value={{ preset, setPreset }}>
+    <PortalSettingsContext.Provider
+      value={{
+        preset,
+        setPreset,
+        theme,
+        toggleTheme,
+        themeReady,
+        themeStorageWarning,
+      }}
+    >
       {children}
-      <ToolbarNavigation preset={preset} />
+      <ToolbarNavigation preset={preset} theme={theme} />
     </PortalSettingsContext.Provider>
   );
 }
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<"light" | "dark">("light");
-  const [storageWarning, setStorageWarning] = useState(false);
-
-  useEffect(() => {
-    let storedTheme: string | null = null;
-    try {
-      storedTheme = window.localStorage.getItem("moorkyz-portal-theme");
-    } catch {
-      setStorageWarning(true);
-    }
-    if (storedTheme === "dark" || storedTheme === "light") {
-      setTheme(storedTheme);
-      document.documentElement.dataset.theme = storedTheme;
-    }
-  }, []);
-
-  function toggleTheme() {
-    const nextTheme = theme === "light" ? "dark" : "light";
-    setTheme(nextTheme);
-    document.documentElement.dataset.theme = nextTheme;
-    try {
-      window.localStorage.setItem("moorkyz-portal-theme", nextTheme);
-      setStorageWarning(false);
-    } catch {
-      setStorageWarning(true);
-    }
-  }
+  const { theme, toggleTheme, themeReady, themeStorageWarning } =
+    usePortalSettings();
 
   return (
     <span className="theme-control">
@@ -205,12 +230,13 @@ export function ThemeToggle() {
         type="button"
         aria-label={`${theme}. Switch to ${theme === "light" ? "dark" : "light"} theme`}
         aria-pressed={theme === "dark"}
+        disabled={!themeReady}
         onClick={toggleTheme}
       >
         <span aria-hidden="true">{theme === "light" ? "◐" : "☼"}</span>
         <span className="theme-toggle-label">{theme}</span>
       </button>
-      {storageWarning && (
+      {themeStorageWarning && (
         <span className="sr-only" role="status">
           Theme changed for this visit but could not be saved on this device.
         </span>

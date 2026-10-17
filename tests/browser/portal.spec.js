@@ -55,7 +55,7 @@ test("portal theme persists locally and updates the mounted dock tokens", async 
   const dockBackground = await toolbar.evaluate(
     (element) => getComputedStyle(element).backgroundColor,
   );
-  expect(dockBackground).toBe("rgba(27, 34, 29, 0.96)");
+  expect(dockBackground).toBe("rgba(20, 16, 29, 0.96)");
   const { violations } = await new AxeBuilder({ page }).analyze();
   expect(violations).toEqual([]);
 

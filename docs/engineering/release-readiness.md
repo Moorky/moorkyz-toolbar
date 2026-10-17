@@ -6,6 +6,14 @@ Moorkyz application. Public contracts remain drafts.
 
 ## Current milestone outcome
 
+The subsequent website/Playground first vertical slice adds an actual SDK-backed
+Modern Workspace and personalized Vanilla exports, not a completed website MVP.
+Its scoped checks and residual work are recorded separately in its task audit
+and the [portal README](../../packages/portal/README.md). The M10/M11 acceptance
+and authorization holds in this dossier remain unchanged; earlier milestone
+test totals below describe that earlier slice, not current whole-workspace
+certification.
+
 | Milestone | Delivered in this slice | Remaining acceptance |
 |---|---|---|
 | M6 | Explicit in-memory safe-retry queue with current authorization, bounded attempts and circuit breaking; separately imported local Inspector; authorized gesture profiles; mounted visibility/BFCache reconciliation; existing search/AI/tasks/notifications/discovery/offline/spatial behavior retained | Persisted offline queues remain intentionally unsupported pending host retention/session approval. Manual device/lifecycle acceptance is part of M10. |

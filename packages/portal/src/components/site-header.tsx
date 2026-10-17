@@ -1,0 +1,55 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { ThemeToggle } from "./portal-shell";
+
+export function SiteHeader() {
+  const header = useRef<HTMLElement>(null);
+  const [hidden, setHidden] = useState(false);
+
+  useEffect(() => {
+    let previous = window.scrollY;
+    function onScroll() {
+      const current = window.scrollY;
+      if (Math.abs(current - previous) < 8) return;
+      setHidden(
+        current > previous &&
+          current > 96 &&
+          !header.current?.contains(document.activeElement),
+      );
+      previous = current;
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  return (
+    <header
+      ref={header}
+      className="site-header adaptive-header"
+      data-hidden={hidden}
+      onFocusCapture={() => setHidden(false)}
+    >
+      <a className="brand" href="#home">
+        <img src="/favicon-32x32.png" width={28} height={28} alt="" />
+        <span>
+          <strong>moorkyz</strong>{" "}
+          <span className="brand-product">toolbar</span>
+        </span>
+      </a>
+      <nav className="header-links" aria-label="Main navigation">
+        <a href="#playground">Playground</a>
+        <a href="#studio">Studio</a>
+        <a href="#docs">Docs</a>
+        <a
+          href="https://github.com/Moorky/moorkyz-toolbar"
+          target="_blank"
+          rel="noreferrer"
+        >
+          GitHub
+        </a>
+        <ThemeToggle />
+      </nav>
+    </header>
+  );
+}

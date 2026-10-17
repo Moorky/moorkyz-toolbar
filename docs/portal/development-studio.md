@@ -2,6 +2,35 @@
 
 ## Current implementation status
 
+### Website/Playground MVP, slice 1
+
+The landing page now starts with the compact specified hero, an adaptive
+keyboard-reachable header using an existing brand asset, and a functional
+Modern Workspace task application backed by the actual SDK. One shared theme
+preference controls the site and this preview; changing variants preserves the
+built-in token family. The eight-section accordion progressively labels future
+functionality rather than exposing inert controls.
+
+Configuration has bounded undo/redo, explicit versioned local save, confirmed
+replacement/restore/reset, SDK validation plus a host-command allowlist, and a
+last-valid preview during JSON editing. Configuration-only persistence follows
+the existing explicit-save policy; sample task contents are not retained.
+The personalized Quick Start uses the existing Vanilla generator with the
+applied configuration. Export is portable JSON containing real generated files,
+not an archive or automatic project installation. Automated integration tests
+mount those exported files against the real SDK.
+
+This is **not the completed website MVP**: only Modern Workspace and the SDK's
+minimal pill structure are delivered here. Three additional applications,
+8–12 structural styles, manual per-variant colors, geometry/action-editor
+completion, resizable/fullscreen layouts, self-hosted DM fonts and remaining
+website section reorganization/explorers are subsequent slices. Existing labs
+remain functional below the new experience; their independent experimental
+theme controls have not yet been synchronized globally. M10/M11 holds are
+unchanged. See the [portal README](../../packages/portal/README.md).
+
+### Earlier SDK and Studio milestones
+
 The current M6–M11 slice adds a full JSON/visual workbench with confirmed,
 versioned local file import/export, searchable versioned preview reference,
 custom nonce-scoped theme authoring/import/export, validated scenario import,

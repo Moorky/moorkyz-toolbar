@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { PortalShell } from "../components/portal-shell";
 import "./globals.css";
+import "./playground.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://toolbar.moorkyz.com"),
@@ -58,8 +59,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f8f8f5" },
-    { media: "(prefers-color-scheme: dark)", color: "#111411" },
+    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
+    { media: "(prefers-color-scheme: dark)", color: "#08060d" },
   ],
 };
 

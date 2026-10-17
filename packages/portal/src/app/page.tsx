@@ -1,7 +1,7 @@
-import { CopyButton } from "../components/copy-button";
 import { ComponentLab } from "../components/component-lab";
 import { EnvironmentExplorer } from "../components/environment-explorer";
-import { ThemeToggle } from "../components/portal-shell";
+import { SiteHeader } from "../components/site-header";
+import { FunctionalPlayground } from "../components/functional-playground";
 import { ScenarioLab } from "../components/scenario-lab";
 import { ThemeStudio } from "../components/theme-studio";
 import { VisualConfigurator } from "../components/visual-configurator";
@@ -12,26 +12,6 @@ import { StarterStudio } from "../components/starter-studio";
 import { ExtensionStudio } from "../components/extension-studio";
 
 const repository = "https://github.com/Moorky/moorkyz-toolbar";
-const installCommand = "pnpm add @moorkyz/toolbar";
-const integrationExample = `import { createToolbar } from "@moorkyz/toolbar";
-
-const toolbar = createToolbar(
-  {
-    actions: [{ id: "docs", label: "Documentation" }],
-  },
-  {
-    dispatchAction: (id) => {
-      document.getElementById(id)?.scrollIntoView();
-    },
-  },
-);
-
-const mounted = toolbar.mount(document.body);
-if (!mounted.ok) {
-  throw new Error(mounted.error.message);
-}
-
-window.addEventListener("pagehide", () => toolbar.dispose(), { once: true });`;
 
 const studioCapabilities = [
   ["Visual configuration", "Available preview"],
@@ -46,65 +26,43 @@ export default async function HomePage() {
   const nonce = (await headers()).get("x-nonce") ?? "";
   return (
     <>
-      <header className="site-header">
-        <a className="brand" href="#home">
-          <span className="brand-mark" aria-hidden="true">
-            m
-          </span>
-          <span>
-            <strong>moorkyz</strong>
-            <span className="brand-product">toolbar</span>
-          </span>
-        </a>
-        <nav className="header-links" aria-label="Main navigation">
-          <a href="#docs">Documentation</a>
-          <a href="#configurator">Configurator</a>
-          <a href={repository} target="_blank" rel="noreferrer">
-            GitHub
-          </a>
-          <ThemeToggle />
-        </nav>
-      </header>
+      <a className="skip-link" href="#main-content">
+        Skip to content
+      </a>
+      <SiteHeader />
 
-      <main id="main-content">
+      <main id="main-content" tabIndex={-1}>
         <section className="hero section-shell" id="home" tabIndex={-1}>
           <div className="hero-copy">
             <p className="eyebrow">
               <span className="status-dot" aria-hidden="true" />
               OPEN SOURCE · DEVELOPMENT PREVIEW
             </p>
-            <h1>
-              One toolbar.
-              <br />
-              <span>Every interface.</span>
-            </h1>
+            <h1>One toolbar. Every interface.</h1>
             <p className="hero-lede">
-              A lightweight, framework-independent toolbar for modern web apps.
-              Start simple; adapt as you grow.
+              A customizable, adaptive toolbar for modern web applications.
+              Built to fit your interface, not the other way around.
             </p>
             <div className="hero-actions">
-              <a className="button button-primary" href="#quick-start">
-                Get started <span aria-hidden="true">↗</span>
+              <a className="button button-primary" href="#playground">
+                Try the Playground <span aria-hidden="true">↓</span>
               </a>
-              <a className="button button-secondary" href="#environments">
-                Explore the live dock <span aria-hidden="true">↓</span>
+              <a
+                className="button button-secondary"
+                href={repository}
+                target="_blank"
+                rel="noreferrer"
+              >
+                View on GitHub <span aria-hidden="true">↗</span>
               </a>
             </div>
             <p className="draft-note">
               The package is in active development and is not yet published.
             </p>
           </div>
-          <div className="hero-note" aria-label="Product principles">
-            <span className="note-index">01 / 03</span>
-            <div className="hero-note-rule" />
-            <p>Easy to start.</p>
-            <p>Easy to use.</p>
-            <p className="note-emphasis">Powerful to master.</p>
-            <span className="hero-note-caption">
-              The dock at the bottom is the actual workspace library.
-            </span>
-          </div>
         </section>
+
+        <FunctionalPlayground />
 
         <section
           className="section-shell environment-section"
@@ -215,54 +173,6 @@ export default async function HomePage() {
             </p>
           </div>
           <ThemeStudio nonce={nonce} />
-        </section>
-
-        <section
-          className="section-shell quickstart-section"
-          id="quick-start"
-          tabIndex={-1}
-        >
-          <div className="quickstart-intro">
-            <p className="eyebrow">A SMALL, EXPLICIT START</p>
-            <h2>
-              Start with actions.
-              <br />
-              Keep your app in charge.
-            </h2>
-            <p>
-              The host handles navigation and decides what each action is
-              allowed to do. The toolbar provides accessible controls and
-              dispatches the action ID.
-            </p>
-            <a
-              className="text-link"
-              href={`${repository}/blob/master/docs/contracts/sdk-and-schema.md`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Read the current contract draft <span aria-hidden="true">↗</span>
-            </a>
-          </div>
-          <div className="code-panel">
-            <div className="code-panel-header">
-              <div>
-                <span className="code-language">TYPESCRIPT</span>
-                <span className="code-filename">toolbar.ts</span>
-              </div>
-              <CopyButton text={integrationExample} />
-            </div>
-            <pre aria-label="TypeScript integration example" tabIndex={0}>
-              <code>{integrationExample}</code>
-            </pre>
-            <div className="install-row">
-              <code>{installCommand}</code>
-              <CopyButton text={installCommand} label="Copy install command" />
-            </div>
-            <p className="code-disclaimer">
-              Install command shown for the planned public release. Until then,
-              use the repository&apos;s workspace consumer examples.
-            </p>
-          </div>
         </section>
 
         <section
