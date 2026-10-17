@@ -48,12 +48,16 @@ approved numerical/platform scope, distribution notices and container evidence
 are still required under M10. M11 still requires separate release authorization.
 No publishing, deployment or production-readiness claim follows from this plan.
 
-The follow-up QA keeps the four-app/ten-style scope unchanged. It makes only the
-Playground wider (explicit user confirmation), corrects fullscreen/sheet/focus/
-geometry/theme/reflow defects, isolates application drafts, improves export and
+The follow-up QA keeps the four-app/ten-style scope unchanged. It corrects
+fullscreen/sheet/focus/geometry/theme/reflow defects, isolates application drafts, improves export and
 generation recovery, defers inactive editor controls, and preserves SDK cleanup
 and documented React ownership semantics. See the
 [human acceptance checklist](manual-mvp-acceptance.md) for work that cannot be
 certified through local headless testing.
 Exact final evidence, resolved findings and residual gates are in the
 [final quality-assurance audit](../audits/2026-10-17T12-22-25Z-final-mvp-qa.md).
+
+The later width instruction was identified as a wrong-chat message and withdrawn.
+The Playground's original `clamp(1rem, 2.5vw, 2.5rem)` outer gutters are restored;
+the other QA corrections remain in place. The committed QA audit remains a
+historical record rather than being retroactively rewritten.

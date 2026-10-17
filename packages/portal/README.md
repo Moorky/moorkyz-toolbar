@@ -86,8 +86,8 @@ working SDK page-navigation dock remain keyboard reachable. Ctrl/Cmd K opens
 local reference/navigation search without overriding inputs/editors or reserved
 modified shortcuts.
 
-The Playground alone uses wider gutters; the rest of the website retains its
-shared content alignment. Its bottom toolbar stays clear of the page dock while
+The Playground retains its original responsive outer gutters; the rest of the
+website retains its shared content alignment. Its bottom toolbar stays clear of the page dock while
 scrolling, without changing saved geometry. Top-anchor movement and centered X
 offsets match their numeric values.
 

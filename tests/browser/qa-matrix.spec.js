@@ -4,7 +4,7 @@ import AxeBuilder from "@axe-core/playwright";
 const origin = `http://127.0.0.1:${process.env.MOORKYZ_TOOLBAR_PORTAL_PORT ?? process.env.PORTAL_TEST_PORT ?? "4174"}`;
 const widths = [320, 360, 390, 700, 701, 768, 900, 1024, 1440, 1920];
 
-test("only the Playground content uses wider desktop gutters while other sections stay aligned", async ({
+test("Playground retains its original responsive gutters while other sections stay aligned", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -15,10 +15,24 @@ test("only the Playground content uses wider desktop gutters while other section
   const playground = await page.locator("#playground").boundingBox();
   const engineering = await page.locator("#engineering").boundingBox();
   const quickstart = await page.locator("#quick-start").boundingBox();
-  expect(playground.x).toBeLessThanOrEqual(20);
+  expect(playground.x).toBeCloseTo(36, 1);
   expect(playground.width).toBeGreaterThan(engineering.width);
   expect(Math.abs(quickstart.x - engineering.x)).toBeLessThan(1);
   expect(Math.abs(quickstart.width - engineering.width)).toBeLessThan(1);
+  for (const [width, gutter] of [
+    [320, 16],
+    [1920, 40],
+  ]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await expect
+      .poll(async () => (await page.locator("#playground").boundingBox()).x)
+      .toBeCloseTo(gutter, 1);
+    await expect
+      .poll(() =>
+        page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+      )
+      .toBe(true);
+  }
 });
 
 for (const route of ["/", "/studio", "/contributing"]) {
