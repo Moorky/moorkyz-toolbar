@@ -38,26 +38,79 @@ async function readPageOverflowState(page) {
     const documentWidth = document.documentElement.scrollWidth;
     if (documentWidth <= viewportWidth) return { fits: true };
 
-    const overflowingElements = [...document.body.querySelectorAll("*")]
+    const describeElement = (element) => {
+      const bounds = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return {
+        tag: element.tagName.toLowerCase(),
+        id: element.id,
+        className:
+          typeof element.className === "string" ? element.className : "",
+        text: element.textContent?.trim().replace(/\s+/g, " ").slice(0, 40),
+        left: Math.round(bounds.left),
+        right: Math.round(bounds.right),
+        width: Math.round(bounds.width),
+        position: style.position,
+        overflowX: style.overflowX,
+        scrollWidth: element.scrollWidth,
+        clientWidth: element.clientWidth,
+      };
+    };
+
+    const allOverflowingElements = [...document.body.querySelectorAll("*")]
       .map((element) => {
-        const bounds = element.getBoundingClientRect();
-        const style = getComputedStyle(element);
+        const ancestorChain = [];
+        let hasFixedAncestor = false;
+        for (
+          let ancestor = element.parentElement;
+          ancestor && ancestor !== document.body;
+          ancestor = ancestor.parentElement
+        ) {
+          const ancestorStyle = getComputedStyle(ancestor);
+          if (ancestorStyle.position === "fixed") hasFixedAncestor = true;
+          if (
+            ancestorStyle.overflowX !== "visible" ||
+            ancestorStyle.position === "fixed"
+          ) {
+            ancestorChain.push(describeElement(ancestor));
+          }
+        }
         return {
-          tag: element.tagName.toLowerCase(),
-          id: element.id,
-          className:
-            typeof element.className === "string" ? element.className : "",
-          text: element.textContent?.trim().replace(/\s+/g, " ").slice(0, 50),
-          left: Math.round(bounds.left),
-          right: Math.round(bounds.right),
-          width: Math.round(bounds.width),
-          position: style.position,
-          overflowX: style.overflowX,
+          ...describeElement(element),
+          ancestorChain: ancestorChain.slice(0, 4),
+          hasFixedAncestor,
         };
       })
-      .filter((element) => element.right > viewportWidth + 1)
-      .sort((left, right) => right.right - left.right)
+      .filter(
+        (element) => element.right > viewportWidth + 1 || element.left < -1,
+      )
+      .sort((left, right) => right.right - left.right);
+
+    const overflowingElements = allOverflowingElements.slice(0, 10);
+    const uncontainedElements = allOverflowingElements
+      .filter(
+        (element) =>
+          !element.hasFixedAncestor &&
+          !element.ancestorChain.some((ancestor) =>
+            ["auto", "scroll", "hidden", "clip"].includes(ancestor.overflowX),
+          ),
+      )
       .slice(0, 10);
+    const bodyChildren = [...document.body.children].map(describeElement);
+    const toolbarHosts = [
+      ...document.querySelectorAll(".mzk-toolbar-host"),
+    ].map((host) => ({
+      host: describeElement(host),
+      toolbar: host.querySelector(".mzk-toolbar")
+        ? describeElement(host.querySelector(".mzk-toolbar"))
+        : null,
+      actions: host.querySelector(".mzk-toolbar__actions")
+        ? describeElement(host.querySelector(".mzk-toolbar__actions"))
+        : null,
+      collapse: host.querySelector(".mzk-toolbar__collapse")
+        ? describeElement(host.querySelector(".mzk-toolbar__collapse"))
+        : null,
+    }));
 
     return {
       fits: false,
@@ -67,6 +120,9 @@ async function readPageOverflowState(page) {
       htmlOverflowX: getComputedStyle(document.documentElement).overflowX,
       bodyOverflowX: getComputedStyle(document.body).overflowX,
       overflowingElements,
+      uncontainedElements,
+      bodyChildren,
+      toolbarHosts,
     };
   });
 }
