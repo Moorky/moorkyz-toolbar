@@ -15,6 +15,7 @@ import { ToolbarMount } from "@moorkyz/toolbar/react";
 import { createDockInspector } from "@moorkyz/toolbar/inspector";
 import { CopyButton } from "./copy-button";
 import { HydrationBoundary } from "./hydration-boundary";
+import { downloadJSON } from "./download-json";
 import { usePortalSettings } from "./portal-shell";
 
 const initial = validateConfiguration({
@@ -167,25 +168,23 @@ export function DeveloperWorkbench() {
       setStatus("Export rejected: fix configuration validation first.");
       return;
     }
-    const blob = new Blob(
-      [
+    try {
+      downloadJSON(
         JSON.stringify(
           { version: 1, configuration: validation.value },
           null,
           2,
         ),
-      ],
-      { type: "application/json" },
-    );
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "toolbar.configuration.json";
-    link.click();
-    URL.revokeObjectURL(url);
-    setStatus(
-      "Versioned configuration downloaded locally; nothing was uploaded.",
-    );
+        "toolbar.configuration.json",
+      );
+      setStatus(
+        "Versioned configuration downloaded locally; nothing was uploaded.",
+      );
+    } catch {
+      setStatus(
+        "Could not export configuration. The valid JSON remains available to copy or retry.",
+      );
+    }
   }
 
   async function importFile(file: File | undefined) {

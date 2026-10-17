@@ -28,13 +28,16 @@ export function ToolbarMount({
   ...containerProps
 }: ToolbarMountProps) {
   const target = useRef<HTMLDivElement>(null);
+  const collapsed = useRef(false);
 
   useEffect(() => {
     const mountTarget = target.current;
     if (mountTarget === null) return;
 
     const controller = createToolbar(configuration, host);
-    const result = controller.mount(mountTarget);
+    const mounted = controller.mount(mountTarget);
+    const result =
+      mounted.ok && collapsed.current ? controller.collapse() : mounted;
     if (!result.ok) {
       controller.dispose();
       if (onMountError !== undefined) {
@@ -52,6 +55,7 @@ export function ToolbarMount({
     }
 
     return () => {
+      collapsed.current = controller.isCollapsed;
       try {
         controller.dispose();
       } finally {

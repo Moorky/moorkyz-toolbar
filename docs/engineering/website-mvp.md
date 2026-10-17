@@ -10,6 +10,7 @@ MVP in the product specification, not its advanced-platform phases 4–6.
 | Complete website | Ordered landing sections; local DM fonts; real capability/architecture explorers and search; dedicated working Studio; responsive sheet/fullscreen workspace; footer | Implemented and verified locally |
 | Hardening | Full automated gates, executed generated consumers, keyboard/axe, responsive/visual tests, dependency/source/bundle/performance evidence | PASS: 198 Node tests, 183 browser cases, all typechecks/build/lint/format, SDK coverage, dependency/source and bundle checks |
 | Acceptance audit | Evidence and known limitations, focused commits, unchanged M10/M11 holds | Recorded in [final MVP audit](../audits/2026-10-17T06-04-23Z-website-mvp-acceptance.md); manual release gates remain on hold |
+| Final quality assurance | Independent baseline, rendered route/theme/width matrix, failure/keyboard recovery, performance and contract-preserving corrections | Implemented and verified; 203 Node tests and 243 browser cases. Human/device/container/independent release evidence remains separate. |
 
 ## Implementation boundaries
 
@@ -46,3 +47,13 @@ Manual screen-reader/touch/device acceptance, independent security/release revie
 approved numerical/platform scope, distribution notices and container evidence
 are still required under M10. M11 still requires separate release authorization.
 No publishing, deployment or production-readiness claim follows from this plan.
+
+The follow-up QA keeps the four-app/ten-style scope unchanged. It makes only the
+Playground wider (explicit user confirmation), corrects fullscreen/sheet/focus/
+geometry/theme/reflow defects, isolates application drafts, improves export and
+generation recovery, defers inactive editor controls, and preserves SDK cleanup
+and documented React ownership semantics. See the
+[human acceptance checklist](manual-mvp-acceptance.md) for work that cannot be
+certified through local headless testing.
+Exact final evidence, resolved findings and residual gates are in the
+[final quality-assurance audit](../audits/2026-10-17T12-22-25Z-final-mvp-qa.md).

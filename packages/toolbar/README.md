@@ -109,6 +109,11 @@ function App({ dispatchAction }: { dispatchAction: (id: string) => void }) {
 
 The adapter owns mount/dispose through an effect and renders an empty mount target during server rendering. It can expose the controller with `onController` and report a structured mount error with `onMountError`; without an error callback, mount failures throw from the effect. Changing the identity of `configuration`, `host`, or either callback recreates the controller, so memoize stable values.
 
+A manually collapsed dock remains collapsed across those ownership replacements.
+Only explicit expansion restores it; changing theme, callbacks, host or isolation
+mode does not implicitly expand the toolbar. The replacement still disposes the
+old controller and notifies its owner with `null` before delivering the new one.
+
 ## Themes and local preferences
 
 The built-in customization control lets users choose a theme and color scheme and reorder actions with labeled earlier/later buttons. Actions are not dispatched while edit mode is active. `features: { customize: false }` hides customization and prevents preference-store reads and writes. The controller also exposes `updateUserPreferences()` for host settings UIs; it accepts a complete preference value.

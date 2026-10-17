@@ -4,6 +4,7 @@ import { useState } from "react";
 import { generateProject } from "@moorkyz/toolbar/generator";
 import { CopyButton } from "./copy-button";
 import { HydrationBoundary } from "./hydration-boundary";
+import { downloadJSON } from "./download-json";
 
 const PRESETS = [
   "universal",
@@ -58,18 +59,19 @@ export function StarterStudio() {
       setStatus("Generate a valid starter first.");
       return;
     }
-    const blob = new Blob([JSON.stringify({ version: 1, project }, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "toolbar.starter.json";
-    link.click();
-    URL.revokeObjectURL(url);
-    setStatus(
-      "Portable project data downloaded. It has not been executed or uploaded.",
-    );
+    try {
+      downloadJSON(
+        JSON.stringify({ version: 1, project }, null, 2),
+        "toolbar.starter.json",
+      );
+      setStatus(
+        "Portable project data downloaded. It has not been executed or uploaded.",
+      );
+    } catch {
+      setStatus(
+        "Could not export the starter. Generated files remain available to copy or retry.",
+      );
+    }
   }
 
   return (

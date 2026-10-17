@@ -36,7 +36,7 @@ export function CopyButton({
       >
         {label}
       </button>
-      <span className="sr-only" role="status" aria-live="polite">
+      <span className="copy-feedback" role="status" aria-live="polite">
         {message}
       </span>
     </span>

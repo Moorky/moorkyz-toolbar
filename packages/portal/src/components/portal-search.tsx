@@ -144,6 +144,12 @@ export function PortalSearch() {
         className="portal-search"
         aria-labelledby="portal-search-heading"
         onClose={() => trigger.current?.focus()}
+        onKeyDown={(event) => {
+          if (event.key !== "Escape") return;
+          event.preventDefault();
+          event.stopPropagation();
+          dialog.current?.close();
+        }}
       >
         <div className="search-heading">
           <h2 id="portal-search-heading">Find your next step.</h2>

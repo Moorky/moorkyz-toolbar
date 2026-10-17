@@ -292,6 +292,7 @@ class ToolbarControllerImpl implements ToolbarController {
   private clickHandler: ((event: MouseEvent) => void) | null = null;
   private overflowObserver: ResizeObserver | null = null;
   private overflowWindow: Window | null = null;
+  private overflowFrame: number | null = null;
   private overflowScrollHandler: (() => void) | null = null;
   private overflowResizeHandler: (() => void) | null = null;
   private preferenceValue: ToolbarPreferences | null = null;
@@ -2470,11 +2471,17 @@ class ToolbarControllerImpl implements ToolbarController {
 
     const view = actions.ownerDocument.defaultView;
     if (view === null) return;
+    this.overflowWindow = view;
     const ResizeObserverConstructor = view.ResizeObserver;
     if (ResizeObserverConstructor !== undefined) {
-      this.overflowObserver = new ResizeObserverConstructor(() =>
-        this.updateOverflowControls(),
-      );
+      this.overflowObserver = new ResizeObserverConstructor(() => {
+        if (this.overflowFrame !== null) return;
+        // Overflow buttons can resize this row; defer writes outside observer delivery.
+        this.overflowFrame = view.requestAnimationFrame(() => {
+          this.overflowFrame = null;
+          this.updateOverflowControls();
+        });
+      });
       this.overflowObserver.observe(actions);
       if (this.toolbarElement !== null) {
         this.overflowObserver.observe(this.toolbarElement);
@@ -2572,6 +2579,10 @@ class ToolbarControllerImpl implements ToolbarController {
       );
     }
     this.overflowObserver?.disconnect();
+    if (this.overflowFrame !== null) {
+      this.overflowWindow?.cancelAnimationFrame(this.overflowFrame);
+      this.overflowFrame = null;
+    }
     if (this.overflowWindow !== null && this.overflowResizeHandler !== null) {
       this.overflowWindow.removeEventListener(
         "resize",

@@ -72,6 +72,76 @@ function installDOM(window) {
   };
 }
 
+test("React host and isolation replacements dispose old ownership without restoring a collapsed dock", async (t) => {
+  const window = new Window({ url: "http://localhost/" });
+  const restoreDOM = installDOM(window);
+  const target = window.document.createElement("main");
+  window.document.body.append(target);
+  const instances = [];
+  const notify = (value) => {
+    if (value) instances.push(value);
+  };
+  const root = createRoot(target);
+  t.after(async () => {
+    try {
+      await act(async () => root.unmount());
+    } finally {
+      restoreDOM();
+      window.close();
+    }
+  });
+  const configuration = {
+    renderMode: "light",
+    actions: [{ id: "home", label: "Home" }],
+  };
+  const originalHost = { dispatchAction() {} };
+  await act(async () =>
+    root.render(
+      createElement(ToolbarMount, {
+        configuration,
+        host: originalHost,
+        onController: notify,
+      }),
+    ),
+  );
+  const first = instances[0];
+  await act(async () => first.collapse());
+  const deniedHost = {};
+  await act(async () =>
+    root.render(
+      createElement(ToolbarMount, {
+        configuration,
+        host: deniedHost,
+        onController: notify,
+      }),
+    ),
+  );
+  const second = instances.at(-1);
+  assert.notEqual(second, first);
+  assert.equal(first.isMounted, false);
+  assert.equal(second.isCollapsed, true);
+  await act(async () =>
+    root.render(
+      createElement(ToolbarMount, {
+        configuration: { ...configuration, renderMode: "shadow" },
+        host: deniedHost,
+        onController: notify,
+      }),
+    ),
+  );
+  const third = instances.at(-1);
+  assert.equal(second.isMounted, false);
+  assert.equal(third.isCollapsed, true);
+  assert.equal(target.querySelectorAll(".mzk-toolbar-host").length, 1);
+  await act(async () => third.expand());
+  assert.equal(
+    target
+      .querySelector(".mzk-toolbar-host")
+      .shadowRoot.querySelector(".mzk-toolbar__action").disabled,
+    true,
+  );
+});
+
 test("React adapter is importable and renderable without browser globals", () => {
   assert.equal("window" in globalThis, false);
   assert.equal(
@@ -176,4 +246,68 @@ test("React adapter reports mount failures after disposing the controller", asyn
   assert.equal(target.querySelector(".mzk-toolbar-host"), null);
   await act(async () => root.unmount());
   root = undefined;
+});
+
+test("React configuration and callback changes retain documented ownership replacement without restoring collapse", async (t) => {
+  const window = new Window({ url: "http://localhost/" });
+  const restoreDOM = installDOM(window);
+  const target = window.document.createElement("main");
+  window.document.body.append(target);
+  const first = [],
+    second = [],
+    errors = [];
+  const host = { dispatchAction() {} };
+  const notifyFirst = (value) => first.push(value);
+  const notifySecond = (value) => second.push(value);
+  const root = createRoot(target);
+  t.after(async () => {
+    try {
+      await act(async () => root.unmount());
+    } finally {
+      restoreDOM();
+      window.close();
+    }
+  });
+  async function render(configuration, onController) {
+    await act(async () =>
+      root.render(
+        createElement(ToolbarMount, {
+          configuration,
+          host,
+          onController,
+          onMountError: (error) => errors.push(error.code),
+        }),
+      ),
+    );
+  }
+  await render(
+    { renderMode: "light", actions: [{ id: "home", label: "Home" }] },
+    notifyFirst,
+  );
+  const instance = first[0];
+  await act(async () => instance.collapse());
+  await render(
+    {
+      renderMode: "light",
+      colorScheme: "dark",
+      actions: [{ id: "home", label: "Home" }],
+    },
+    notifySecond,
+  );
+  assert.notEqual(second[0], instance);
+  assert.equal(first.at(-1), null);
+  assert.equal(instance.isMounted, false);
+  assert.equal(second[0].isCollapsed, true);
+  assert.equal(
+    target.querySelector('[role="toolbar"]').dataset.colorScheme,
+    "dark",
+  );
+  await render({ renderMode: "light", label: "Recovered" }, notifySecond);
+  assert.deepEqual(errors, []);
+  assert.equal(target.querySelectorAll(".mzk-toolbar__action").length, 0);
+  assert.equal(
+    target.querySelector('[role="toolbar"]').getAttribute("aria-label"),
+    "Recovered",
+  );
+  assert.equal(second.at(-1).isCollapsed, true);
 });

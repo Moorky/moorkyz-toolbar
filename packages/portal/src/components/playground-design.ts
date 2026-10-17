@@ -598,11 +598,12 @@ export function presentationCSS(
   const verticalBorder = design.style === "edge" ? a.borderWidth : border * 2;
   const padding = Math.min(6, (g.height - 44 - verticalBorder) / 2);
   const buttonHeight = g.height - padding * 2 - verticalBorder;
+  const offsetFactor = g.align === "center" ? 2 : 1;
   return `${scope} .mzk-toolbar-host[data-placement="container"] {
     top: ${g.position === "top" ? `${64 + g.offsetY}px` : "auto"};
     bottom: ${g.position === "bottom" ? `max(${g.offsetY}px, env(safe-area-inset-bottom, 0px))` : "auto"};
-    inset-inline-start: max(12px, min(${12 + Math.max(0, g.offsetX)}px, calc(100% - 332px)));
-    inset-inline-end: max(12px, min(${12 + Math.max(0, -g.offsetX)}px, calc(100% - 332px)));
+    inset-inline-start: max(12px, min(${12 + offsetFactor * Math.max(0, g.offsetX)}px, calc(100% - 332px)));
+    inset-inline-end: max(12px, min(${12 + offsetFactor * Math.max(0, -g.offsetX)}px, calc(100% - 332px)));
     padding-inline: 0; justify-content: ${g.align === "start" ? "flex-start" : g.align === "end" ? "flex-end" : "center"};
   }
   ${selector} {

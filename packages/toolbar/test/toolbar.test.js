@@ -26,6 +26,54 @@ test("module import is SSR-safe and does not need browser globals", () => {
   assert.equal(typeof createToolbar, "function");
 });
 
+test("resize delivery batches overflow writes outside the observer and cancels pending frames", (t) => {
+  const current = fixture({ renderMode: "light" });
+  t.after(() => disposeFixture(current));
+  const observers = [];
+  const frames = new Map();
+  let nextFrame = 1;
+  let disconnected = 0;
+  current.window.ResizeObserver = class {
+    constructor(callback) {
+      observers.push(callback);
+    }
+    observe() {}
+    disconnect() {
+      disconnected++;
+    }
+  };
+  current.window.requestAnimationFrame = (callback) => {
+    const id = nextFrame++;
+    frames.set(id, callback);
+    return id;
+  };
+  current.window.cancelAnimationFrame = (id) => frames.delete(id);
+  current.toolbar.mount(current.target);
+  const toolbar = current.target.querySelector('[role="toolbar"]');
+  const actions = toolbar.querySelector(".mzk-toolbar__actions");
+  Object.defineProperties(actions, {
+    scrollWidth: { value: 300, configurable: true },
+    clientWidth: { value: 100, configurable: true },
+  });
+  observers[0]();
+  observers[0]();
+  assert.equal(frames.size, 1);
+  assert.equal(toolbar.dataset.overflowing, "false");
+  const [id, callback] = frames.entries().next().value;
+  frames.delete(id);
+  callback(0);
+  assert.equal(toolbar.dataset.overflowing, "true");
+  observers[0]();
+  current.toolbar.update({ label: "Updated" });
+  assert.equal(frames.size, 0);
+  assert.equal(disconnected, 1);
+  observers.at(-1)();
+  assert.equal(frames.size, 1);
+  current.toolbar.dispose();
+  assert.equal(frames.size, 0);
+  assert.equal(disconnected, 2);
+});
+
 test("mounts a semantic Shadow DOM toolbar with a local stylesheet", (t) => {
   const current = fixture({
     actions: [

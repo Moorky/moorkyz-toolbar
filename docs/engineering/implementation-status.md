@@ -19,6 +19,12 @@ The landing page, local search/explorers and dedicated Studio are tracked in the
 [MVP plan](website-mvp.md) with task-scoped verification audits. These additions
 do not close any manual, distribution or authorization milestone exit below.
 
+Final MVP QA independently re-established the baseline and then verified 203
+Node tests and 243 browser cases after corrections. Responsive checks now include
+ten widths, both themes, large text, failure recovery and actual local performance
+observations. Remaining human/device/independent/container work is tracked in
+the [manual checklist](manual-mvp-acceptance.md), not marked complete by automation.
+
 ## Pre-task milestone snapshot
 
 | Milestone                                               | Status      | Evidence / remaining exit criteria                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |

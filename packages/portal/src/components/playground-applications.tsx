@@ -51,11 +51,32 @@ export const PlaygroundApplications = forwardRef<
 ) {
   const [tasks, setTasks] = useState(INITIAL_TASKS);
   const [showCompleted, setShowCompleted] = useState(true);
-  const [title, setTitle] = useState("");
+  const [titles, setTitles] = useState({ workspace: "", board: "" });
+  const title = application === "workspace" ? titles.workspace : titles.board;
+  function setTitle(value: string) {
+    if (application === "workspace" || application === "board")
+      setTitles((current) => ({ ...current, [application]: value }));
+  }
   const [documentText, setDocumentText] = useState(
     "A toolbar should belong to your application.\n\nSelect some text, then use Uppercase selection in the real toolbar. Your document stays local to this page.",
   );
+  const documentValue = useRef(documentText);
+  const documentInput = useRef<HTMLTextAreaElement>(null);
+  const updateDocument = useCallback((value: string) => {
+    documentValue.current = value;
+    setDocumentText(value);
+  }, []);
   const [selection, setSelection] = useState({ start: 0, end: 0 });
+  useEffect(() => {
+    const editor = documentInput.current;
+    if (
+      application === "document" &&
+      editor !== null &&
+      (editor.selectionStart !== selection.start ||
+        editor.selectionEnd !== selection.end)
+    )
+      editor.setSelectionRange(selection.start, selection.end);
+  }, [application, documentText, selection]);
   const [period, setPeriod] = useState<"week" | "month">("week");
   const [enterprise, setEnterprise] = useState(false);
   const [descending, setDescending] = useState(false);
@@ -107,7 +128,16 @@ export const PlaygroundApplications = forwardRef<
           onStatus("Completed sample tasks cleared.");
           break;
         case "document-heading":
-          setDocumentText((value) => `# Untitled section\n\n${value}`);
+          if (
+            documentValue.current.length + "# Untitled section\n\n".length >
+            10000
+          ) {
+            onStatus(
+              "The sample document limit is 10,000 characters. Your current text is unchanged.",
+            );
+            break;
+          }
+          updateDocument(`# Untitled section\n\n${documentValue.current}`);
           setSelection({ start: 0, end: 0 });
           onStatus("Heading inserted in the local document.");
           break;
@@ -116,19 +146,24 @@ export const PlaygroundApplications = forwardRef<
           const end =
             selection.end > selection.start
               ? selection.end
-              : documentText.length;
-          setDocumentText(
-            (value) =>
-              value.slice(0, start) +
-              value.slice(start, end).toUpperCase() +
-              value.slice(end),
-          );
+              : documentValue.current.length;
+          const value = documentValue.current;
+          const transformed = value.slice(start, end).toUpperCase();
+          const next = value.slice(0, start) + transformed + value.slice(end);
+          if (next.length > 10000) {
+            onStatus(
+              "The sample document limit is 10,000 characters. Your current text is unchanged.",
+            );
+            break;
+          }
+          updateDocument(next);
+          setSelection({ start, end: start + transformed.length });
           onStatus("Selected document text converted to uppercase.");
           break;
         }
         case "document-count":
           onStatus(
-            `${new Intl.NumberFormat("en").format(documentText.trim().split(/\s+/).filter(Boolean).length)} words in the current document.`,
+            `${new Intl.NumberFormat("en").format(documentValue.current.trim().split(/\s+/).filter(Boolean).length)} words in the current document.`,
           );
           break;
         case "analytics-period":
@@ -160,7 +195,7 @@ export const PlaygroundApplications = forwardRef<
           break;
       }
     },
-    [allowed, application, documentText, onStatus, selectedCard, selection],
+    [allowed, application, onStatus, selectedCard, selection, updateDocument],
   );
   useImperativeHandle(ref, () => ({ dispatch }), [dispatch]);
 
@@ -171,7 +206,7 @@ export const PlaygroundApplications = forwardRef<
       nextTask.current = 4;
     }
     if (application === "document") {
-      setDocumentText(
+      updateDocument(
         "A fresh page. Select text to reveal a formatting command.",
       );
       setSelection({ start: 0, end: 0 });
@@ -322,23 +357,27 @@ export const PlaygroundApplications = forwardRef<
             <h3>Good tools stay out of your way.</h3>
             <label htmlFor="playground-document">Document content</label>
             <textarea
+              ref={documentInput}
               id="playground-document"
               rows={9}
               value={documentText}
               maxLength={10000}
               onChange={(event) => {
-                setDocumentText(event.currentTarget.value);
+                updateDocument(event.currentTarget.value);
                 setSelection({
                   start: event.currentTarget.selectionStart,
                   end: event.currentTarget.selectionEnd,
                 });
               }}
-              onSelect={(event) =>
-                setSelection({
-                  start: event.currentTarget.selectionStart,
-                  end: event.currentTarget.selectionEnd,
-                })
-              }
+              onSelect={(event) => {
+                const { selectionStart: start, selectionEnd: end } =
+                  event.currentTarget;
+                setSelection((current) =>
+                  current.start === start && current.end === end
+                    ? current
+                    : { start, end },
+                );
+              }}
             />
             <p>
               {selection.end - selection.start} characters selected.{" "}

@@ -1,11 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import type { InputHTMLAttributes } from "react";
 import { validateThemeTokens, type ToolbarController } from "@moorkyz/toolbar";
 import { ToolbarMount } from "@moorkyz/toolbar/react";
-import type { GeneratedProject } from "@moorkyz/toolbar/generator";
-import { CopyButton } from "./copy-button";
+import { PersonalizedQuickStart } from "./personalized-quickstart";
+import { downloadJSON } from "./download-json";
 import { usePortalSettings } from "./portal-shell";
 import { HydrationBoundary } from "./hydration-boundary";
 import {
@@ -23,7 +31,6 @@ import {
   applyStyle,
   decorateToolbar,
   defaultActions,
-  generateDesignProject,
   parseDesign,
   presentationCSS,
   sdkConfiguration,
@@ -44,6 +51,41 @@ interface History {
 }
 const initialConfiguration = sdkConfiguration(INITIAL_DESIGN, "light");
 type Pending = "save" | "restore" | "reset" | "autosave" | null;
+type WorkspaceView = "preview" | "customize" | "code";
+const NARROW_LAYOUT = "(max-width: 700px)";
+
+function subscribeLayout(listener: () => void) {
+  const media = window.matchMedia(NARROW_LAYOUT);
+  media.addEventListener("change", listener);
+  return () => media.removeEventListener("change", listener);
+}
+const narrowSnapshot = () => window.matchMedia(NARROW_LAYOUT).matches;
+const serverSnapshot = () => false;
+
+function WorkspaceModes({
+  mode,
+  onChange,
+}: {
+  readonly mode: WorkspaceView;
+  readonly onChange: (mode: WorkspaceView) => void;
+}) {
+  return (
+    <div className="mobile-workspace-modes" aria-label="Mobile workspace view">
+      {(["preview", "customize", "code"] as const).map((value) => (
+        <button
+          id={`playground-view-${value}`}
+          key={value}
+          data-mode={value}
+          type="button"
+          aria-pressed={mode === value}
+          onClick={() => onChange(value)}
+        >
+          {value}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 function DraftInput({
   value,
@@ -112,6 +154,11 @@ function GeometryInput({
 
 export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
   const { theme } = usePortalSettings();
+  const narrow = useSyncExternalStore(
+    subscribeLayout,
+    narrowSnapshot,
+    serverSnapshot,
+  );
   const [history, setHistory] = useState<History>({
     past: [],
     present: INITIAL_DESIGN,
@@ -139,23 +186,18 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
   const [favoriteOnly, setFavoriteOnly] = useState(false);
   const [variant, setVariant] = useState<"light" | "dark">(theme);
   const [tokenDraft, setTokenDraft] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState("toolbar.config.js");
-  const [generated, setGenerated] = useState<{
-    design: PlaygroundDesign;
-    theme: string;
-    project: GeneratedProject;
-  } | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [dragDesign, setDragDesign] = useState<PlaygroundDesign | null>(null);
-  const [mobileMode, setMobileMode] = useState<
-    "preview" | "customize" | "code"
-  >("preview");
+  const [mobileMode, setMobileMode] = useState<WorkspaceView>("preview");
   const [sidebarWidth, setSidebarWidth] = useState(300);
   const [sheetHeight, setSheetHeight] = useState(65);
   const [focus, setFocus] = useState(false);
   const controller = useRef<ToolbarController | null>(null);
+  const appliedConfiguration = useRef<string | null>(null);
   const mount = useRef<HTMLDivElement>(null);
   const workspace = useRef<HTMLDivElement>(null);
+  const sidebar = useRef<HTMLElement>(null);
+  const fullscreenTrigger = useRef<HTMLButtonElement>(null);
   const application = useRef<ApplicationHost>(null);
   const imported = useRef<PlaygroundDesign | null>(null);
   const importRequest = useRef(0);
@@ -178,14 +220,12 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
   );
   const effectiveConfig = useRef(configuration);
   effectiveConfig.current = configuration;
-  const sourceText = source ?? JSON.stringify(current, null, 2);
-  const validation = useMemo(() => parseDesign(sourceText), [sourceText]);
-  const project =
-    generated?.design === current && generated.theme === theme
-      ? generated.project
-      : null;
-  const generatedFile = project?.files.find(
-    ({ path }) => path === selectedFile,
+  const sourceText =
+    source ??
+    (section === "Code & Export" ? JSON.stringify(current, null, 2) : "");
+  const validation = useMemo(
+    () => (section === "Code & Export" ? parseDesign(sourceText) : null),
+    [section, sourceText],
   );
   const host = useMemo(
     () => ({
@@ -211,8 +251,11 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
   );
   const onController = useCallback((instance: ToolbarController | null) => {
     controller.current = instance;
+    appliedConfiguration.current = null;
     if (instance !== null) {
       const result = instance.update(effectiveConfig.current);
+      if (result.ok)
+        appliedConfiguration.current = JSON.stringify(effectiveConfig.current);
       setError(result.ok ? null : result.error.message);
     }
   }, []);
@@ -225,6 +268,21 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
     [],
   );
   const appStatus = useCallback((message: string) => setStatus(message), []);
+  useLayoutEffect(() => {
+    const panel = sidebar.current;
+    const selected = panel?.querySelector<HTMLButtonElement>(
+      '.playground-accordion h3 button[aria-expanded="true"]',
+    );
+    if (!panel || !selected || panel.clientHeight === 0) return;
+    const offset =
+      selected.getBoundingClientRect().top - panel.getBoundingClientRect().top;
+    if (offset < 0 || offset + selected.clientHeight > panel.clientHeight)
+      panel.scrollTop += offset;
+  }, [section, mobileMode, focus, narrow]);
+  const setView = useCallback((mode: WorkspaceView) => {
+    setMobileMode(mode);
+    if (mode === "code") setSection("Code & Export");
+  }, []);
   useEffect(
     () => () => {
       importRequest.current++;
@@ -293,7 +351,10 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
   }
 
   useEffect(() => {
+    const key = JSON.stringify(configuration);
+    if (appliedConfiguration.current === key) return;
     const result = controller.current?.update(configuration);
+    if (result?.ok) appliedConfiguration.current = key;
     if (result) setError(result.ok ? null : result.error.message);
   }, [configuration]);
   useEffect(() => {
@@ -396,24 +457,25 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
     }
   }, [sidebarWidth, favorites, ready, canAutosave]);
   useEffect(() => {
-    let active = true;
-    setGenerated(null);
-    void generateDesignProject(current, theme)
-      .then((project) => {
-        if (active) setGenerated({ design: current, theme, project });
-      })
-      .catch((cause: unknown) => {
-        if (active)
-          setError(
-            cause instanceof Error
-              ? cause.message
-              : "Local project generation failed.",
-          );
-      });
-    return () => {
-      active = false;
-    };
-  }, [current, theme]);
+    if (!narrow || mobileMode === "preview") return;
+    function closeSheet(event: KeyboardEvent) {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      event.preventDefault();
+      setMobileMode("preview");
+      document.getElementById("playground-view-preview")?.focus();
+    }
+    document.addEventListener("keydown", closeSheet);
+    return () => document.removeEventListener("keydown", closeSheet);
+  }, [narrow, mobileMode]);
+  useEffect(() => {
+    if (source === null && tokenDraft === null) return;
+    function preserveDraft(event: BeforeUnloadEvent) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+    window.addEventListener("beforeunload", preserveDraft);
+    return () => window.removeEventListener("beforeunload", preserveDraft);
+  }, [source, tokenDraft]);
   useEffect(() => {
     function changed() {
       setFocus(document.fullscreenElement === workspace.current);
@@ -423,7 +485,6 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
   }, []);
   useEffect(() => {
     if (!focus) return;
-    const previous = document.activeElement;
     workspace.current
       ?.querySelector<HTMLButtonElement>(".fullscreen-exit")
       ?.focus();
@@ -457,8 +518,8 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
     document.addEventListener("keydown", key);
     return () => {
       document.removeEventListener("keydown", key);
-      if (previous instanceof HTMLElement && previous.isConnected)
-        previous.focus();
+      if (fullscreenTrigger.current?.isConnected)
+        fullscreenTrigger.current.focus();
     };
   }, [focus]);
 
@@ -506,17 +567,13 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
     }
   }
   function download(text: string, filename: string) {
-    const url = URL.createObjectURL(
-      new Blob([text], { type: "application/json" }),
-    );
     try {
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = filename;
-      link.click();
+      downloadJSON(text, filename);
       setStatus("Export downloaded locally. Nothing was uploaded or executed.");
-    } finally {
-      URL.revokeObjectURL(url);
+    } catch {
+      setStatus(
+        "Could not export. Your design is unchanged; copy the JSON or retry the download.",
+      );
     }
   }
   async function toggleFullscreen() {
@@ -584,7 +641,12 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
           ...(start.type === "move"
             ? {
                 offsetX: clamp(start.design.geometry.offsetX + dx, -128, 128),
-                offsetY: clamp(start.design.geometry.offsetY - dy, 0, 120),
+                offsetY: clamp(
+                  start.design.geometry.offsetY +
+                    (start.design.geometry.position === "top" ? dy : -dy),
+                  0,
+                  120,
+                ),
               }
             : {
                 width: clamp(
@@ -689,7 +751,11 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
           <button type="button" onClick={() => setPending("restore")}>
             Restore saved
           </button>
-          <button type="button" onClick={() => void toggleFullscreen()}>
+          <button
+            ref={fullscreenTrigger}
+            type="button"
+            onClick={() => void toggleFullscreen()}
+          >
             {focus ? "Exit fullscreen" : "Fullscreen preview"}
           </button>
         </div>
@@ -768,24 +834,7 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
             </button>
           </div>
         )}
-        <div
-          className="mobile-workspace-modes"
-          aria-label="Mobile workspace view"
-        >
-          {(["preview", "customize", "code"] as const).map((mode) => (
-            <button
-              key={mode}
-              type="button"
-              aria-pressed={mobileMode === mode}
-              onClick={() => {
-                setMobileMode(mode);
-                if (mode === "code") setSection("Code & Export");
-              }}
-            >
-              {mode}
-            </button>
-          ))}
-        </div>
+        {!focus && <WorkspaceModes mode={mobileMode} onChange={setView} />}
         <div
           ref={workspace}
           id="playground-workspace"
@@ -794,18 +843,33 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
           data-focus={focus}
         >
           {focus && (
-            <button
-              type="button"
-              className="fullscreen-exit"
-              onClick={() => void toggleFullscreen()}
-            >
-              Exit fullscreen
-            </button>
+            <div className="workspace-fullscreen-bar">
+              <span className="workspace-fullscreen-label">
+                Fullscreen workspace
+              </span>
+              <WorkspaceModes mode={mobileMode} onChange={setView} />
+              <button
+                type="button"
+                className="fullscreen-exit"
+                aria-label="Exit fullscreen"
+                onClick={() => void toggleFullscreen()}
+              >
+                Exit<span className="fullscreen-exit-label"> fullscreen</span>
+              </button>
+              <p
+                className="playground-status workspace-fullscreen-status"
+                role="status"
+                aria-live="polite"
+              >
+                {status}
+              </p>
+            </div>
           )}
           <style
             nonce={nonce}
-          >{`#playground-workspace { --sidebar-width:${sidebarWidth}px; --sheet-height:${sheetHeight}svh; }\n${presentationCSS(preview, "#playground-canvas", theme)}`}</style>
+          >{`#playground-workspace { --sidebar-width:${sidebarWidth}px; --sheet-height:${sheetHeight}dvh; }\n#playground-canvas { --preview-toolbar-space:${preview.geometry.height + preview.geometry.offsetY + 24}px; }\n${presentationCSS(preview, "#playground-canvas", theme)}`}</style>
           <aside
+            ref={sidebar}
             className="playground-sidebar"
             aria-label="Playground settings"
           >
@@ -845,7 +909,7 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
                   </button>
                 </h3>
                 <div id={`playground-panel-${index}`} hidden={section !== name}>
-                  {name === "Templates" && (
+                  {section === name && name === "Templates" && (
                     <>
                       <div
                         className="template-tabs"
@@ -1017,7 +1081,7 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
                       )}
                     </>
                   )}
-                  {name === "Appearance" && (
+                  {section === name && name === "Appearance" && (
                     <>
                       <label>
                         Edit theme variant
@@ -1146,7 +1210,7 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
                       ))}
                     </>
                   )}
-                  {name === "Geometry & Position" && (
+                  {section === name && name === "Geometry & Position" && (
                     <>
                       <label className="inline-check">
                         <input
@@ -1259,7 +1323,7 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
                       </label>
                     </>
                   )}
-                  {name === "Actions" && (
+                  {section === name && name === "Actions" && (
                     <>
                       <p>
                         Commands are host-allowlisted. Incompatible commands
@@ -1481,7 +1545,7 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
                       </button>
                     </>
                   )}
-                  {name === "Motion & Interaction" && (
+                  {section === name && name === "Motion & Interaction" && (
                     <>
                       <label className="inline-check">
                         <input
@@ -1500,7 +1564,7 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
                       </p>
                     </>
                   )}
-                  {name === "Context & Capabilities" && (
+                  {section === name && name === "Context & Capabilities" && (
                     <>
                       <label className="inline-check">
                         <input
@@ -1508,7 +1572,9 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
                           checked={current.contextual}
                           disabled={source !== null}
                           onChange={(event) =>
-                            patch({ contextual: event.currentTarget.checked })
+                            patch({
+                              contextual: event.currentTarget.checked,
+                            })
                           }
                         />
                         Selection-aware document formatting
@@ -1521,7 +1587,7 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
                       </p>
                     </>
                   )}
-                  {name === "Advanced Settings" && (
+                  {section === name && name === "Advanced Settings" && (
                     <>
                       <p>
                         Only design/configuration autosaves. Application text,
@@ -1583,59 +1649,77 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
                       </button>
                     </>
                   )}
-                  {name === "Code & Export" && (
-                    <>
-                      <label>
-                        Playground configuration JSON
-                        <textarea
-                          aria-label="Playground configuration JSON"
-                          spellCheck={false}
-                          rows={14}
-                          maxLength={65536}
-                          value={sourceText}
-                          onChange={(event) => {
-                            setSource(event.currentTarget.value);
-                            setEditMode(false);
+                  {section === name &&
+                    name === "Code & Export" &&
+                    validation !== null && (
+                      <>
+                        <label>
+                          Playground configuration JSON
+                          <textarea
+                            aria-label="Playground configuration JSON"
+                            spellCheck={false}
+                            rows={14}
+                            maxLength={65536}
+                            value={sourceText}
+                            onChange={(event) => {
+                              setSource(event.currentTarget.value);
+                              setEditMode(false);
+                            }}
+                          />
+                        </label>
+                        <p className="playground-validation" role="status">
+                          {validation.ok
+                            ? "SDK schema and Workspace policy validation passed."
+                            : validation.message}
+                        </p>
+                        <button
+                          type="button"
+                          disabled={!validation.ok || source === null}
+                          onClick={() => {
+                            if (validation.ok) commit(validation.value, true);
                           }}
-                        />
-                      </label>
-                      <p className="playground-validation" role="status">
-                        {validation.ok
-                          ? "SDK schema and Workspace policy validation passed."
-                          : validation.message}
-                      </p>
-                      <button
-                        type="button"
-                        disabled={!validation.ok || source === null}
-                        onClick={() => {
-                          if (validation.ok) commit(validation.value, true);
-                        }}
-                      >
-                        Apply Playground JSON
-                      </button>
-                      <button
-                        type="button"
-                        disabled={source === null}
-                        onClick={() => setSource(null)}
-                      >
-                        Discard JSON edits
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          download(
-                            JSON.stringify(current, null, 2),
-                            "toolbar.playground.design.json",
-                          )
-                        }
-                      >
-                        Download design
-                      </button>
-                      <a href="#quick-start">
-                        Personalized Vanilla integration
-                      </a>
-                    </>
-                  )}
+                        >
+                          Apply Playground JSON
+                        </button>
+                        <button
+                          type="button"
+                          disabled={source === null}
+                          onClick={() => setSource(null)}
+                        >
+                          Discard JSON edits
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            download(
+                              JSON.stringify(current, null, 2),
+                              "toolbar.playground.design.json",
+                            )
+                          }
+                        >
+                          Download design
+                        </button>
+                        <a
+                          href="#quick-start"
+                          onClick={async (event) => {
+                            if (!focus) return;
+                            event.preventDefault();
+                            await toggleFullscreen();
+                            document
+                              .getElementById("quick-start")
+                              ?.scrollIntoView({
+                                behavior: "instant",
+                                block: "start",
+                              });
+                            document
+                              .getElementById("quick-start")
+                              ?.focus({ preventScroll: true });
+                          }}
+                        >
+                          Personalized Vanilla integration
+                        </a>
+                      </>
+                    )}
                 </div>
               </div>
             ))}
@@ -1668,6 +1752,8 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
             id="playground-canvas"
             className="playground-application"
             data-theme={theme}
+            data-toolbar-position={preview.geometry.position}
+            inert={narrow && mobileMode !== "preview"}
           >
             <PlaygroundApplications
               ref={application}
@@ -1733,10 +1819,13 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
                               120,
                               current.geometry.offsetY +
                                 (event.key === "ArrowUp"
-                                  ? 8
+                                  ? -8
                                   : event.key === "ArrowDown"
-                                    ? -8
-                                    : 0),
+                                    ? 8
+                                    : 0) *
+                                  (current.geometry.position === "top"
+                                    ? 1
+                                    : -1),
                             ),
                           ),
                         });
@@ -1749,6 +1838,7 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
             )}
             <ToolbarMount
               className="playground-toolbar"
+              data-anchor={preview.geometry.position}
               configuration={initialConfiguration}
               host={host}
               onController={onController}
@@ -1756,9 +1846,11 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
             />
           </div>
         </div>
-        <p className="playground-status" role="status" aria-live="polite">
-          {status}
-        </p>
+        {!focus && (
+          <p className="playground-status" role="status" aria-live="polite">
+            {status}
+          </p>
+        )}
         {source !== null && (
           <p className="playground-hint">
             JSON edits are not applied. Preview, Quick Start, export and
@@ -1776,108 +1868,11 @@ export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
         )}
         {error && <p role="alert">{error}</p>}
       </section>
-      <section
-        className="section-shell personalized-quickstart"
-        id="quick-start"
-        tabIndex={-1}
-        aria-labelledby="personalized-heading"
-      >
-        <div>
-          <p className="eyebrow">PERSONALIZED QUICK START</p>
-          <h2 id="personalized-heading">From design to code.</h2>
-          <label>
-            Verified generator
-            <select
-              aria-label="Verified integration environment"
-              value="vanilla"
-              onChange={() =>
-                setStatus("Vanilla is the verified generated integration.")
-              }
-            >
-              <option value="vanilla">Vanilla JavaScript · verified</option>
-            </select>
-          </label>
-          <p>
-            Configuration, geometry, both theme variants, labels and icons are
-            portable. The shared SDK generator supplies the real mount, dispatch
-            and cleanup lifecycle. No privileged user code runs here.
-          </p>
-          <p>
-            The SDK is not published. Build it in this checkout with{" "}
-            <code>pnpm --filter @moorkyz/toolbar build</code>. Export files into
-            a new folder and run{" "}
-            <code>
-              node server.mjs --sdk-path &lt;absolute SDK package path&gt;
-            </code>{" "}
-            as described in the generated README.
-          </p>
-          <p>
-            React, Next.js, Vue and Angular have{" "}
-            <a href="https://github.com/Moorky/moorkyz-toolbar/tree/master/examples">
-              tested consumer fixtures
-            </a>
-            , not generated starters. Generated sample hosts report action IDs;
-            the four mini-applications are not generated.
-          </p>
-        </div>
-        <div className="code-panel">
-          <div className="code-panel-header">
-            <label htmlFor="playground-file">Vanilla source file</label>
-            <select
-              id="playground-file"
-              value={selectedFile}
-              disabled={!project}
-              onChange={(event) => setSelectedFile(event.currentTarget.value)}
-            >
-              {[
-                "toolbar.config.js",
-                "app.js",
-                "style.css",
-                "playground.design.json",
-                "index.html",
-                "README.md",
-              ].map((file) => (
-                <option key={file}>{file}</option>
-              ))}
-            </select>
-            {generatedFile && (
-              <CopyButton
-                text={generatedFile.content}
-                label="Copy personalized source"
-              />
-            )}
-          </div>
-          <pre
-            tabIndex={0}
-            aria-label="Personalized Vanilla integration source"
-          >
-            <code>
-              {generatedFile?.content ?? "Preparing verified Vanilla source…"}
-            </code>
-          </pre>
-          <div className="workbench-actions">
-            <button
-              className="button button-primary"
-              type="button"
-              disabled={!project}
-              onClick={() => {
-                if (project)
-                  download(
-                    JSON.stringify({ version: 1, project }, null, 2),
-                    "toolbar.playground.vanilla.json",
-                  );
-              }}
-            >
-              Export personalized Vanilla project
-            </button>
-          </div>
-          <p className="code-disclaimer">
-            Versioned JSON contains all source files and SHA-256 integrity
-            metadata, not an installer. Nothing is installed, uploaded or
-            executed by export.
-          </p>
-        </div>
-      </section>
+      <PersonalizedQuickStart
+        design={current}
+        theme={theme}
+        onStatus={appStatus}
+      />
     </HydrationBoundary>
   );
 }

@@ -22,6 +22,28 @@ SDK coverage thresholds, bundle isolation and bounded dependency/source checks
 passed. It adds no distribution authorization and does not close the manual
 or independent M10/M11 holds below.
 
+### Final MVP quality-assurance follow-up
+
+The [final QA audit](../audits/2026-10-17T12-22-25Z-final-mvp-qa.md) independently
+re-established the previous baseline, implemented verified corrections, and
+passed 203 Node tests and 243 browser cases. The expanded checks include ten
+widths, both themes, all preset families, 200% text reflow, interrupted editing,
+negative API/storage paths, owned cleanup and executed generated consumers.
+
+The final local Chromium 4x-CPU run observed route LCP of 652/644/492ms, an
+interaction-duration observation of 104ms and CLS below 0.002. These meet the
+requested local targets in that run, not field Core Web Vitals or an approved
+release budget. Unsupported metric APIs are recorded as unavailable.
+The audit includes exact conditions, cold-route payloads and before/after data.
+
+Dependency advisories and bounded source checks passed. Installed-license
+metadata includes existing MPL, LGPL and attribution obligations; distribution
+review is still required. The Docker CLI exists, but its local engine pipe is
+unavailable: container build/runtime acceptance remains NOT RUN.
+Use the [human acceptance checklist](manual-mvp-acceptance.md) for the remaining
+device/assistive-technology, native zoom/fullscreen, field-performance, independent
+review and release approvals. **M10/M11 remain on hold.**
+
 | Milestone | Delivered in this slice | Remaining acceptance |
 |---|---|---|
 | M6 | Explicit in-memory safe-retry queue with current authorization, bounded attempts and circuit breaking; separately imported local Inspector; authorized gesture profiles; mounted visibility/BFCache reconciliation; existing search/AI/tasks/notifications/discovery/offline/spatial behavior retained | Persisted offline queues remain intentionally unsupported pending host retention/session approval. Manual device/lifecycle acceptance is part of M10. |

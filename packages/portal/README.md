@@ -29,6 +29,9 @@ contracts, feature defaults and framework-neutral architecture are unchanged.
 - Desktop sidebar and mobile settings sheet resize by pointer or keyboard.
   Mobile is preview-first with separate Customize/Code views. Browser fullscreen
   has an explicitly reported expanded-view fallback and an accessible exit.
+  Preview/Customize/Code controls and status feedback remain inside fullscreen.
+  Mobile settings make the obscured application inert; changing sections keeps
+  the active heading visible without scrolling the surrounding page.
 - Personalized Vanilla exports use the SDK generator and add validated styling/
   presentation files with recomputed SHA-256 integrity. Export is portable JSON
   containing source files, not an installer. The generated sample host reports
@@ -57,6 +60,19 @@ SDK lifecycle code through the generated local server, not mocked asset routes.
 Presentation code is inlined into the generated application so the existing
 server's narrow public-file allowlist remains intact.
 
+Final QA checks are also available with:
+
+```powershell
+pnpm exec playwright test 'qa-.*\.spec\.js' --workers=3
+node --test tests\tooling\download-json.test.js
+```
+
+These exercise all implemented routes at 320, 360, 390, 700, 701, 768, 900, 1024,
+1440 and 1920px, both themes, large text, all application/style families, negative
+API/storage paths and local performance observations. The Playwright report
+retains metrics and screenshots. Cold-route contexts and Chromium's 4x CPU mode
+are explicit; unsupported metrics remain unavailable rather than zero.
+
 Production uses a per-request nonce-based CSP with no unsafe inline scripts,
 unsafe-inline styles or `unsafe-eval`. Development permits `unsafe-eval` only for
 Next.js diagnostics. No visitor data is sent to a server.
@@ -70,6 +86,18 @@ working SDK page-navigation dock remain keyboard reachable. Ctrl/Cmd K opens
 local reference/navigation search without overriding inputs/editors or reserved
 modified shortcuts.
 
+The Playground alone uses wider gutters; the rest of the website retains its
+shared content alignment. Its bottom toolbar stays clear of the page dock while
+scrolling, without changing saved geometry. Top-anchor movement and centered X
+offsets match their numeric values.
+
+Only the expanded editor panel acquires controls. Code generation has a separate
+memoized lifecycle, visible errors and explicit retry. Blocked clipboard or
+download APIs retain copyable valid source and visible feedback. Unapplied JSON/
+color buffers warn before leaving the page; they are not silently persisted as
+unvalidated data. Application task/card input drafts are isolated, and document
+commands respect the same 10,000-character limit as typing.
+
 `/studio` retains the existing configuration workbench, Component/Scenario/Theme/
 Extension labs, local Inspector, Vanilla starter gallery and feature reference.
 SDK previews follow the global color scheme. Theme authoring preserves separate
@@ -82,3 +110,6 @@ The [MVP plan](../../docs/engineering/website-mvp.md) and task audits retain
 verification evidence. The [M10/M11 release holds](../../docs/engineering/release-readiness.md)
 are unchanged; implemented MVP functionality is not production/distribution
 authorization or manual WCAG/device certification.
+The remaining [human acceptance checklist](../../docs/engineering/manual-mvp-acceptance.md)
+covers real assistive technology, touch devices, native zoom/fullscreen/keyboard,
+field performance, independent review and release approvals.
