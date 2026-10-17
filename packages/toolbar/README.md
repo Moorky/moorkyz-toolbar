@@ -73,7 +73,7 @@ function App({ dispatchAction }: { dispatchAction: (id: string) => void }) {
 }
 ```
 
-The adapter owns mount/dispose through an effect and renders an empty mount target during server rendering. It can expose the controller with `onController`; changing the identity of `configuration`, `host`, or that callback recreates the controller, so memoize stable values.
+The adapter owns mount/dispose through an effect and renders an empty mount target during server rendering. It can expose the controller with `onController` and report a structured mount error with `onMountError`; without an error callback, mount failures throw from the effect. Changing the identity of `configuration`, `host`, or either callback recreates the controller, so memoize stable values.
 
 ## Themes and local preferences
 

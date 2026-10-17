@@ -143,3 +143,37 @@ test("React adapter mounts, forwards the controller, dispatches, and cleans up",
   assert.equal(controllers[2], controller);
   assert.equal(controllers[3], null);
 });
+
+test("React adapter reports mount failures after disposing the controller", async (t) => {
+  const window = new Window({ url: "http://localhost/" });
+  const restoreDOM = installDOM(window);
+  const target = window.document.createElement("main");
+  window.document.body.appendChild(target);
+  const errors = [];
+  let root;
+  t.after(async () => {
+    try {
+      if (root !== undefined) {
+        await act(async () => root.unmount());
+      }
+    } finally {
+      restoreDOM();
+      window.close();
+    }
+  });
+
+  await act(async () => {
+    root = createRoot(target);
+    root.render(
+      createElement(ToolbarMount, {
+        configuration: { features: { advancedGestures: true } },
+        onMountError: (error) => errors.push(error.code),
+      }),
+    );
+  });
+
+  assert.deepEqual(errors, ["GESTURE_HANDLER_REQUIRED"]);
+  assert.equal(target.querySelector(".mzk-toolbar-host"), null);
+  await act(async () => root.unmount());
+  root = undefined;
+});

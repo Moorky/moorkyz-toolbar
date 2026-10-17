@@ -7,6 +7,7 @@ import {
   createToolbar,
   type ToolbarController,
   type ToolbarHost,
+  type ToolbarRuntimeError,
 } from "./toolbar.js";
 
 const EMPTY_CONFIGURATION: ToolbarConfigurationInput = Object.freeze({});
@@ -16,12 +17,14 @@ export interface ToolbarMountProps extends HTMLAttributes<HTMLDivElement> {
   readonly configuration?: ToolbarConfigurationInput;
   readonly host?: ToolbarHost;
   readonly onController?: (controller: ToolbarController | null) => void;
+  readonly onMountError?: (error: ToolbarRuntimeError) => void;
 }
 
 export function ToolbarMount({
   configuration = EMPTY_CONFIGURATION,
   host = EMPTY_HOST,
   onController,
+  onMountError,
   ...containerProps
 }: ToolbarMountProps) {
   const target = useRef<HTMLDivElement>(null);
@@ -34,6 +37,10 @@ export function ToolbarMount({
     const result = controller.mount(mountTarget);
     if (!result.ok) {
       controller.dispose();
+      if (onMountError !== undefined) {
+        onMountError(result.error);
+        return;
+      }
       throw new Error(result.error.message, { cause: result.error });
     }
 
@@ -51,7 +58,7 @@ export function ToolbarMount({
         onController?.(null);
       }
     };
-  }, [configuration, host, onController]);
+  }, [configuration, host, onController, onMountError]);
 
   return createElement("div", { ...containerProps, ref: target });
 }

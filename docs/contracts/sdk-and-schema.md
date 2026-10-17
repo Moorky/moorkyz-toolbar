@@ -178,7 +178,7 @@ The existing `features.offline` flag remains false by default. When explicitly e
 
 ## M7 optional React adapter draft
 
-The `@moorkyz/toolbar/react` subpath exports `ToolbarMount`, a client component that owns a core controller through a React effect and disposes it on unmount. React is an optional peer dependency; the framework-neutral root entry does not import or re-export the adapter. `ToolbarMount` may notify the host of its controller through `onController`, followed by `null` during cleanup. Configuration, host, and callback identity changes dispose and recreate the controller, so callers should memoize stable values. Mount failures throw from the effect for host error-boundary handling. Server rendering and Strict Mode setup/cleanup are covered by adapter tests; broader concurrent and framework matrix validation remains.
+The `@moorkyz/toolbar/react` subpath exports `ToolbarMount`, a client component that owns a core controller through a React effect and disposes it on unmount. React is an optional peer dependency; the framework-neutral root entry does not import or re-export the adapter. `ToolbarMount` may notify the host of its controller through `onController`, followed by `null` during cleanup. Configuration, host, and callback identity changes dispose and recreate the controller, so callers should memoize stable values. Mount failures dispose the controller and are passed to `onMountError` when supplied; otherwise they throw from the effect for host error-boundary handling. Server rendering and Strict Mode setup/cleanup are covered by adapter tests, and the Next.js portal exercises the subpath in a production build and browser tests; broader concurrent and framework matrix validation remains.
 
 ## Schema validation gate
 

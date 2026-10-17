@@ -5,16 +5,16 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
 } from "react";
 import {
-  createBrowserPreferenceStorage,
-  createToolbar,
   createToolbarPreferenceStore,
   type ToolbarController,
 } from "@moorkyz/toolbar";
+import { ToolbarMount } from "@moorkyz/toolbar/react";
 
 const presets = {
   website: [
@@ -61,9 +61,27 @@ export function usePortalSettings(): PortalSettings {
 }
 
 function ToolbarNavigation({ preset }: { readonly preset: DemoPreset }) {
-  const mountTarget = useRef<HTMLDivElement>(null);
   const toolbar = useRef<ToolbarController | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const configuration = useMemo(
+    () => ({
+      renderMode: "light" as const,
+      label: "Moorkyz Toolbar website navigation",
+      features: { search: false },
+      actions: presets.website,
+    }),
+    [],
+  );
+  const preferenceStore = useMemo(
+    () =>
+      createToolbarPreferenceStore("portal-navigation", {
+        getItem: (key) => window.localStorage.getItem(key),
+        setItem: (key, value) => window.localStorage.setItem(key, value),
+        removeItem: (key) => window.localStorage.removeItem(key),
+      }),
+    [],
+  );
 
   const dispatchAction = useCallback((actionId: string) => {
     const target = document.getElementById(actionId);
@@ -81,45 +99,33 @@ function ToolbarNavigation({ preset }: { readonly preset: DemoPreset }) {
     window.history.replaceState(null, "", `#${encodeURIComponent(actionId)}`);
   }, []);
 
-  useEffect(() => {
-    const target = mountTarget.current;
-    if (target === null) return;
-
-    const preferenceStore = createToolbarPreferenceStore(
-      "portal-navigation",
-      createBrowserPreferenceStorage(window),
-    );
-    const instance = createToolbar(
-      {
-        renderMode: "light",
-        label: "Moorkyz Toolbar website navigation",
-        features: { search: false },
-        actions: presets.website,
-      },
-      {
-        dispatchAction,
-        preferenceStore,
-        onActionError: (_cause, actionId) => {
-          setError(`Could not navigate to the "${actionId}" section.`);
-        },
-        onPreferenceError: (diagnostic) => {
-          setError(`Toolbar preferences need attention: ${diagnostic.code}`);
-        },
-      },
-    );
-    const result = instance.mount(target);
-    if (!result.ok) {
-      setError(result.error.message);
-      instance.dispose();
-      return;
-    }
-
+  const onActionError = useCallback((_cause: unknown, actionId: string) => {
+    setError(`Could not navigate to the "${actionId}" section.`);
+  }, []);
+  const onPreferenceError = useCallback(
+    (diagnostic: { readonly code: string }) => {
+      setError(`Toolbar preferences need attention: ${diagnostic.code}`);
+    },
+    [],
+  );
+  const onController = useCallback((instance: ToolbarController | null) => {
     toolbar.current = instance;
-    return () => {
-      instance.dispose();
-      if (toolbar.current === instance) toolbar.current = null;
-    };
-  }, [dispatchAction]);
+  }, []);
+  const onMountError = useCallback(
+    (mountError: { readonly message: string }) => {
+      setError(mountError.message);
+    },
+    [],
+  );
+  const host = useMemo(
+    () => ({
+      dispatchAction,
+      preferenceStore,
+      onActionError,
+      onPreferenceError,
+    }),
+    [dispatchAction, onActionError, onPreferenceError, preferenceStore],
+  );
 
   useEffect(() => {
     const instance = toolbar.current;
@@ -134,11 +140,14 @@ function ToolbarNavigation({ preset }: { readonly preset: DemoPreset }) {
 
   return (
     <>
-      <div
+      <ToolbarMount
         className="toolbar-mount"
-        ref={mountTarget}
         role="region"
         aria-label="Page navigation toolbar"
+        configuration={configuration}
+        host={host}
+        onController={onController}
+        onMountError={onMountError}
       />
       {error !== null && (
         <p className="toolbar-error" role="alert">
