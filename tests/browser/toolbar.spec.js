@@ -515,6 +515,80 @@ test("advanced gestures stay opt-in, ignore scrolling and edge gestures, and do 
   expect(outcomes.notPrevented).toBe(true);
 });
 
+test("toolbar advancedGestures flag forwards intent only through the host callback", async ({
+  page,
+}) => {
+  await page.evaluate(() => {
+    window.toolbar.dispose();
+    window.mountIntegratedGestureToolbar();
+  });
+  const toolbar = page.getByRole("toolbar", {
+    name: "Integrated gesture toolbar",
+  });
+  const gesture = await page.evaluate(() => {
+    const target = document
+      .querySelector("#gesture-target")
+      .firstElementChild.shadowRoot.querySelector('[role="toolbar"]');
+    target.dispatchEvent(
+      new PointerEvent("pointerdown", {
+        pointerId: 1,
+        pointerType: "touch",
+        isPrimary: true,
+        button: 0,
+        clientX: 100,
+        clientY: 100,
+      }),
+    );
+    target.dispatchEvent(
+      new PointerEvent("pointerup", {
+        pointerId: 1,
+        pointerType: "touch",
+        isPrimary: true,
+        button: 0,
+        clientX: 180,
+        clientY: 105,
+      }),
+    );
+    return window.integratedGestures;
+  });
+  expect(gesture).toEqual([
+    { direction: "right", pointerType: "touch", distance: 80 },
+  ]);
+
+  await page.evaluate(() =>
+    window.integratedGestureToolbar.update({
+      features: { advancedGestures: false },
+    }),
+  );
+  await page.evaluate(() => {
+    const target = document
+      .querySelector("#gesture-target")
+      .firstElementChild.shadowRoot.querySelector('[role="toolbar"]');
+    target.dispatchEvent(
+      new PointerEvent("pointerdown", {
+        pointerId: 2,
+        pointerType: "touch",
+        isPrimary: true,
+        button: 0,
+        clientX: 100,
+        clientY: 100,
+      }),
+    );
+    target.dispatchEvent(
+      new PointerEvent("pointerup", {
+        pointerId: 2,
+        pointerType: "touch",
+        isPrimary: true,
+        button: 0,
+        clientX: 180,
+        clientY: 105,
+      }),
+    );
+  });
+  expect(await page.evaluate(() => window.integratedGestures)).toHaveLength(1);
+  await expect(toolbar).toBeVisible();
+});
+
 test("search panel is keyboard-usable and dispatches local results only through the host", async ({
   page,
 }) => {

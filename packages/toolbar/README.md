@@ -155,6 +155,8 @@ const gestures = createGestureManager(toolbarHostElement, {
 
 It does not change `touch-action`, attach global listeners, move focus, or perform toolbar commands itself.
 
+For the built-in dock, set `features.advancedGestures: true` and provide the host's `onGesture` callback; the controller creates and disposes the scoped manager with the toolbar lifecycle. The flag remains false by default. Every mapped action must still have a keyboard/button alternative.
+
 ## Host-coordinated spatial placement
 
 Spatial coordination is opt-in. `createSpatialCoordinator()` starts disabled and accepts only explicit host-provided exclusion rectangles; it never scans the page, observes geometry, inserts DOM, or changes host padding. When enabled, it returns a deterministic safe anchor/rectangle for the host to apply through its own placement policy.

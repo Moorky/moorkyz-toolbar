@@ -737,6 +737,32 @@ test("disabled offline status rejects before inspecting non-string inputs", (t) 
   );
 });
 
+test("advanced gesture activation requires a host intent handler", (t) => {
+  const current = fixture({
+    actions: [{ id: "home", label: "Home" }],
+  });
+  t.after(() => disposeFixture(current));
+  assert.equal(current.toolbar.mount(current.target).ok, true);
+
+  const result = current.toolbar.update({
+    features: { advancedGestures: true },
+  });
+  assert.equal(result.ok, false);
+  if (!result.ok) {
+    assert.equal(result.error.code, "GESTURE_HANDLER_REQUIRED");
+  }
+  assert.equal(
+    current.toolbar.update({ features: { advancedGestures: false } }).ok,
+    true,
+  );
+  assert.equal(
+    current.target.firstElementChild.shadowRoot.querySelector(
+      '[data-toolbar-control="action:home"]',
+    )?.disabled,
+    true,
+  );
+});
+
 test("search panel combines local actions with host results and selects only through host callbacks", async (t) => {
   const dispatched = [];
   const selectedResults = [];

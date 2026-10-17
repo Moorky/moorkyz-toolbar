@@ -21,6 +21,11 @@ import {
   type ToolbarConnectivityStatus,
 } from "./offline.js";
 import { createToolbarPreferenceStore } from "./preferences.js";
+import {
+  createGestureManager,
+  type GestureIntent,
+  type GestureManager,
+} from "./gestures.js";
 import type {
   FederatedSearchCoordinator,
   FederatedSearchOutcome,
@@ -51,6 +56,7 @@ export interface ToolbarHost {
   readonly onSearchError?: (error: unknown, query: string) => void;
   readonly aiAdapter?: HostAuthorizedAIAdapter;
   readonly onAIError?: (error: unknown) => void;
+  readonly onGesture?: (intent: GestureIntent) => void;
 }
 
 export type ToolbarErrorCode =
@@ -68,7 +74,8 @@ export type ToolbarErrorCode =
   | "NOTIFICATIONS_DISABLED"
   | "INVALID_NOTIFICATION_SNAPSHOT"
   | "OFFLINE_DISABLED"
-  | "INVALID_CONNECTIVITY_STATUS";
+  | "INVALID_CONNECTIVITY_STATUS"
+  | "GESTURE_HANDLER_REQUIRED";
 
 export interface ToolbarRuntimeError {
   readonly code: ToolbarErrorCode;
@@ -277,6 +284,7 @@ class ToolbarControllerImpl implements ToolbarController {
   private aiKeydownHandler: ((event: KeyboardEvent) => void) | null = null;
   private aiAbortController: AbortController | null = null;
   private aiRequestVersion = 0;
+  private gestureManager: GestureManager | null = null;
 
   constructor(configuration: ToolbarConfiguration, host: ToolbarHost) {
     this.configuration = configuration;
@@ -311,6 +319,15 @@ class ToolbarControllerImpl implements ToolbarController {
       return failure(
         "INVALID_MOUNT_TARGET",
         "Mount target must be an element with an owner document.",
+      );
+    }
+    if (
+      this.configuration.features.advancedGestures &&
+      this.host.onGesture === undefined
+    ) {
+      return failure(
+        "GESTURE_HANDLER_REQUIRED",
+        "A host gesture handler is required when advanced gestures are enabled.",
       );
     }
 
@@ -355,6 +372,7 @@ class ToolbarControllerImpl implements ToolbarController {
       this.clickHandler = (event) => this.handleClick(event);
       toolbar.addEventListener("keydown", this.keydownHandler);
       toolbar.addEventListener("click", this.clickHandler);
+      this.syncGestureManager();
       target.appendChild(hostElement);
       this.render();
       return preferenceResult;
@@ -435,6 +453,15 @@ class ToolbarControllerImpl implements ToolbarController {
         "Render mode cannot change after mounting; create a new toolbar instance.",
       );
     }
+    if (
+      validation.value.features.advancedGestures &&
+      this.host.onGesture === undefined
+    ) {
+      return failure(
+        "GESTURE_HANDLER_REQUIRED",
+        "A host gesture handler is required when advanced gestures are enabled.",
+      );
+    }
 
     let nextConfiguration = validation.value;
     if (
@@ -471,6 +498,7 @@ class ToolbarControllerImpl implements ToolbarController {
     if (!this.configuration.features.search) this.resetSearchState();
     if (!this.configuration.features.ai) this.resetAIState();
     if (!this.configuration.features.customize) this.editing = false;
+    if (this.isMounted) this.syncGestureManager();
     if (this.toolbarElement !== null) {
       this.render();
     }
@@ -650,6 +678,8 @@ class ToolbarControllerImpl implements ToolbarController {
 
   private clearMountReferences(): void {
     this.clearOverflowMonitoring();
+    this.gestureManager?.dispose();
+    this.gestureManager = null;
     this.resetSearchState();
     this.resetAIState();
     this.detachSearchPanelHandlers();
@@ -816,6 +846,24 @@ class ToolbarControllerImpl implements ToolbarController {
     button.disabled = true;
     button.tabIndex = -1;
     return button;
+  }
+
+  private syncGestureManager(): void {
+    const toolbar = this.toolbarElement;
+    const onGesture = this.host.onGesture;
+    if (
+      toolbar === null ||
+      !this.configuration.features.advancedGestures ||
+      onGesture === undefined
+    ) {
+      this.gestureManager?.dispose();
+      this.gestureManager = null;
+      return;
+    }
+    this.gestureManager ??= createGestureManager(toolbar, {
+      enabled: true,
+      onGesture,
+    });
   }
 
   private render(): void {

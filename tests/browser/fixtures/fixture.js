@@ -105,6 +105,22 @@ window.mountGestureManager = (enabled) => {
   window.gestureResults = gestures;
 };
 
+window.mountIntegratedGestureToolbar = () => {
+  window.integratedGestures = [];
+  const toolbar = createToolbar(
+    {
+      features: { advancedGestures: true },
+      label: "Integrated gesture toolbar",
+    },
+    {
+      onGesture: (intent) => window.integratedGestures.push(intent),
+    },
+  );
+  const outcome = toolbar.mount(document.querySelector("#gesture-target"));
+  if (!outcome.ok) throw new Error(outcome.error.message);
+  window.integratedGestureToolbar = toolbar;
+};
+
 window.mountAIToolbar = () => {
   window.aiRequests = [];
   const aiToolbar = createToolbar(
