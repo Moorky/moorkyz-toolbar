@@ -52,7 +52,7 @@ const server = createServer(async (request, response) => {
   }
 
   let file;
-  if (path === "/") {
+  if (path === "/" || path === "/trusted-types") {
     file = resolve(fixtureRoot, "index.html");
   } else if (path === "/fixture.js") {
     file = resolve(fixtureRoot, "fixture.js");
@@ -69,7 +69,10 @@ const server = createServer(async (request, response) => {
     const body = await readFile(file);
     const extension = file.slice(file.lastIndexOf("."));
     response.writeHead(200, {
-      "Content-Security-Policy": policy,
+      "Content-Security-Policy":
+        path === "/trusted-types"
+          ? `${policy}; require-trusted-types-for 'script'; trusted-types 'none'`
+          : policy,
       "Content-Type": contentTypes.get(extension) ?? "application/octet-stream",
       "X-Content-Type-Options": "nosniff",
     });

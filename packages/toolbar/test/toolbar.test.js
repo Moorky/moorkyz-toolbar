@@ -153,15 +153,27 @@ test("supports toolbar arrow/Home/End keyboard navigation and manual collapse", 
   );
 
   current.toolbar.collapse();
-  const collapsedActions = shadow.querySelector(".mzk-toolbar__actions");
+  const collapsedActions = shadow.querySelectorAll(
+    '[data-toolbar-control^="action:"]',
+  );
   const restore = shadow.querySelector('[data-toolbar-control="collapse"]');
-  assert.equal(collapsedActions.hidden, true);
+  assert.equal(
+    [...collapsedActions].every(
+      (action) => action.closest("[hidden]") !== null,
+    ),
+    true,
+  );
   assert.equal(restore.getAttribute("aria-expanded"), "false");
   assert.equal(shadow.activeElement, restore);
 
   restore.click();
   assert.equal(current.toolbar.isCollapsed, false);
-  assert.equal(shadow.querySelector(".mzk-toolbar__actions").hidden, false);
+  assert.equal(
+    shadow
+      .querySelector('[data-toolbar-control="action:home"]')
+      .closest("[hidden]"),
+    null,
+  );
 });
 
 test("repeated mount and disposal leave no attached DOM nodes", () => {

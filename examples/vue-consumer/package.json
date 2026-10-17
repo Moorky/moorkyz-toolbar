@@ -1,0 +1,14 @@
+{
+  "name": "vue-consumer",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "dependencies": {
+    "@moorkyz/toolbar": "workspace:*",
+    "@vue/server-renderer": "3.5.44",
+    "vue": "3.5.44"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}

@@ -37,8 +37,11 @@ The pnpm workspace now provides the following commands:
 
 ```powershell
 pnpm install --frozen-lockfile
-pnpm exec playwright install chromium
+pnpm exec playwright install chromium firefox webkit
 pnpm check
+pnpm test:coverage
+pnpm check:source
+pnpm measure:bundles
 pnpm test
 pnpm lint
 pnpm typecheck
@@ -46,7 +49,14 @@ pnpm build
 node --test tests/tooling/moorkyz-cli.test.cjs
 ```
 
-`pnpm check` runs lint, formatting, Node tests, Chromium/Playwright and axe checks, package/portal builds, and consumer/package/portal typechecks. Broader assistive-technology/device coverage, formal performance budgets, and extended security/supply-chain gates remain future work; do not report those as having passed.
+`pnpm check` runs lint, formatting, Node tests, Chromium/Firefox/WebKit Playwright
+and axe checks, package/portal builds, and all consumer/package/portal typechecks.
+The JSON browser report at `test-results/browser-results.json` retains per-engine
+results and performance attachments. Coverage, bounded source scanning and bundle
+isolation have separate commands and CI gates; exact scopes and residual manual,
+performance, supply-chain and container requirements are in the
+[release dossier](release-readiness.md). Do not claim whole-workspace coverage,
+independent security review or manual accessibility certification from these checks.
 
 ## Reporting
 

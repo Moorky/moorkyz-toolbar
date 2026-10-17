@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CopyButton } from "./copy-button";
+import { HydrationBoundary } from "./hydration-boundary";
 import { ToolbarMount } from "@moorkyz/toolbar/react";
 import { presetActions, type DemoPreset } from "./portal-shell";
 
@@ -36,6 +37,7 @@ export function ScenarioLab() {
   const [scenario, setScenario] = useState(INITIAL_SCENARIO);
   const [capturedScenario, setCapturedScenario] =
     useState<ScenarioDraft | null>(null);
+  const [importSource, setImportSource] = useState("");
   const [status, setStatus] = useState(
     "Adjust the simulation; no host application or network is connected.",
   );
@@ -107,125 +109,207 @@ export function ScenarioLab() {
     setStatus("Captured scenario replayed deterministically.");
   }
 
+  function importScenario() {
+    let value: unknown;
+    try {
+      value = JSON.parse(importSource);
+    } catch {
+      setStatus("Snapshot is not valid JSON; current simulation is unchanged.");
+      return;
+    }
+    if (
+      typeof value !== "object" ||
+      value === null ||
+      !("version" in value) ||
+      value.version !== 1 ||
+      !("scenario" in value) ||
+      Object.keys(value).length !== 2 ||
+      typeof value.scenario !== "object" ||
+      value.scenario === null
+    ) {
+      setStatus("Unsupported snapshot version or shape.");
+      return;
+    }
+    const candidate = value.scenario;
+    if (
+      Object.keys(candidate).sort().join(",") !==
+        "allowActions,context,failOnAction,simulatedMinute,viewport" ||
+      !("context" in candidate) ||
+      !("viewport" in candidate) ||
+      !("simulatedMinute" in candidate) ||
+      !("allowActions" in candidate) ||
+      !("failOnAction" in candidate)
+    ) {
+      setStatus("Snapshot scenario fields are invalid.");
+      return;
+    }
+    const context = CONTEXTS.find((entry) => entry === candidate.context);
+    const viewport = VIEWPORTS.find((entry) => entry === candidate.viewport);
+    if (
+      context === undefined ||
+      viewport === undefined ||
+      typeof candidate.simulatedMinute !== "number" ||
+      !Number.isInteger(candidate.simulatedMinute) ||
+      candidate.simulatedMinute < 0 ||
+      candidate.simulatedMinute > 120 ||
+      candidate.simulatedMinute % 5 !== 0 ||
+      typeof candidate.allowActions !== "boolean" ||
+      typeof candidate.failOnAction !== "boolean"
+    ) {
+      setStatus("Snapshot scenario values are invalid.");
+      return;
+    }
+    setCapturedScenario({
+      context,
+      viewport,
+      simulatedMinute: candidate.simulatedMinute,
+      allowActions: candidate.allowActions,
+      failOnAction: candidate.failOnAction,
+    });
+    setStatus(
+      "Validated snapshot imported. Replay explicitly to replace the simulation.",
+    );
+  }
+
   return (
-    <div className="scenario-lab">
-      <div className="scenario-lab-controls">
-        <label htmlFor="scenario-context">Simulated context</label>
-        <select
-          id="scenario-context"
-          value={scenario.context}
-          onChange={(event) => {
-            const context = CONTEXTS.find(
-              (candidate) => candidate === event.currentTarget.value,
-            );
-            if (context !== undefined) updateScenario("context", context);
-          }}
-        >
-          {CONTEXTS.map((context) => (
-            <option key={context} value={context}>
-              {context}
-            </option>
-          ))}
-        </select>
+    <HydrationBoundary label="Scenario simulation workspace">
+      <div className="scenario-lab">
+        <div className="scenario-lab-controls">
+          <label htmlFor="scenario-context">Simulated context</label>
+          <select
+            id="scenario-context"
+            value={scenario.context}
+            onChange={(event) => {
+              const context = CONTEXTS.find(
+                (candidate) => candidate === event.currentTarget.value,
+              );
+              if (context !== undefined) updateScenario("context", context);
+            }}
+          >
+            {CONTEXTS.map((context) => (
+              <option key={context} value={context}>
+                {context}
+              </option>
+            ))}
+          </select>
 
-        <label htmlFor="scenario-viewport">Simulated viewport</label>
-        <select
-          id="scenario-viewport"
-          value={scenario.viewport}
-          onChange={(event) => {
-            const viewport = VIEWPORTS.find(
-              (candidate) => candidate === event.currentTarget.value,
-            );
-            if (viewport !== undefined) updateScenario("viewport", viewport);
-          }}
-        >
-          {VIEWPORTS.map((viewport) => (
-            <option key={viewport} value={viewport}>
-              {viewport}
-            </option>
-          ))}
-        </select>
+          <label htmlFor="scenario-viewport">Simulated viewport</label>
+          <select
+            id="scenario-viewport"
+            value={scenario.viewport}
+            onChange={(event) => {
+              const viewport = VIEWPORTS.find(
+                (candidate) => candidate === event.currentTarget.value,
+              );
+              if (viewport !== undefined) updateScenario("viewport", viewport);
+            }}
+          >
+            {VIEWPORTS.map((viewport) => (
+              <option key={viewport} value={viewport}>
+                {viewport}
+              </option>
+            ))}
+          </select>
 
-        <label htmlFor="scenario-time">
-          Simulated time:{" "}
-          {String(Math.floor(scenario.simulatedMinute / 60)).padStart(2, "0")}:
-          {String(scenario.simulatedMinute % 60).padStart(2, "0")}
-        </label>
-        <input
-          id="scenario-time"
-          type="range"
-          min="0"
-          max="120"
-          step="5"
-          value={scenario.simulatedMinute}
-          onChange={(event) =>
-            updateScenario("simulatedMinute", Number(event.currentTarget.value))
-          }
-        />
-
-        <label className="scenario-lab-check">
+          <label htmlFor="scenario-time">
+            Simulated time:{" "}
+            {String(Math.floor(scenario.simulatedMinute / 60)).padStart(2, "0")}
+            :{String(scenario.simulatedMinute % 60).padStart(2, "0")}
+          </label>
           <input
-            type="checkbox"
-            checked={scenario.allowActions}
+            id="scenario-time"
+            type="range"
+            min="0"
+            max="120"
+            step="5"
+            value={scenario.simulatedMinute}
             onChange={(event) =>
-              updateScenario("allowActions", event.currentTarget.checked)
+              updateScenario(
+                "simulatedMinute",
+                Number(event.currentTarget.value),
+              )
             }
           />
-          Host allows navigation
-        </label>
-        <label className="scenario-lab-check">
-          <input
-            type="checkbox"
-            checked={scenario.failOnAction}
-            onChange={(event) =>
-              updateScenario("failOnAction", event.currentTarget.checked)
-            }
-          />
-          Simulate host action failure
-        </label>
 
-        <div className="scenario-lab-snapshot-controls">
+          <label className="scenario-lab-check">
+            <input
+              type="checkbox"
+              checked={scenario.allowActions}
+              onChange={(event) =>
+                updateScenario("allowActions", event.currentTarget.checked)
+              }
+            />
+            Host allows navigation
+          </label>
+          <label className="scenario-lab-check">
+            <input
+              type="checkbox"
+              checked={scenario.failOnAction}
+              onChange={(event) =>
+                updateScenario("failOnAction", event.currentTarget.checked)
+              }
+            />
+            Simulate host action failure
+          </label>
+
+          <div className="scenario-lab-snapshot-controls">
+            <button
+              className="button button-secondary"
+              type="button"
+              onClick={captureScenario}
+            >
+              Capture snapshot
+            </button>
+            <button
+              className="button button-secondary"
+              type="button"
+              disabled={capturedScenario === null}
+              onClick={replayScenario}
+            >
+              Replay snapshot
+            </button>
+            {snapshotCode !== null && (
+              <div className="scenario-lab-snapshot">
+                <CopyButton text={snapshotCode} label="Copy snapshot JSON" />
+                <pre aria-label="Scenario snapshot JSON" tabIndex={0}>
+                  <code>{snapshotCode}</code>
+                </pre>
+              </div>
+            )}
+          </div>
+          <label htmlFor="scenario-import">Import scenario data</label>
+          <textarea
+            id="scenario-import"
+            rows={5}
+            maxLength={16000}
+            value={importSource}
+            onChange={(event) => setImportSource(event.currentTarget.value)}
+          />
           <button
-            className="button button-secondary"
             type="button"
-            onClick={captureScenario}
-          >
-            Capture snapshot
-          </button>
-          <button
             className="button button-secondary"
-            type="button"
-            disabled={capturedScenario === null}
-            onClick={replayScenario}
+            onClick={importScenario}
           >
-            Replay snapshot
+            Import snapshot
           </button>
-          {snapshotCode !== null && (
-            <div className="scenario-lab-snapshot">
-              <CopyButton text={snapshotCode} label="Copy snapshot JSON" />
-              <pre aria-label="Scenario snapshot JSON" tabIndex={0}>
-                <code>{snapshotCode}</code>
-              </pre>
-            </div>
-          )}
+          <p className="scenario-lab-status" role="status" aria-live="polite">
+            {status}
+          </p>
         </div>
-        <p className="scenario-lab-status" role="status" aria-live="polite">
-          {status}
-        </p>
-      </div>
 
-      <div
-        className={`scenario-lab-frame${scenario.viewport === "compact" ? " scenario-lab-frame--compact" : ""}`}
-      >
-        <ToolbarMount
-          className="scenario-lab-mount"
-          configuration={configuration}
-          host={host}
-          onMountError={onMountError}
-          role="region"
-          aria-label="Scenario Lab preview"
-        />
+        <div
+          className={`scenario-lab-frame${scenario.viewport === "compact" ? " scenario-lab-frame--compact" : ""}`}
+        >
+          <ToolbarMount
+            className="scenario-lab-mount"
+            configuration={configuration}
+            host={host}
+            onMountError={onMountError}
+            role="region"
+            aria-label="Scenario Lab preview"
+          />
+        </div>
       </div>
-    </div>
+    </HydrationBoundary>
   );
 }

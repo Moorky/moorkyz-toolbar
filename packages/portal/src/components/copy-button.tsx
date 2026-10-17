@@ -5,9 +5,11 @@ import { useState } from "react";
 export function CopyButton({
   text,
   label = "Copy code",
+  disabled = false,
 }: {
   readonly text: string;
   readonly label?: string;
+  readonly disabled?: boolean;
 }) {
   const [message, setMessage] = useState("");
 
@@ -26,7 +28,12 @@ export function CopyButton({
 
   return (
     <span className="copy-control">
-      <button className="copy-button" type="button" onClick={copyText}>
+      <button
+        className="copy-button"
+        type="button"
+        onClick={copyText}
+        disabled={disabled}
+      >
         {label}
       </button>
       <span className="sr-only" role="status" aria-live="polite">

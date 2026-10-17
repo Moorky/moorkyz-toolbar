@@ -12,7 +12,41 @@ Build the package from the repository root:
 pnpm --filter @moorkyz/toolbar build
 ```
 
-The workspace fixtures in `examples/vanilla-consumer` and `examples/react-consumer` show typed usage. They are not published starter templates.
+The workspace fixtures in `examples/vanilla-consumer`, `examples/react-consumer`,
+`examples/vue-consumer` and `examples/angular-consumer` show typed usage. The
+Next.js portal exercises the React entry point. Adapter fixtures are not
+automatically promises of generated framework starters.
+
+## Additional optional draft entry points
+
+These additions remain pre-release contracts and do not change feature defaults:
+
+| Entry                              | Purpose                                                                                                                                                                                                                   |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@moorkyz/toolbar/vue`             | `useToolbar()` owns Vue mount/update/unmount; Vue is an optional peer.                                                                                                                                                    |
+| `@moorkyz/toolbar/angular`         | `injectToolbar()` owns Angular render/update/destruction; Angular is an optional peer.                                                                                                                                    |
+| `@moorkyz/toolbar/extensions`      | Explicitly enabled, host-authorized trusted registry with scoped actions, revocation, cleanup and bounded fault containment. Same-realm code is not sandboxed.                                                            |
+| `@moorkyz/toolbar/experimental`    | Explicit experimental namespace, disabled by default; no permission bypass.                                                                                                                                               |
+| `@moorkyz/toolbar/inspector`       | Explicitly mounted static snapshots from an already-redacted local diagnostics recorder; no polling or telemetry.                                                                                                         |
+| `@moorkyz/toolbar/recovery`        | Disabled-by-default, in-memory safe/idempotent job admission and explicit host-confirmed draining; authorization each attempt, bounded retries, cancellation and circuit breaker. No persisted queue or automatic replay. |
+| `@moorkyz/toolbar/gesture-profile` | Explicitly enabled gesture-to-host-action mapping with current authorization; keyboard/button alternatives remain required.                                                                                               |
+| `@moorkyz/toolbar/generator`       | Local, manifest-driven Vanilla starter source generation with shared configuration validation. No install, network or source execution.                                                                                   |
+
+The package also contains the optional Node-only `moorkyz-toolbar` consumer
+binary (`help`, `version`, `examples`, `init`, `add`, `validate`, `doctor`,
+`upgrade`). It never enters a browser entry point. Use `--dry-run` to preview
+creation; upgrades preview by default and require `--apply`. Existing
+destinations, symlinks and edited generated files are not silently overwritten.
+`add` creates an isolated child starter rather than rewriting a host project.
+The CLI is tested on Node 22.18.0; it does not install dependencies for you.
+
+Mounted controllers expose optional `onSuspend`/`onResume` host lifecycle
+notifications; local search/AI presentation is cancelled on suspension without
+restoring a collapsed dock or replaying host commands. Custom token files use
+`validateThemeFile()`. Applying validated tokens through
+`controller.updateThemeTokens()` requires a host-authorized `styleNonce` for its
+existing CSP; passing `null` removes the scoped override. The package never
+loosens that policy.
 
 ## Mount a toolbar
 

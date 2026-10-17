@@ -57,6 +57,7 @@ test("keeps the dock within a narrow viewport and scrolls its action row", async
       scrollWidth: element.scrollWidth,
     }));
   expect(actionRow.scrollWidth).toBeGreaterThan(actionRow.clientWidth);
+  expect(actionRow.clientWidth).toBeGreaterThanOrEqual(44);
   const towardStart = page.getByRole("button", {
     name: "Scroll toolbar actions toward start",
   });

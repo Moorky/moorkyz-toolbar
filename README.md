@@ -7,18 +7,31 @@
 
 **License:** Apache License 2.0. See [`LICENSE`](LICENSE).
 
-This repository consolidates the 80 confirmed architecture questionnaire decisions into an implementation plan. **Implementation is in progress**; the current code includes an early configuration contract, DOM dock, and portal foundation, not the complete product. Public API declarations are not finalized or approved, and unapproved method names, feature keys, performance thresholds, and browser matrices remain _proposed contracts_ or _validation items_.
+This repository implements the 80 confirmed architecture questionnaire decisions.
+The development preview includes the framework-neutral dock, optional capabilities,
+trusted extensions, framework adapters, local Development Studio and safe Vanilla
+generator/consumer CLI. **It is not release-ready:** public contracts, manual
+acceptance and release authorization remain open. See the
+[current evidence and blockers](docs/engineering/release-readiness.md).
 
 ## Local development
 
 ```sh
 pnpm install --frozen-lockfile
-pnpm exec playwright install chromium
+pnpm exec playwright install chromium firefox webkit
 pnpm check
+pnpm test:coverage
+pnpm check:source
+pnpm measure:bundles
 pnpm --filter @moorkyz/portal dev
 ```
 
-The checks build the package and portal, run unit/Chromium accessibility tests, and typecheck the consumer fixtures. See the [implementation checklist](docs/engineering/implementation-status.md) for incomplete milestones and release restrictions.
+The checks build the package and portal, run unit and three-browser accessibility
+tests, and typecheck Vanilla/React/Vue/Angular consumers plus the Next.js portal.
+The separate [public consumer CLI](docs/engineering/consumer-cli.md) performs
+local generation and preview-first upgrades without installs or silent overwrite.
+See the [implementation checklist](docs/engineering/implementation-status.md) for
+incomplete milestone exits and release restrictions.
 
 ## Production deployment
 

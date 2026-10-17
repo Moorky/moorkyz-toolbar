@@ -30,7 +30,15 @@ export default defineConfig({
   testDir: "./tests/browser",
   testMatch: "**/*.spec.js",
   fullyParallel: true,
-  reporter: "list",
+  reporter: [
+    ["list"],
+    ["json", { outputFile: "test-results/browser-results.json" }],
+  ],
+  projects: [
+    { name: "chromium", use: { browserName: "chromium" } },
+    { name: "firefox", use: { browserName: "firefox" } },
+    { name: "webkit", use: { browserName: "webkit" } },
+  ],
   use: {
     baseURL: `http://127.0.0.1:${fixturePort}`,
     browserName: "chromium",

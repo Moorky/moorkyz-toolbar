@@ -4,6 +4,14 @@
 
 ## Public API design principles
 
+Current additive M6–M9 drafts are documented in
+[optional recovery, lifecycle, inspection and Studio contracts](optional-lifecycle-and-studio.md),
+[extensions and framework adapters](extensions-and-adapters.md), and
+[consumer generation/CLI behavior](../engineering/consumer-cli.md).
+The later implementation-status paragraphs below describe their original slices;
+the [release dossier](../engineering/release-readiness.md) records current evidence
+and remaining gates. None of these additions approves a stable public API.
+
 1. **Minimum onboarding:** install package; define actions or host context; mount. No account, backend, CLI, or complex project scaffold needed.
 2. **One coherent API:** typed declarative configuration + typed imperative controller; stable subpath exports where useful.
 3. **Versioned contracts:** semantic versioning, generated docs tied to versions, schema migrations, deprecation guidance, deterministic validation errors.

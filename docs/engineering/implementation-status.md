@@ -2,7 +2,15 @@
 
 This checklist tracks delivery against the approved milestone roadmap. A milestone is complete only when its acceptance criteria have evidence; a code change or passing unit tests alone is not sufficient. No external product integration, publishing, deployment, signing, or paid infrastructure is authorized.
 
-## Milestones
+## Current M6–M11 results
+
+See [the current implementation and release-readiness dossier](release-readiness.md)
+for the delivered M6–M9 code, exact automated evidence, scoped support claims,
+M10 blockers and M11 authorization hold. It supersedes the M6–M11 rows in the
+pre-task snapshot below. The full release gates are not marked complete merely
+because the implementation and automated tests pass.
+
+## Pre-task milestone snapshot
 
 | Milestone                                               | Status      | Evidence / remaining exit criteria                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | ------------------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

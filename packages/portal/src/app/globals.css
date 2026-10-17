@@ -19,6 +19,81 @@
   --gutter: clamp(1.25rem, 5vw, 4.5rem);
 }
 
+.studio-hydration-boundary {
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.developer-workbench,
+.versioned-docs,
+.extension-studio,
+.starter-studio {
+  min-width: 0;
+  margin-block: 2rem;
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--surface);
+}
+
+.developer-workbench details {
+  margin-block: 1rem;
+}
+
+.developer-workbench summary {
+  min-height: 2.75rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.developer-workbench textarea,
+.theme-studio textarea,
+.extension-studio textarea,
+.starter-studio textarea {
+  width: 100%;
+  max-width: 100%;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 0.75rem;
+  font: inherit;
+}
+
+.workbench-feature {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  margin-inline-end: 1rem;
+}
+
+.workbench-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-block: 1rem;
+}
+
+.developer-workbench[data-focus="true"] > details:first-of-type {
+  min-height: 35rem;
+}
+
+.versioned-docs table {
+  width: 100%;
+  text-align: start;
+}
+
+.theme-studio fieldset input {
+  display: block;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  min-height: 2.75rem;
+  max-width: 100%;
+}
+
 html[data-theme="dark"] {
   color-scheme: dark;
   --page: #111411;
@@ -291,6 +366,7 @@ h1 span {
 
 .button-secondary {
   border-color: var(--line);
+  background: var(--surface);
   color: var(--ink);
 }
 
@@ -1557,35 +1633,37 @@ html[data-theme="dark"] .configurator-validation {
   border: 0;
 }
 
-html[data-theme="light"] .mzk-toolbar-host {
+html[data-theme="light"] .toolbar-mount > .mzk-toolbar-host {
   color: var(--dock-ink);
 }
 
-html[data-theme="light"] .mzk-toolbar-host .mzk-toolbar {
+html[data-theme="light"] .toolbar-mount > .mzk-toolbar-host .mzk-toolbar {
   border-color: var(--dock-border);
   background: var(--dock-bg);
   box-shadow: 0 0.65rem 1.8rem rgb(17 24 39 / 13%);
 }
 
 html[data-theme="light"]
-  .mzk-toolbar-host
+  .toolbar-mount
+  > .mzk-toolbar-host
   .mzk-toolbar
   button:hover:not(:disabled) {
   background: var(--dock-hover);
 }
 
-html[data-theme="dark"] .mzk-toolbar-host {
+html[data-theme="dark"] .toolbar-mount > .mzk-toolbar-host {
   color: var(--dock-ink);
 }
 
-html[data-theme="dark"] .mzk-toolbar-host .mzk-toolbar {
+html[data-theme="dark"] .toolbar-mount > .mzk-toolbar-host .mzk-toolbar {
   border-color: var(--dock-border);
   background: var(--dock-bg);
   box-shadow: 0 0.65rem 1.8rem rgb(0 0 0 / 35%);
 }
 
 html[data-theme="dark"]
-  .mzk-toolbar-host
+  .toolbar-mount
+  > .mzk-toolbar-host
   .mzk-toolbar
   button:hover:not(:disabled) {
   background: var(--dock-hover);

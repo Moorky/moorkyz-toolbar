@@ -6,17 +6,21 @@
   "scripts": {
     "build": "pnpm --filter @moorkyz/portal build",
     "check": "pnpm lint && pnpm format:check && pnpm test && pnpm test:browser && pnpm typecheck",
-    "format": "prettier --write package.json pnpm-workspace.yaml tsconfig.base.json .prettierrc.json eslint.config.mjs playwright.config.mjs packages/toolbar packages/portal examples/vanilla-consumer examples/react-consumer tests/browser",
-    "format:check": "prettier --check package.json pnpm-workspace.yaml tsconfig.base.json .prettierrc.json eslint.config.mjs playwright.config.mjs packages/toolbar packages/portal examples/vanilla-consumer examples/react-consumer tests/browser",
-    "lint": "eslint packages/toolbar/src packages/toolbar/test packages/portal/src examples/vanilla-consumer/src examples/react-consumer/src tests/browser playwright.config.mjs",
+    "format": "prettier --write package.json pnpm-workspace.yaml tsconfig.base.json .prettierrc.json eslint.config.mjs playwright.config.mjs packages/toolbar packages/portal examples tests/browser scripts",
+    "format:check": "prettier --check package.json pnpm-workspace.yaml tsconfig.base.json .prettierrc.json eslint.config.mjs playwright.config.mjs packages/toolbar packages/portal examples tests/browser scripts",
+    "lint": "eslint packages/toolbar/src packages/toolbar/test packages/toolbar/cli packages/portal/src packages/portal/scripts examples scripts tests/browser playwright.config.mjs",
     "test": "pnpm build && node --test",
     "test:browser": "playwright test",
-    "typecheck": "pnpm --filter @moorkyz/toolbar build && pnpm --filter @moorkyz/toolbar typecheck && pnpm --filter vanilla-consumer typecheck && pnpm --filter react-consumer typecheck && pnpm --filter @moorkyz/portal typecheck"
+    "test:coverage": "pnpm --filter @moorkyz/toolbar build && node scripts/verify-coverage.mjs",
+    "check:source": "node scripts/verify-source.mjs",
+    "measure:bundles": "pnpm --filter @moorkyz/toolbar build && node scripts/measure-bundles.mjs",
+    "typecheck": "pnpm --filter @moorkyz/toolbar build && pnpm --filter @moorkyz/toolbar typecheck && pnpm --filter vanilla-consumer typecheck && pnpm --filter react-consumer typecheck && pnpm --filter vue-consumer typecheck && pnpm --filter angular-consumer typecheck && pnpm --filter @moorkyz/portal typecheck"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
     "@playwright/test": "^1.64.1",
     "eslint": "^10.12.0",
+    "esbuild": "0.28.2",
     "happy-dom": "^21.0.1",
     "prettier": "^3.9.10",
     "typescript": "^6.0.3",

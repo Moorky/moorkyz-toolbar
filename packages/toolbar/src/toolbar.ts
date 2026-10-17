@@ -31,12 +31,22 @@ import {
   type GestureIntent,
   type GestureManager,
 } from "./gestures.js";
+import {
+  createLifecycleCoordinator,
+  type LifecycleCoordinator,
+  type LifecycleReason,
+} from "./lifecycle.js";
 import type {
   FederatedSearchCoordinator,
   FederatedSearchOutcome,
   ToolbarSearchResult,
 } from "./search.js";
-import { THEME_NAMES, type ToolbarColorScheme } from "./themes.js";
+import {
+  THEME_NAMES,
+  validateThemeTokens,
+  type ThemeTokens,
+  type ToolbarColorScheme,
+} from "./themes.js";
 import {
   validateTaskSnapshot,
   type TaskDiagnostic,
@@ -70,6 +80,9 @@ export interface ToolbarHost {
   readonly onGesture?: (intent: GestureIntent) => void;
   readonly onSpatialError?: (error: SpatialError) => void;
   readonly getSpatialViewport?: () => SpatialViewport;
+  readonly onSuspend?: (reason: LifecycleReason) => void;
+  readonly onResume?: (reason: LifecycleReason) => void;
+  readonly styleNonce?: string;
 }
 
 export type ToolbarErrorCode =
@@ -93,7 +106,9 @@ export type ToolbarErrorCode =
   | "INVALID_DISCOVERY_SNAPSHOT"
   | "SPATIAL_DISABLED"
   | "INVALID_SPATIAL_ZONES"
-  | "SPATIAL_VIEWPORT_REQUIRED";
+  | "SPATIAL_VIEWPORT_REQUIRED"
+  | "INVALID_THEME_TOKENS"
+  | "THEME_NONCE_REQUIRED";
 
 export interface ToolbarRuntimeError {
   readonly code: ToolbarErrorCode;
@@ -135,6 +150,7 @@ export interface ToolbarController {
   updateConnectivityStatus(status: unknown): ToolbarResult;
   updateDiscoveryHints(snapshot: unknown): ToolbarResult;
   updateSpatialZones(snapshot: unknown): ToolbarResult;
+  updateThemeTokens(tokens: unknown): ToolbarResult;
   collapse(): ToolbarResult;
   expand(): ToolbarResult;
   dispose(): void;
@@ -148,6 +164,7 @@ type SearchDisplayResult =
 const MAX_SEARCH_DISPLAY_RESULTS = 50;
 const MAX_SEARCH_QUERY = 256;
 const MAX_AI_PROMPT = 8_000;
+let themeInstanceSequence = 0;
 
 function orderActions(
   actions: ToolbarConfiguration["actions"],
@@ -319,6 +336,10 @@ class ToolbarControllerImpl implements ToolbarController {
   private aiAbortController: AbortController | null = null;
   private aiRequestVersion = 0;
   private gestureManager: GestureManager | null = null;
+  private lifecycle: LifecycleCoordinator | null = null;
+  private themeTokens: ThemeTokens | null = null;
+  private themeStyle: HTMLStyleElement | null = null;
+  private readonly themeInstance = `mzk-${++themeInstanceSequence}`;
   private spatialCoordinator: SpatialCoordinator | null = null;
   private spatialAnchor:
     | "bottom-center"
@@ -346,6 +367,61 @@ class ToolbarControllerImpl implements ToolbarController {
 
   get isCollapsed(): boolean {
     return this.collapsed;
+  }
+
+  updateThemeTokens(input: unknown): ToolbarResult {
+    if (this.disposed) return failure("DISPOSED", "Toolbar is disposed.");
+    if (input === null) {
+      this.themeTokens = null;
+      this.themeStyle?.remove();
+      this.themeStyle = null;
+      return { ok: true };
+    }
+    if (
+      typeof this.host.styleNonce !== "string" ||
+      !/^[A-Za-z0-9+/_-]{1,256}={0,2}$/.test(this.host.styleNonce)
+    ) {
+      return failure(
+        "THEME_NONCE_REQUIRED",
+        "Custom themes require a host CSP style nonce.",
+      );
+    }
+    const validation = validateThemeTokens(input);
+    if (!validation.ok) {
+      return failure(
+        "INVALID_THEME_TOKENS",
+        validation.errors.map((issue) => issue.message).join(" "),
+      );
+    }
+    this.themeTokens = validation.value;
+    this.applyThemeTokens();
+    return { ok: true };
+  }
+
+  private applyThemeTokens(): void {
+    if (
+      this.renderRoot === null ||
+      this.toolbarElement === null ||
+      this.themeTokens === null
+    )
+      return;
+    if (this.themeStyle === null) {
+      this.themeStyle =
+        this.toolbarElement.ownerDocument.createElement("style");
+      this.themeStyle.nonce = this.host.styleNonce!;
+      this.renderRoot.append(this.themeStyle);
+    }
+    this.toolbarElement.dataset.customTheme = this.themeInstance;
+    const tokens = this.themeTokens;
+    this.toolbarElement.id = this.themeInstance;
+    this.themeStyle.textContent = `#${this.themeInstance} {
+      --mzk-toolbar-background: ${tokens.background};
+      --mzk-toolbar-foreground: ${tokens.foreground};
+      --mzk-toolbar-border: ${tokens.border};
+      --mzk-toolbar-hover: ${tokens.hover};
+      --mzk-toolbar-focus: ${tokens.focus};
+      --mzk-toolbar-disabled: ${tokens.foreground};
+    }`;
   }
 
   mount(target: HTMLElement): ToolbarResult {
@@ -424,6 +500,14 @@ class ToolbarControllerImpl implements ToolbarController {
       this.syncGestureManager();
       target.appendChild(hostElement);
       this.render();
+      this.lifecycle = createLifecycleCoordinator(document, {
+        onSuspend: (reason) => {
+          this.resetSearchState();
+          this.resetAIState();
+          this.host.onSuspend?.(reason);
+        },
+        onResume: (reason) => this.host.onResume?.(reason),
+      });
       return preferenceResult;
     } catch (cause) {
       hostElement.remove();
@@ -857,6 +941,11 @@ class ToolbarControllerImpl implements ToolbarController {
   }
 
   private clearMountReferences(): void {
+    this.lifecycle?.dispose();
+    this.lifecycle = null;
+    this.themeStyle?.remove();
+    this.themeStyle = null;
+    this.themeTokens = null;
     this.clearOverflowMonitoring();
     this.clearSpatialState();
     this.gestureManager?.dispose();
@@ -1175,6 +1264,7 @@ class ToolbarControllerImpl implements ToolbarController {
     toolbar.setAttribute("data-collapsed", String(this.collapsed));
     toolbar.dataset.theme = this.configuration.theme;
     toolbar.dataset.colorScheme = this.configuration.colorScheme;
+    this.applyThemeTokens();
     if (this.hostElement !== null) {
       this.hostElement.dataset.placement = this.configuration.placement.mode;
     }
@@ -1203,10 +1293,10 @@ class ToolbarControllerImpl implements ToolbarController {
 
     const actions = document.createElement("div");
     actions.className = "mzk-toolbar__actions";
-    actions.hidden = this.collapsed;
     for (const [index, action] of this.configuration.actions.entries()) {
       const item = document.createElement("div");
       item.className = "mzk-toolbar__action-item";
+      item.hidden = this.collapsed;
       const button = document.createElement("button");
       button.className = "mzk-toolbar__action";
       button.type = "button";
@@ -1256,7 +1346,7 @@ class ToolbarControllerImpl implements ToolbarController {
     collapseButton.setAttribute("aria-expanded", String(!this.collapsed));
     collapseButton.tabIndex = -1;
 
-    const controls: HTMLElement[] = [scrollStart, actionViewport, scrollEnd];
+    const controls: HTMLElement[] = [];
     if (this.configuration.features.search) {
       const searchButton = document.createElement("button");
       searchButton.className = "mzk-toolbar__search";
@@ -1378,8 +1468,13 @@ class ToolbarControllerImpl implements ToolbarController {
         controls.push(schemeButton);
       }
     }
-    controls.push(collapseButton);
-    toolbar.replaceChildren(...controls);
+    actions.append(...controls);
+    toolbar.replaceChildren(
+      scrollStart,
+      actionViewport,
+      scrollEnd,
+      collapseButton,
+    );
     if (this.configuration.features.tasks) {
       this.ensureTaskPanel(root, document);
     } else {
@@ -2230,6 +2325,7 @@ class ToolbarControllerImpl implements ToolbarController {
     this.aiResponseElement = response;
     this.aiSubmitHandler = (event) => {
       event.preventDefault();
+      if (event.submitter === submit) submit.focus();
       void this.submitAI();
     };
     this.aiKeydownHandler = (event) => {
@@ -2454,10 +2550,17 @@ class ToolbarControllerImpl implements ToolbarController {
       actions.ownerDocument.defaultView?.matchMedia(
         "(prefers-reduced-motion: reduce)",
       ).matches ?? false;
-    target.scrollIntoView({
+    const viewport = actions.getBoundingClientRect();
+    const bounds = target.getBoundingClientRect();
+    const rtl =
+      actions.ownerDocument.defaultView?.getComputedStyle(actions).direction ===
+      "rtl";
+    const alignRight = toStart ? rtl : !rtl;
+    actions.scrollBy({
+      left: alignRight
+        ? bounds.right - viewport.right
+        : bounds.left - viewport.left,
       behavior: reducedMotion ? "auto" : "smooth",
-      block: "nearest",
-      inline: toStart ? "start" : "end",
     });
   }
 

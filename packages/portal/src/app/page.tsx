@@ -5,6 +5,11 @@ import { ThemeToggle } from "../components/portal-shell";
 import { ScenarioLab } from "../components/scenario-lab";
 import { ThemeStudio } from "../components/theme-studio";
 import { VisualConfigurator } from "../components/visual-configurator";
+import { headers } from "next/headers";
+import { DeveloperWorkbench } from "../components/developer-workbench";
+import { VersionedDocs } from "../components/versioned-docs";
+import { StarterStudio } from "../components/starter-studio";
+import { ExtensionStudio } from "../components/extension-studio";
 
 const repository = "https://github.com/Moorky/moorkyz-toolbar";
 const installCommand = "pnpm add @moorkyz/toolbar";
@@ -33,11 +38,12 @@ const studioCapabilities = [
   ["Component Lab", "Available preview"],
   ["Scenario Lab", "Available preview"],
   ["Theme Design Studio", "Available preview"],
-  ["Extension Studio", "Planned"],
-  ["Code and starter generation", "Planned"],
+  ["Extension Studio", "Trusted recipe preview"],
+  ["Code and starter generation", "Local Vanilla preview"],
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const nonce = (await headers()).get("x-nonce") ?? "";
   return (
     <>
       <header className="site-header">
@@ -140,10 +146,11 @@ export default function HomePage() {
             <p>
               Edit supported configuration fields, validate against the package
               schema, and apply a real toolbar preview. Drafts stay in memory
-              and are never uploaded or saved.
+              unless you explicitly save or export them. Nothing is uploaded.
             </p>
           </div>
           <VisualConfigurator />
+          <DeveloperWorkbench />
         </section>
 
         <section
@@ -194,7 +201,7 @@ export default function HomePage() {
           tabIndex={-1}
         >
           <div className="section-heading">
-            <p className="eyebrow">THEME DESIGN STUDIO · BUILT-IN TOKENS</p>
+            <p className="eyebrow">THEME DESIGN STUDIO · VALIDATED TOKENS</p>
             <h2>
               Inspect the palette.
               <br />
@@ -202,11 +209,12 @@ export default function HomePage() {
             </h2>
             <p>
               Browse the built-in themes, inspect their actual SDK tokens,
-              validate contrast, and copy a versioned token file. This preview
-              does not change the portal theme or edit runtime styles.
+              author custom tokens, validate contrast, and import or copy a
+              versioned token file. Custom styles are scoped to this preview
+              under the portal&apos;s nonce-based CSP.
             </p>
           </div>
-          <ThemeStudio />
+          <ThemeStudio nonce={nonce} />
         </section>
 
         <section
@@ -255,6 +263,31 @@ export default function HomePage() {
               use the repository&apos;s workspace consumer examples.
             </p>
           </div>
+        </section>
+
+        <section
+          className="section-shell"
+          id="versioned-docs"
+          aria-labelledby="versioned-docs-heading"
+        >
+          <h2 id="versioned-docs-heading">Versioned SDK reference</h2>
+          <VersionedDocs />
+        </section>
+        <section
+          className="section-shell"
+          id="starter-gallery"
+          aria-labelledby="starter-gallery-heading"
+        >
+          <h2 id="starter-gallery-heading">Local starter gallery</h2>
+          <StarterStudio />
+        </section>
+        <section
+          className="section-shell"
+          id="extension-studio"
+          aria-labelledby="extension-studio-heading"
+        >
+          <h2 id="extension-studio-heading">Trusted Extension Studio</h2>
+          <ExtensionStudio />
         </section>
 
         <section
@@ -334,7 +367,7 @@ export default function HomePage() {
             </p>
             <p className="section-footnote">
               The SDK includes built-in token families and contrast validation.
-              Custom theme authoring remains in the Studio roadmap.
+              Custom theme authoring is available in the local Theme Studio.
             </p>
           </div>
           <div className="theme-sample" aria-hidden="true">
@@ -364,15 +397,15 @@ export default function HomePage() {
           <div className="studio-copy">
             <p className="eyebrow">DEVELOPMENT STUDIO</p>
             <h2>
-              A deeper workspace
+              A local workspace
               <br />
-              is on the roadmap.
+              for real SDK experiments.
             </h2>
             <p>
-              A schema-validated configurator, a component lab, and a
-              deterministic scenario simulator are available below. The full
-              Studio will add themes and starter generation; those tools remain
-              on the roadmap.
+              Configuration, components, deterministic scenario replay, theme
+              authoring, trusted extension recipes, local diagnostics and
+              Vanilla starter generation use the actual package. Arbitrary
+              user-authored JavaScript is not executed.
             </p>
             <a
               className="button button-primary"
@@ -409,8 +442,9 @@ export default function HomePage() {
               ))}
             </ul>
             <p>
-              Configurator drafts are local, and built-in theme tokens can be
-              inspected and exported. Custom theme authoring remains planned.
+              Drafts and exports stay local. All APIs remain development
+              previews; release authorization and manual acceptance are separate
+              gates.
             </p>
           </div>
         </section>

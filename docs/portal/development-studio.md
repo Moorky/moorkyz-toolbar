@@ -2,6 +2,18 @@
 
 ## Current implementation status
 
+The current M6–M11 slice adds a full JSON/visual workbench with confirmed,
+versioned local file import/export, searchable versioned preview reference,
+custom nonce-scoped theme authoring/import/export, validated scenario import,
+trusted static extension recipes with permission/fault/revocation demonstrations,
+an explicit local Inspector and the shared Vanilla starter generator. Studio
+controls are disabled/inert until hydration so early input cannot be discarded.
+No arbitrary user JavaScript runs in the privileged portal. The safe static
+fallback is deliberate; untrusted-code execution and additional framework
+generators are not advertised as implemented. See the
+[current evidence and remaining acceptance](../engineering/release-readiness.md).
+The paragraph below describes the earlier foundation for historical context.
+
 The private Next.js app in `packages/portal/` is an early portal foundation, not the complete Studio. It mounts the workspace library for page navigation, updates real actions from the context picker, offers a locally persisted light/dark site preference, includes a schema-validated visual configurator with a real toolbar preview and generated TypeScript configuration, provides state-driven Component and Scenario Labs, and previews built-in tokens in a Theme Design Studio using the real library. The Theme Studio reports token contrast and copies a versioned JSON token set; custom token editing is not yet available. The Scenario Lab simulates context, viewport, time, host authorization decisions, and host faults; snapshots are page-local and copied as data, never executed. Users can explicitly save, restore, or delete a versioned configuration draft in this browser; replacing or deleting a saved draft requires confirmation, ordinary edits are not written automatically, and no draft is uploaded. The production build applies a nonce-based CSP through the Next.js Proxy. The M8 acceptance gates for versioned docs, custom theme authoring, broader Scenario/Extension labs, generator, and robust migration/recovery remain open.
 
 ## Purpose

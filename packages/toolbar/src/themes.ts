@@ -92,7 +92,8 @@ export type ThemeDiagnosticCode =
   | "THEME_INVALID_COLOR"
   | "THEME_ACCESSOR"
   | "THEME_TEXT_CONTRAST"
-  | "THEME_FOCUS_CONTRAST";
+  | "THEME_FOCUS_CONTRAST"
+  | "THEME_HOVER_CONTRAST";
 
 export interface ThemeDiagnostic {
   readonly code: ThemeDiagnosticCode;
@@ -136,7 +137,10 @@ export function validateThemeTokens(input: unknown): ThemeValidation {
     };
   }
   const prototype = Object.getPrototypeOf(input);
-  if (prototype !== Object.prototype && prototype !== null) {
+  if (
+    (prototype !== Object.prototype && prototype !== null) ||
+    Object.getOwnPropertySymbols(input).length > 0
+  ) {
     return {
       ok: false,
       errors: [
@@ -254,8 +258,70 @@ export function validateThemeTokens(input: unknown): ThemeValidation {
       message: "Focus/background contrast must be at least 3:1.",
     });
   }
+  if (contrastRatio(tokens.foreground, tokens.hover) < 4.5) {
+    errors.push({
+      code: "THEME_HOVER_CONTRAST",
+      path: "hover",
+      message: "Foreground/hover contrast must be at least 4.5:1.",
+    });
+  }
 
   return errors.length > 0
     ? { ok: false, errors: Object.freeze(errors) }
     : { ok: true, value: Object.freeze({ ...tokens }) };
+}
+
+export type ThemeFileResult =
+  | {
+      readonly ok: true;
+      readonly value: {
+        readonly version: 1;
+        readonly theme: string;
+        readonly tokens: ThemeTokens;
+      };
+    }
+  | { readonly ok: false; readonly message: string };
+
+export function validateThemeFile(input: unknown): ThemeFileResult {
+  if (typeof input !== "object" || input === null || Array.isArray(input)) {
+    return { ok: false, message: "Theme file must be a plain object." };
+  }
+  const prototype = Object.getPrototypeOf(input);
+  if (
+    (prototype !== Object.prototype && prototype !== null) ||
+    Object.getOwnPropertySymbols(input).length > 0
+  ) {
+    return { ok: false, message: "Theme file must be plain data." };
+  }
+  const descriptors = Object.getOwnPropertyDescriptors(input);
+  const keys = Reflect.ownKeys(descriptors);
+  if (
+    keys.length !== 3 ||
+    !["version", "theme", "tokens"].every(
+      (key) => descriptors[key] !== undefined && "value" in descriptors[key],
+    )
+  ) {
+    return { ok: false, message: "Expected only version, theme and tokens." };
+  }
+  const version: unknown = descriptors.version?.value;
+  const theme: unknown = descriptors.theme?.value;
+  const tokens: unknown = descriptors.tokens?.value;
+  if (
+    version !== 1 ||
+    typeof theme !== "string" ||
+    !/^[a-z][a-z0-9-]{0,63}$/.test(theme)
+  ) {
+    return { ok: false, message: "Unsupported theme version or invalid name." };
+  }
+  const validated = validateThemeTokens(tokens);
+  if (!validated.ok) {
+    return {
+      ok: false,
+      message: validated.errors.map((issue) => issue.message).join(" "),
+    };
+  }
+  return {
+    ok: true,
+    value: Object.freeze({ version: 1, theme, tokens: validated.value }),
+  };
 }

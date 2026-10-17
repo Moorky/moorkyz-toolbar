@@ -11,7 +11,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "50295742d8a4647844a45fe2468ee3cc690a1be33873019eda4cd74365689ea3"
+      "sha256": "1a2ef5b78bf9e68f15d3b69f84f03f1a48995f3d48a8ab5006fb5c63a7f0c0cc"
     },
     {
       "path": "LICENSE",
@@ -31,7 +31,7 @@
     },
     {
       "path": "docs/contracts/sdk-and-schema.md",
-      "sha256": "9981ebd4aedefe4027a0bbd671b31a8ec0bd269010ac7b70d5a22fcb09c3dcf9"
+      "sha256": "b9a309dcd21b606e483c2988068384e932e067d0ce3733c19ff5f07c8732d3f2"
     },
     {
       "path": "docs/decisions/decision-register.md",
@@ -67,7 +67,7 @@
     },
     {
       "path": "docs/portal/development-studio.md",
-      "sha256": "b6c050388370684db115ff44ca5534611c347947d65394faa1bb47f667a69cd5"
+      "sha256": "c731b9ad13a893c105a60c5af3ed87176c4a2c1a1bdd8f48fdb887417320ab45"
     }
   ]
 }
