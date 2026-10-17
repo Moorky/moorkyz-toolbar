@@ -1,297 +1,556 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  THEME_NAMES,
-  type ToolbarConfiguration,
-  type ToolbarController,
-} from "@moorkyz/toolbar";
+import { validateThemeTokens, type ToolbarController } from "@moorkyz/toolbar";
 import { ToolbarMount } from "@moorkyz/toolbar/react";
-import {
-  generateProject,
-  type GeneratedProject,
-} from "@moorkyz/toolbar/generator";
-import { usePortalSettings } from "./portal-shell";
+import type { GeneratedProject } from "@moorkyz/toolbar/generator";
 import { CopyButton } from "./copy-button";
+import { usePortalSettings } from "./portal-shell";
 import { HydrationBoundary } from "./hydration-boundary";
 import {
-  INITIAL_PLAYGROUND_CONFIGURATION,
   PLAYGROUND_SECTIONS,
   PLAYGROUND_STORAGE_KEY,
-  parsePlaygroundJSON,
-  validatePlaygroundConfiguration,
 } from "./playground-model";
+import {
+  APPLICATIONS,
+  AUTOSAVE_KEY,
+  COMMANDS,
+  DESIGN_KEY,
+  ICONS,
+  INITIAL_DESIGN,
+  STYLES,
+  applyStyle,
+  decorateToolbar,
+  defaultActions,
+  generateDesignProject,
+  parseDesign,
+  presentationCSS,
+  sdkConfiguration,
+  validateDesign,
+  type DesignAction,
+  type Geometry,
+  type PlaygroundDesign,
+} from "./playground-design";
+import {
+  PlaygroundApplications,
+  type ApplicationHost,
+} from "./playground-applications";
 
 interface History {
-  readonly past: readonly ToolbarConfiguration[];
-  readonly present: ToolbarConfiguration;
-  readonly future: readonly ToolbarConfiguration[];
+  readonly past: readonly PlaygroundDesign[];
+  readonly present: PlaygroundDesign;
+  readonly future: readonly PlaygroundDesign[];
 }
+const initialConfiguration = sdkConfiguration(INITIAL_DESIGN, "light");
+type Pending = "save" | "restore" | "reset" | "autosave" | null;
 
-const INITIAL_TASKS = [
-  { id: 1, title: "Explore your new workspace", done: true },
-  { id: 2, title: "Make the toolbar your own", done: false },
-  { id: 3, title: "Export a local Vanilla starter", done: false },
-];
-
-export function FunctionalPlayground() {
+export function FunctionalPlayground({ nonce }: { readonly nonce: string }) {
   const { theme } = usePortalSettings();
   const [history, setHistory] = useState<History>({
     past: [],
-    present: INITIAL_PLAYGROUND_CONFIGURATION,
+    present: INITIAL_DESIGN,
     future: [],
   });
   const [section, setSection] = useState<string | null>("Templates");
   const [source, setSource] = useState<string | null>(null);
-  const [pending, setPending] = useState<"save" | "restore" | "reset" | null>(
-    null,
-  );
   const [status, setStatus] = useState(
-    "Local sample data. Configuration is saved only when you choose Save locally.",
+    "Design autosaves locally. Application contents stay in memory only.",
   );
-  const [previewError, setPreviewError] = useState<string | null>(null);
-  const [tasks, setTasks] = useState(INITIAL_TASKS);
-  const [showCompleted, setShowCompleted] = useState(true);
-  const [title, setTitle] = useState("");
-  const [generated, setGenerated] = useState<{
-    readonly configuration: ToolbarConfiguration;
-    readonly project: GeneratedProject;
-  } | null>(null);
-  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState<Pending>(null);
+  const [ready, setReady] = useState(false);
+  const [canAutosave, setCanAutosave] = useState(false);
+  const [recovery, setRecovery] = useState(false);
+  const [allowed, setAllowed] = useState<readonly string[]>(
+    COMMANDS.filter(({ application }) => application === "workspace").map(
+      ({ id }) => id,
+    ),
+  );
+  const [tab, setTab] = useState<"application" | "style">("application");
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("All");
+  const [favorites, setFavorites] = useState<readonly string[]>([]);
+  const [favoriteOnly, setFavoriteOnly] = useState(false);
+  const [variant, setVariant] = useState<"light" | "dark">(theme);
+  const [tokenDraft, setTokenDraft] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState("toolbar.config.js");
-  const nextTask = useRef(4);
-  const taskInput = useRef<HTMLInputElement>(null);
+  const [generated, setGenerated] = useState<{
+    design: PlaygroundDesign;
+    theme: string;
+    project: GeneratedProject;
+  } | null>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [dragDesign, setDragDesign] = useState<PlaygroundDesign | null>(null);
+  const [mobileMode, setMobileMode] = useState<
+    "preview" | "customize" | "code"
+  >("preview");
+  const [sidebarWidth, setSidebarWidth] = useState(300);
+  const [sheetHeight, setSheetHeight] = useState(65);
+  const [focus, setFocus] = useState(false);
   const controller = useRef<ToolbarController | null>(null);
+  const mount = useRef<HTMLDivElement>(null);
+  const workspace = useRef<HTMLDivElement>(null);
+  const application = useRef<ApplicationHost>(null);
+  const imported = useRef<PlaygroundDesign | null>(null);
+  const drag = useRef<{
+    type: "move" | "resize" | "sidebar" | "sheet";
+    x: number;
+    y: number;
+    design: PlaygroundDesign;
+    width: number;
+    sheet: number;
+  } | null>(null);
+  const current = history.present;
+  const preview = dragDesign ?? current;
+  const currentRef = useRef(current);
+  currentRef.current = current;
   const configuration = useMemo(
-    () => ({ ...history.present, colorScheme: theme }),
-    [history.present, theme],
+    () => sdkConfiguration(current, theme),
+    [current, theme],
   );
-  const configurationRef = useRef(configuration);
-  configurationRef.current = configuration;
+  const effectiveConfig = useRef(configuration);
+  effectiveConfig.current = configuration;
+  const sourceText = source ?? JSON.stringify(current, null, 2);
+  const validation = useMemo(() => parseDesign(sourceText), [sourceText]);
   const project =
-    generated?.configuration === configuration ? generated.project : null;
+    generated?.design === current && generated.theme === theme
+      ? generated.project
+      : null;
   const generatedFile = project?.files.find(
     ({ path }) => path === selectedFile,
   );
-  const code = source ?? JSON.stringify(configuration, null, 2);
-  const validation = useMemo(() => parsePlaygroundJSON(code), [code]);
-  const hasUnappliedSource = source !== null;
-
-  const dispatchAction = useCallback((id: string) => {
-    switch (id) {
-      case "add-task":
-        taskInput.current?.focus();
-        setStatus("Enter a task title in the workspace, then choose Add task.");
-        break;
-      case "toggle-completed":
-        setShowCompleted((current) => !current);
-        setStatus("Completed task visibility changed by the Workspace host.");
-        break;
-      case "clear-completed":
-        setTasks((current) => current.filter(({ done }) => !done));
-        setStatus("Completed sample tasks cleared by the Workspace host.");
-        break;
-      default:
-        throw new Error(`Workspace host does not authorize command "${id}".`);
-    }
-  }, []);
   const host = useMemo(
     () => ({
-      dispatchAction,
+      dispatchAction: (id: string) => {
+        const action = currentRef.current.actions.find(
+          (entry) => entry.id === id,
+        );
+        const definition = COMMANDS.find(
+          (entry) => entry.id === action?.command,
+        );
+        if (
+          !action?.enabled ||
+          definition?.application !== currentRef.current.application ||
+          application.current === null
+        )
+          throw new Error("The application host denied this action.");
+        application.current.dispatch(action.command);
+      },
       onActionError: (_cause: unknown, id: string) =>
-        setPreviewError(`Workspace command "${id}" failed.`),
+        setError(`The host rejected action "${id}".`),
     }),
-    [dispatchAction],
+    [],
   );
   const onController = useCallback((instance: ToolbarController | null) => {
     controller.current = instance;
     if (instance !== null) {
-      const result = instance.update(configurationRef.current);
-      setPreviewError(result.ok ? null : result.error.message);
+      const result = instance.update(effectiveConfig.current);
+      setError(result.ok ? null : result.error.message);
     }
   }, []);
   const onMountError = useCallback(
-    (error: { readonly message: string }) => setPreviewError(error.message),
+    (cause: { readonly message: string }) => setError(cause.message),
     [],
   );
+  const onAvailable = useCallback(
+    (commands: readonly string[]) => setAllowed(commands),
+    [],
+  );
+  const appStatus = useCallback((message: string) => setStatus(message), []);
 
-  useEffect(() => {
-    const result = controller.current?.update(configuration);
-    if (result !== undefined)
-      setPreviewError(result.ok ? null : result.error.message);
-  }, [configuration]);
-
-  useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem(PLAYGROUND_STORAGE_KEY);
-      if (saved !== null) {
-        const result = parsePlaygroundJSON(saved, true);
-        setStatus(
-          result.ok
-            ? "A saved configuration is available. Choose Restore saved to review and recover it."
-            : `Saved draft needs recovery: ${result.message}`,
-        );
-      }
-    } catch {
-      setStatus(
-        "Local storage is unavailable. The workspace still works in memory; use export to keep your configuration.",
-      );
+  function commit(design: PlaygroundDesign) {
+    const valid = validateDesign(design);
+    if (!valid.ok) {
+      setStatus(valid.message);
+      return;
     }
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-    setGenerated(null);
-    setGenerationError(null);
-    void generateProject({
-      name: "my-toolbar-workspace",
-      framework: "vanilla",
-      preset: "universal",
-      origin: "studio",
-      configuration,
-    })
-      .then((result) => {
-        if (!active) return;
-        if (result.ok) setGenerated({ configuration, project: result.value });
-        else setGenerationError(result.error.message);
-      })
-      .catch(() => {
-        if (active)
-          setGenerationError(
-            "Local Vanilla generation failed. Your configuration is unchanged; retry by editing or undoing a configuration change.",
-          );
-      });
-    return () => {
-      active = false;
-    };
-  }, [configuration]);
-
-  function apply(value: ToolbarConfiguration) {
-    setHistory((current) =>
-      JSON.stringify(current.present) === JSON.stringify(value)
-        ? current
+    setHistory((state) =>
+      JSON.stringify(state.present) === JSON.stringify(valid.value)
+        ? state
         : {
-            past: [...current.past.slice(-49), current.present],
-            present: value,
+            past: [...state.past.slice(-49), state.present],
+            present: valid.value,
             future: [],
           },
     );
     setSource(null);
     setPending(null);
+    setTokenDraft(null);
   }
-
-  function patch(value: Partial<ToolbarConfiguration>) {
-    const result = validatePlaygroundConfiguration({
-      ...history.present,
-      ...value,
+  function patch(value: Partial<PlaygroundDesign>) {
+    commit({ ...current, ...value });
+  }
+  function geometry(value: Partial<Geometry>) {
+    patch({ geometry: { ...current.geometry, ...value } });
+  }
+  function actionPatch(index: number, value: Partial<DesignAction>) {
+    patch({
+      actions: current.actions.map((entry, i) =>
+        i === index ? { ...entry, ...value } : entry,
+      ),
     });
-    if (!result.ok) {
-      setStatus(result.message);
-      return;
-    }
-    apply(result.value);
   }
-
   function travel(direction: "undo" | "redo") {
-    setHistory((current) => {
-      if (direction === "undo") {
-        const previous = current.past.at(-1);
-        return previous === undefined
-          ? current
-          : {
-              past: current.past.slice(0, -1),
-              present: previous,
-              future: [current.present, ...current.future],
-            };
-      }
-      const next = current.future[0];
-      return next === undefined
-        ? current
+    setHistory((state) => {
+      const target = direction === "undo" ? state.past.at(-1) : state.future[0];
+      if (!target) return state;
+      return direction === "undo"
+        ? {
+            past: state.past.slice(0, -1),
+            present: target,
+            future: [state.present, ...state.future],
+          }
         : {
-            past: [...current.past, current.present],
-            present: next,
-            future: current.future.slice(1),
+            past: [...state.past, state.present],
+            present: target,
+            future: state.future.slice(1),
           };
     });
-    setSource(null);
+    setTokenDraft(null);
     setPending(null);
     setStatus(
-      "Configuration history restored. Application tasks are not replayed.",
+      "Design history restored. Application commands are never replayed.",
     );
   }
 
+  useEffect(() => {
+    const result = controller.current?.update(configuration);
+    if (result) setError(result.ok ? null : result.error.message);
+  }, [configuration]);
+  useEffect(() => {
+    const target = mount.current;
+    if (!target) return;
+    const present = () => decorateToolbar(target, current, allowed, editMode);
+    present();
+    const observer = new MutationObserver(present);
+    observer.observe(target, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [current, allowed, editMode, configuration]);
+  useEffect(() => {
+    try {
+      const auto = localStorage.getItem(AUTOSAVE_KEY);
+      const saved =
+        localStorage.getItem(DESIGN_KEY) ??
+        localStorage.getItem(PLAYGROUND_STORAGE_KEY);
+      if (auto !== null) {
+        const parsed = parseDesign(auto);
+        if (parsed.ok) {
+          setHistory({ past: [], present: parsed.value, future: [] });
+          setCanAutosave(true);
+          setStatus(
+            "Recovered your browser-local autosaved design. Application contents were not stored.",
+          );
+        } else {
+          setRecovery(true);
+          setStatus(
+            `Autosave needs recovery: ${parsed.message} Choose a recovery action before replacing stored data.`,
+          );
+        }
+      } else setCanAutosave(true);
+      if (saved !== null)
+        setStatus(
+          (message) =>
+            `${message} A saved configuration is available through Restore saved.`,
+        );
+      const prefs = localStorage.getItem(`${DESIGN_KEY}:workspace`);
+      if (prefs !== null) {
+        const parsed: unknown = JSON.parse(prefs);
+        if (
+          typeof parsed === "object" &&
+          parsed !== null &&
+          "width" in parsed &&
+          typeof parsed.width === "number" &&
+          parsed.width >= 240 &&
+          parsed.width <= 420
+        )
+          setSidebarWidth(parsed.width);
+      }
+      const favoriteData = localStorage.getItem(`${DESIGN_KEY}:favorites`);
+      if (favoriteData !== null) {
+        const parsed: unknown = JSON.parse(favoriteData);
+        if (
+          Array.isArray(parsed) &&
+          parsed.every(
+            (value) =>
+              typeof value === "string" &&
+              [...APPLICATIONS, ...STYLES].some(({ id }) => id === value),
+          )
+        )
+          setFavorites(parsed);
+        else
+          setStatus(
+            (message) => `${message} Favorites could not be recovered.`,
+          );
+      }
+    } catch {
+      setStatus(
+        "Local storage is unavailable or contains unreadable preferences. Work continues in memory; export keeps your design.",
+      );
+    }
+    setReady(true);
+  }, []);
+  useEffect(() => {
+    if (!ready || !canAutosave) return;
+    try {
+      localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(current));
+    } catch {
+      setStatus(
+        "Autosave could not be written. Your design remains in memory; export it to keep a copy.",
+      );
+    }
+  }, [current, ready, canAutosave]);
+  useEffect(() => {
+    if (!ready || !canAutosave) return;
+    try {
+      localStorage.setItem(
+        `${DESIGN_KEY}:workspace`,
+        JSON.stringify({ width: sidebarWidth }),
+      );
+      localStorage.setItem(
+        `${DESIGN_KEY}:favorites`,
+        JSON.stringify(favorites),
+      );
+    } catch {
+      setStatus(
+        "Workspace preferences could not be saved. The design remains available in memory.",
+      );
+    }
+  }, [sidebarWidth, favorites, ready, canAutosave]);
+  useEffect(() => {
+    let active = true;
+    setGenerated(null);
+    void generateDesignProject(current, theme)
+      .then((project) => {
+        if (active) setGenerated({ design: current, theme, project });
+      })
+      .catch((cause: unknown) => {
+        if (active)
+          setError(
+            cause instanceof Error
+              ? cause.message
+              : "Local project generation failed.",
+          );
+      });
+    return () => {
+      active = false;
+    };
+  }, [current, theme]);
+  useEffect(() => {
+    function changed() {
+      setFocus(document.fullscreenElement === workspace.current);
+    }
+    document.addEventListener("fullscreenchange", changed);
+    return () => document.removeEventListener("fullscreenchange", changed);
+  }, []);
+  useEffect(() => {
+    if (!focus) return;
+    const previous = document.activeElement;
+    workspace.current
+      ?.querySelector<HTMLButtonElement>(".fullscreen-exit")
+      ?.focus();
+    function key(event: KeyboardEvent) {
+      if (event.key === "Escape" && document.fullscreenElement === null) {
+        event.preventDefault();
+        setFocus(false);
+      }
+      if (event.key !== "Tab" || !workspace.current) return;
+      const controls = [
+        ...workspace.current.querySelectorAll<HTMLElement>(
+          "button, a, input, select, textarea, [tabindex]",
+        ),
+      ].filter(
+        (element) =>
+          element.tabIndex >= 0 &&
+          !element.matches(":disabled") &&
+          element.getClientRects().length > 0 &&
+          getComputedStyle(element).visibility !== "hidden",
+      );
+      const first = controls[0],
+        last = controls.at(-1);
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    }
+    document.addEventListener("keydown", key);
+    return () => {
+      document.removeEventListener("keydown", key);
+      if (previous instanceof HTMLElement && previous.isConnected)
+        previous.focus();
+    };
+  }, [focus]);
+
   function save(replace = false) {
     try {
-      if (
-        !replace &&
-        window.localStorage.getItem(PLAYGROUND_STORAGE_KEY) !== null
-      ) {
+      if (!replace && localStorage.getItem(DESIGN_KEY) !== null) {
         setPending("save");
         return;
       }
-      window.localStorage.setItem(
-        PLAYGROUND_STORAGE_KEY,
-        JSON.stringify({ version: 1, configuration: history.present }),
-      );
+      localStorage.setItem(DESIGN_KEY, JSON.stringify(current));
       setPending(null);
       setStatus(
-        "Configuration saved in this browser only. Sample task contents are not stored.",
+        "Configuration saved in this browser only. Application contents are not stored.",
       );
     } catch {
       setPending(null);
       setStatus(
-        "Could not save configuration. It remains in memory; download an export instead.",
+        "Could not save configuration. It remains in memory; export a copy.",
       );
     }
   }
-
   function restore() {
     try {
-      const raw = window.localStorage.getItem(PLAYGROUND_STORAGE_KEY);
+      const raw =
+        localStorage.getItem(DESIGN_KEY) ??
+        localStorage.getItem(PLAYGROUND_STORAGE_KEY);
       if (raw === null) {
-        setStatus("No saved Playground configuration exists in this browser.");
+        setStatus("No saved design exists in this browser.");
         setPending(null);
         return;
       }
-      const result = parsePlaygroundJSON(raw, true);
-      if (!result.ok) {
-        setStatus(result.message);
+      const parsed = parseDesign(raw);
+      if (!parsed.ok) {
+        setStatus(parsed.message);
         setPending(null);
         return;
       }
-      apply(result.value);
-      setStatus(
-        "Saved configuration restored. Undo returns to your previous configuration.",
-      );
+      commit(parsed.value);
+      setStatus("Saved design restored. Undo returns to your previous design.");
     } catch {
       setPending(null);
       setStatus(
-        "Could not read the saved configuration. Your current configuration is unchanged.",
+        "Could not read the saved design. Your current design is unchanged.",
       );
     }
   }
-
-  function download() {
-    if (project === null) {
-      setStatus("A valid generated Vanilla project is required before export.");
-      return;
-    }
+  function download(text: string, filename: string) {
     const url = URL.createObjectURL(
-      new Blob([JSON.stringify({ version: 1, project }, null, 2)], {
-        type: "application/json",
-      }),
+      new Blob([text], { type: "application/json" }),
     );
     try {
       const link = document.createElement("a");
       link.href = url;
-      link.download = "toolbar.playground.vanilla.json";
+      link.download = filename;
       link.click();
-      setStatus(
-        "Vanilla project data exported locally. Review the included README; no files were installed or executed.",
-      );
+      setStatus("Export downloaded locally. Nothing was uploaded or executed.");
     } finally {
       URL.revokeObjectURL(url);
     }
+  }
+  async function toggleFullscreen() {
+    try {
+      if (focus && document.fullscreenElement !== workspace.current) {
+        setFocus(false);
+        return;
+      }
+      if (document.fullscreenElement === workspace.current)
+        await document.exitFullscreen();
+      else if (workspace.current?.requestFullscreen)
+        await workspace.current.requestFullscreen();
+      else {
+        setFocus((value) => !value);
+        setStatus(
+          "Native fullscreen is unavailable; expanded focus view is active instead.",
+        );
+      }
+    } catch {
+      setFocus((value) => !value);
+      setStatus(
+        "Browser fullscreen was denied. Expanded focus view is available; use Exit fullscreen to close it.",
+      );
+    }
+  }
+  function startDrag(
+    event: React.PointerEvent<HTMLButtonElement>,
+    type: "move" | "resize" | "sidebar" | "sheet",
+  ) {
+    event.currentTarget.setPointerCapture(event.pointerId);
+    drag.current = {
+      type,
+      x: event.clientX,
+      y: event.clientY,
+      design: current,
+      width:
+        type === "resize"
+          ? (mount.current
+              ?.querySelector(".mzk-toolbar")
+              ?.getBoundingClientRect().width ?? sidebarWidth)
+          : sidebarWidth,
+      sheet: sheetHeight,
+    };
+  }
+  function moveDrag(event: React.PointerEvent<HTMLButtonElement>) {
+    const start = drag.current;
+    if (!start) return;
+    const dx = event.clientX - start.x,
+      dy = event.clientY - start.y;
+    const clamp = (value: number, min: number, max: number) =>
+      Math.round(Math.max(min, Math.min(max, value)));
+    if (start.type === "sidebar")
+      setSidebarWidth(clamp(start.width + dx, 240, 420));
+    else if (start.type === "sheet")
+      setSheetHeight(
+        clamp(start.sheet - (dy / window.innerHeight) * 100, 35, 85),
+      );
+    else
+      setDragDesign({
+        ...start.design,
+        geometry: {
+          ...start.design.geometry,
+          ...(start.type === "move"
+            ? {
+                offsetX: clamp(start.design.geometry.offsetX + dx, -128, 128),
+                offsetY: clamp(start.design.geometry.offsetY - dy, 0, 120),
+              }
+            : {
+                width: clamp(
+                  (start.design.geometry.width || start.width) + dx,
+                  180,
+                  1100,
+                ),
+              }),
+        },
+      });
+  }
+  function endDrag(event: React.PointerEvent<HTMLButtonElement>) {
+    if (event.currentTarget.hasPointerCapture(event.pointerId))
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    if (dragDesign) commit(dragDesign);
+    drag.current = null;
+    setDragDesign(null);
+  }
+  const dragEvents = {
+    onPointerMove: moveDrag,
+    onPointerUp: endDrag,
+    onPointerCancel: () => {
+      drag.current = null;
+      setDragDesign(null);
+    },
+  };
+  const list = tab === "application" ? APPLICATIONS : STYLES;
+  const shown = list.filter(
+    (entry) =>
+      `${entry.name} ${"description" in entry ? entry.description : ""}`
+        .toLowerCase()
+        .includes(query.toLowerCase()) &&
+      (category === "All" || entry.category === category) &&
+      (!favoriteOnly || favorites.includes(entry.id)),
+  );
+  const colors = current.appearance[variant];
+  let colorCandidate = colors;
+  let colorError: string | null = null;
+  if (tokenDraft !== null) {
+    try {
+      colorCandidate = JSON.parse(tokenDraft);
+    } catch {
+      colorError = "Invalid color data.";
+    }
+    const validated = validateThemeTokens(colorCandidate);
+    if (!validated.ok)
+      colorError = validated.errors.map(({ message }) => message).join(" ");
   }
 
   return (
@@ -304,7 +563,7 @@ export function FunctionalPlayground() {
       >
         <div className="playground-heading">
           <div>
-            <p className="eyebrow">LIVE PLAYGROUND · SDK 0.1.0 PREVIEW</p>
+            <p className="eyebrow">FUNCTIONAL PLAYGROUND · SDK 0.1.0 PREVIEW</p>
             <h2 id="playground-heading">Your interface. Your toolbar.</h2>
           </div>
           <span className="status-pill">LOCAL ONLY</span>
@@ -315,14 +574,14 @@ export function FunctionalPlayground() {
         >
           <button
             type="button"
-            disabled={history.past.length === 0 || hasUnappliedSource}
+            disabled={!history.past.length || source !== null}
             onClick={() => travel("undo")}
           >
             Undo
           </button>
           <button
             type="button"
-            disabled={history.future.length === 0 || hasUnappliedSource}
+            disabled={!history.future.length || source !== null}
             onClick={() => travel("redo")}
           >
             Redo
@@ -332,7 +591,7 @@ export function FunctionalPlayground() {
           </button>
           <button
             type="button"
-            disabled={hasUnappliedSource}
+            disabled={source !== null}
             onClick={() => save()}
           >
             Save locally
@@ -340,45 +599,145 @@ export function FunctionalPlayground() {
           <button type="button" onClick={() => setPending("restore")}>
             Restore saved
           </button>
+          <button type="button" onClick={() => void toggleFullscreen()}>
+            {focus ? "Exit fullscreen" : "Fullscreen preview"}
+          </button>
         </div>
-        {pending !== null && (
+        {pending && (
           <div
-            className="playground-confirmation"
             role="group"
+            className="playground-confirmation"
             aria-label="Confirm configuration change"
           >
             <p>
               {pending === "save"
-                ? "Replace the saved configuration? This also replaces an unreadable or newer saved draft."
+                ? "Replace the saved configuration?"
                 : pending === "restore"
-                  ? "Restore the saved configuration? Current edits can be recovered with Undo; unapplied JSON will be discarded."
-                  : "Reset configuration to the built-in defaults? Undo will keep your current configuration; unapplied JSON will be discarded."}
+                  ? "Restore the saved configuration? Undo preserves your current design."
+                  : pending === "autosave"
+                    ? "Replace unreadable autosave with the current design? Export the unreadable data first if needed."
+                    : "Reset this design? Undo preserves your current design."}{" "}
+              Unapplied JSON edits will be discarded.
             </p>
             <button
               type="button"
               onClick={() => {
                 if (pending === "save") save(true);
                 else if (pending === "restore") restore();
-                else {
-                  apply(INITIAL_PLAYGROUND_CONFIGURATION);
-                  setStatus(
-                    "Default configuration restored. Undo is available; saved configuration was not deleted.",
-                  );
+                else if (pending === "autosave") {
+                  setRecovery(false);
+                  setCanAutosave(true);
+                  setPending(null);
+                } else {
+                  commit(INITIAL_DESIGN);
+                  setStatus("Defaults restored. Undo is available.");
                 }
               }}
             >
               Confirm {pending === "save" ? "replace saved" : pending}
             </button>
-            <button type="button" onClick={() => setPending(null)}>
+            <button
+              type="button"
+              onClick={() => {
+                setPending(null);
+                imported.current = null;
+              }}
+            >
               Cancel
             </button>
           </div>
         )}
-        <div className="playground-workspace">
+        {recovery && (
+          <div
+            className="playground-confirmation"
+            role="group"
+            aria-label="Autosave recovery"
+          >
+            <p>
+              Unreadable or newer autosave is preserved. Export it before
+              explicitly replacing it.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                try {
+                  download(
+                    localStorage.getItem(AUTOSAVE_KEY) ?? "",
+                    "toolbar.unrecovered.json",
+                  );
+                } catch {
+                  setStatus("Could not read the unrecovered autosave.");
+                }
+              }}
+            >
+              Export unrecovered data
+            </button>
+            <button type="button" onClick={() => setPending("autosave")}>
+              Use current design for autosave
+            </button>
+          </div>
+        )}
+        <div
+          className="mobile-workspace-modes"
+          aria-label="Mobile workspace view"
+        >
+          {(["preview", "customize", "code"] as const).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              aria-pressed={mobileMode === mode}
+              onClick={() => {
+                setMobileMode(mode);
+                if (mode === "code") setSection("Code & Export");
+              }}
+            >
+              {mode}
+            </button>
+          ))}
+        </div>
+        <div
+          ref={workspace}
+          id="playground-workspace"
+          className="playground-workspace"
+          data-mobile-mode={mobileMode}
+          data-focus={focus}
+        >
+          {focus && (
+            <button
+              type="button"
+              className="fullscreen-exit"
+              onClick={() => void toggleFullscreen()}
+            >
+              Exit fullscreen
+            </button>
+          )}
+          <style
+            nonce={nonce}
+          >{`#playground-workspace { --sidebar-width:${sidebarWidth}px; --sheet-height:${sheetHeight}svh; }\n${presentationCSS(preview, "#playground-canvas", theme)}`}</style>
           <aside
             className="playground-sidebar"
             aria-label="Playground settings"
           >
+            <button
+              type="button"
+              className="sheet-resize"
+              aria-label="Resize settings sheet"
+              onPointerDown={(event) => startDrag(event, "sheet")}
+              {...dragEvents}
+              onKeyDown={(event) => {
+                if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+                  event.preventDefault();
+                  setSheetHeight((value) =>
+                    Math.max(
+                      35,
+                      Math.min(85, value + (event.key === "ArrowUp" ? 5 : -5)),
+                    ),
+                  );
+                }
+              }}
+            >
+              Resize settings ↕
+            </button>
             {PLAYGROUND_SECTIONS.map((name, index) => (
               <div className="playground-accordion" key={name}>
                 <h3>
@@ -397,148 +756,715 @@ export function FunctionalPlayground() {
                 <div id={`playground-panel-${index}`} hidden={section !== name}>
                   {name === "Templates" && (
                     <>
-                      <p className="eyebrow">APPLICATION</p>
                       <div
-                        className="playground-template"
-                        aria-label="Selected application: Modern Workspace"
+                        className="template-tabs"
+                        aria-label="Template library"
                       >
-                        <span aria-hidden="true">▤</span>
-                        <strong>Modern Workspace</strong>
-                        <p>
-                          A working local task list. Use the toolbar to change
-                          the application, not a screenshot.
-                        </p>
+                        <button
+                          type="button"
+                          aria-pressed={tab === "application"}
+                          onClick={() => {
+                            setTab("application");
+                            setCategory("All");
+                          }}
+                        >
+                          Application
+                        </button>
+                        <button
+                          type="button"
+                          aria-pressed={tab === "style"}
+                          onClick={() => {
+                            setTab("style");
+                            setCategory("All");
+                          }}
+                        >
+                          Toolbar Style
+                        </button>
                       </div>
-                      <p className="eyebrow">TOOLBAR STYLE</p>
-                      <p>Minimal Floating Pill · real SDK default</p>
-                      <p className="playground-hint">
-                        Document Editor, Analytics Dashboard, Project Board and
-                        the geometry style library are next-slice capabilities,
-                        not available templates yet.
-                      </p>
+                      <label>
+                        Search templates
+                        <input
+                          type="search"
+                          value={query}
+                          onChange={(event) =>
+                            setQuery(event.currentTarget.value)
+                          }
+                        />
+                      </label>
+                      <label>
+                        Template category
+                        <select
+                          value={category}
+                          onChange={(event) =>
+                            setCategory(event.currentTarget.value)
+                          }
+                        >
+                          <option>All</option>
+                          {[
+                            ...new Set(list.map(({ category }) => category)),
+                          ].map((value) => (
+                            <option key={value}>{value}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="inline-check">
+                        <input
+                          type="checkbox"
+                          checked={favoriteOnly}
+                          onChange={(event) =>
+                            setFavoriteOnly(event.currentTarget.checked)
+                          }
+                        />
+                        Favorites only
+                      </label>
+                      <div className="template-list">
+                        {shown.map((entry) => (
+                          <div
+                            className={`template-card template-${entry.id}`}
+                            key={entry.id}
+                          >
+                            <button
+                              type="button"
+                              disabled={source !== null}
+                              aria-pressed={
+                                current.application === entry.id ||
+                                current.style === entry.id
+                              }
+                              onClick={() => {
+                                if (tab === "application") {
+                                  const target = APPLICATIONS.find(
+                                    ({ id }) => id === entry.id,
+                                  );
+                                  if (!target) return;
+                                  const previous = defaultActions(
+                                    current.application,
+                                  );
+                                  const next = defaultActions(target.id);
+                                  const actions = current.actions.map(
+                                    (action, i) => {
+                                      const old = previous.find(
+                                        ({ command }) =>
+                                          command === action.command,
+                                      );
+                                      const replacement = next[i];
+                                      if (!old || !replacement) return action;
+                                      const label =
+                                        action.label === old.label
+                                          ? replacement.label
+                                          : action.label;
+                                      return {
+                                        ...action,
+                                        command: replacement.command,
+                                        label,
+                                        accessibleName:
+                                          action.accessibleName === action.label
+                                            ? label
+                                            : `${label} — ${action.accessibleName}`,
+                                        tooltip:
+                                          action.tooltip === old.tooltip
+                                            ? replacement.tooltip
+                                            : action.tooltip,
+                                      };
+                                    },
+                                  );
+                                  commit({
+                                    ...current,
+                                    application: target.id,
+                                    actions,
+                                  });
+                                  setStatus(
+                                    "Application changed. Style is preserved; compatible action slots are rebound to the new host. Undo restores the previous design.",
+                                  );
+                                } else {
+                                  const target = STYLES.find(
+                                    ({ id }) => id === entry.id,
+                                  );
+                                  if (target) {
+                                    commit(applyStyle(current, target.id));
+                                    setStatus(
+                                      "Style applied to geometry/material only. Colors, application and actions are preserved; Undo is available.",
+                                    );
+                                  }
+                                }
+                              }}
+                            >
+                              <span
+                                className="template-thumbnail"
+                                aria-hidden="true"
+                              >
+                                {"glyph" in entry ? entry.glyph : "•••"}
+                              </span>
+                              <strong>{entry.name}</strong>
+                              <span>{entry.category}</span>
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={`${favorites.includes(entry.id) ? "Unfavorite" : "Favorite"} ${entry.name}`}
+                              onClick={() =>
+                                setFavorites((value) =>
+                                  value.includes(entry.id)
+                                    ? value.filter((id) => id !== entry.id)
+                                    : [...value, entry.id],
+                                )
+                              }
+                            >
+                              {favorites.includes(entry.id) ? "★" : "☆"}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      {!shown.length && (
+                        <p role="status">No matching templates.</p>
+                      )}
                     </>
                   )}
                   {name === "Appearance" && (
                     <>
-                      <label htmlFor="playground-theme">
-                        Toolbar token family
+                      <label>
+                        Edit theme variant
+                        <select
+                          value={variant}
+                          onChange={(event) => {
+                            setVariant(
+                              event.currentTarget.value === "dark"
+                                ? "dark"
+                                : "light",
+                            );
+                            setTokenDraft(null);
+                          }}
+                        >
+                          <option>light</option>
+                          <option>dark</option>
+                        </select>
                       </label>
-                      <select
-                        id="playground-theme"
-                        value={history.present.theme}
-                        disabled={hasUnappliedSource}
-                        onChange={(event) => {
-                          const selected = THEME_NAMES.find(
-                            (value) => value === event.currentTarget.value,
-                          );
-                          if (selected !== undefined)
-                            patch({ theme: selected });
-                        }}
-                      >
-                        {THEME_NAMES.map((value) => (
-                          <option key={value}>{value}</option>
-                        ))}
-                      </select>
                       <p>
-                        The global theme selects the light/dark variant without
-                        replacing this token family.
+                        Editing a variant does not switch the global theme or
+                        overwrite the other variant.
                       </p>
-                      <p className="playground-hint">
-                        Manual per-variant colors and structural style presets
-                        follow in the style-library slice.
-                      </p>
-                    </>
-                  )}
-                  {name === "Geometry & Position" && (
-                    <p>
-                      The SDK is container-anchored at the bottom of this
-                      workspace. Width, offsets, shape editing and direct
-                      manipulation are planned for the geometry slice; they are
-                      not SDK configuration fields today.
-                    </p>
-                  )}
-                  {name === "Actions" && (
-                    <>
-                      <p>
-                        Rename the three host-owned Workspace commands. Full
-                        add/remove/reorder editing follows in the action-editor
-                        slice.
-                      </p>
-                      {history.present.actions.map((action) => (
-                        <label key={action.id}>
-                          {action.id}
+                      {Object.entries(colorCandidate).map(([key, value]) => (
+                        <label key={key}>
+                          {key}
                           <input
-                            aria-label={`Label for ${action.id}`}
-                            value={action.label}
-                            maxLength={80}
-                            disabled={hasUnappliedSource}
-                            onChange={(event) => {
-                              patch({
-                                actions: history.present.actions.map((entry) =>
-                                  entry.id === action.id
-                                    ? {
-                                        ...entry,
-                                        label: event.currentTarget.value,
-                                      }
-                                    : entry,
-                                ),
-                              });
-                            }}
+                            aria-label={`${variant} ${key} color`}
+                            type="color"
+                            value={value}
+                            disabled={source !== null}
+                            onChange={(event) =>
+                              setTokenDraft(
+                                JSON.stringify({
+                                  ...colorCandidate,
+                                  [key]: event.currentTarget.value,
+                                }),
+                              )
+                            }
                           />
+                        </label>
+                      ))}
+                      {colorError && <p role="alert">{colorError}</p>}
+                      <button
+                        type="button"
+                        disabled={
+                          source !== null ||
+                          tokenDraft === null ||
+                          colorError !== null
+                        }
+                        onClick={() =>
+                          patch({
+                            appearance: {
+                              ...current.appearance,
+                              [variant]: colorCandidate,
+                            },
+                          })
+                        }
+                      >
+                        Apply variant colors
+                      </button>
+                      {(
+                        [
+                          "opacity",
+                          "blur",
+                          "shadow",
+                          "borderWidth",
+                          "fontSize",
+                          "iconSize",
+                        ] as const
+                      ).map((key) => (
+                        <label key={key}>
+                          {key}
+                          <input
+                            type="range"
+                            aria-label={`Toolbar ${key}`}
+                            min={
+                              key === "opacity"
+                                ? 90
+                                : key === "fontSize" || key === "iconSize"
+                                  ? 14
+                                  : 0
+                            }
+                            max={
+                              key === "opacity"
+                                ? 100
+                                : key === "borderWidth"
+                                  ? 4
+                                  : key === "fontSize"
+                                    ? 18
+                                    : key === "shadow"
+                                      ? 32
+                                      : 24
+                            }
+                            value={current.appearance[key]}
+                            disabled={source !== null}
+                            onChange={(event) =>
+                              patch({
+                                appearance: {
+                                  ...current.appearance,
+                                  [key]: Number(event.currentTarget.value),
+                                },
+                              })
+                            }
+                          />
+                          <output>{current.appearance[key]}</output>
                         </label>
                       ))}
                     </>
                   )}
+                  {name === "Geometry & Position" && (
+                    <>
+                      <label className="inline-check">
+                        <input
+                          type="checkbox"
+                          checked={editMode}
+                          onChange={(event) =>
+                            setEditMode(event.currentTarget.checked)
+                          }
+                        />
+                        Edit Mode
+                      </label>
+                      <p>
+                        Outside Edit Mode, toolbar actions work normally.
+                        Numeric controls and drag handles share the same
+                        geometry. Width 0 means intrinsic; Y offset 0 attaches
+                        to the bottom.
+                      </p>
+                      {(
+                        [
+                          "width",
+                          "height",
+                          "gap",
+                          "radius",
+                          "offsetX",
+                          "offsetY",
+                        ] as const
+                      ).map((key) => (
+                        <label key={key}>
+                          {key}
+                          <input
+                            type="number"
+                            aria-label={`Toolbar ${key}`}
+                            min={
+                              key === "height"
+                                ? 56
+                                : key === "offsetX"
+                                  ? -128
+                                  : 0
+                            }
+                            max={
+                              key === "width"
+                                ? 1100
+                                : key === "height"
+                                  ? 96
+                                  : key === "gap"
+                                    ? 24
+                                    : key === "radius"
+                                      ? 48
+                                      : key === "offsetX"
+                                        ? 128
+                                        : 120
+                            }
+                            value={preview.geometry[key]}
+                            disabled={source !== null}
+                            onChange={(event) =>
+                              geometry({
+                                [key]: Number(event.currentTarget.value),
+                              })
+                            }
+                          />
+                        </label>
+                      ))}
+                      <label>
+                        Position
+                        <select
+                          value={current.geometry.position}
+                          disabled={source !== null}
+                          onChange={(event) =>
+                            geometry({
+                              position:
+                                event.currentTarget.value === "top"
+                                  ? "top"
+                                  : "bottom",
+                            })
+                          }
+                        >
+                          <option>bottom</option>
+                          <option>top</option>
+                        </select>
+                      </label>
+                      <label>
+                        Horizontal alignment
+                        <select
+                          value={current.geometry.align}
+                          disabled={source !== null}
+                          onChange={(event) =>
+                            geometry({
+                              align:
+                                event.currentTarget.value === "start"
+                                  ? "start"
+                                  : event.currentTarget.value === "end"
+                                    ? "end"
+                                    : "center",
+                            })
+                          }
+                        >
+                          <option>start</option>
+                          <option>center</option>
+                          <option>end</option>
+                        </select>
+                      </label>
+                    </>
+                  )}
+                  {name === "Actions" && (
+                    <>
+                      <p>
+                        Commands are host-allowlisted. Incompatible commands
+                        remain visible but disabled. Groups and arbitrary
+                        callbacks are not part of the current SDK action
+                        contract.
+                      </p>
+                      {current.actions.map((action, i) => (
+                        <fieldset className="action-editor" key={action.id}>
+                          <legend>
+                            Action {i + 1} · {action.id}
+                          </legend>
+                          <label>
+                            Label
+                            <input
+                              aria-label={`Label for ${action.id}`}
+                              maxLength={80}
+                              value={action.label}
+                              disabled={source !== null}
+                              onChange={(event) =>
+                                actionPatch(i, {
+                                  label: event.currentTarget.value,
+                                  accessibleName: event.currentTarget.value,
+                                })
+                              }
+                            />
+                          </label>
+                          <label>
+                            Accessible name
+                            <input
+                              value={action.accessibleName}
+                              disabled={source !== null}
+                              onChange={(event) =>
+                                actionPatch(i, {
+                                  accessibleName: event.currentTarget.value,
+                                })
+                              }
+                            />
+                          </label>
+                          <label>
+                            Tooltip
+                            <input
+                              value={action.tooltip}
+                              disabled={source !== null}
+                              onChange={(event) =>
+                                actionPatch(i, {
+                                  tooltip: event.currentTarget.value,
+                                })
+                              }
+                            />
+                          </label>
+                          <label>
+                            Command
+                            <select
+                              value={action.command}
+                              disabled={source !== null}
+                              onChange={(event) => {
+                                const command = COMMANDS.find(
+                                  ({ id }) => id === event.currentTarget.value,
+                                );
+                                if (command)
+                                  actionPatch(i, { command: command.id });
+                              }}
+                            >
+                              {COMMANDS.map(({ id, label, application }) => (
+                                <option key={id} value={id}>
+                                  {label} · {application}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label>
+                            Icon
+                            <select
+                              value={action.icon}
+                              disabled={source !== null}
+                              onChange={(event) => {
+                                const icon = (
+                                  Object.keys(ICONS) as (keyof typeof ICONS)[]
+                                ).find(
+                                  (key) => key === event.currentTarget.value,
+                                );
+                                if (icon) actionPatch(i, { icon });
+                              }}
+                            >
+                              {Object.keys(ICONS).map((key) => (
+                                <option key={key}>{key}</option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="inline-check">
+                            <input
+                              type="checkbox"
+                              checked={action.enabled}
+                              disabled={source !== null}
+                              onChange={(event) =>
+                                actionPatch(i, {
+                                  enabled: event.currentTarget.checked,
+                                })
+                              }
+                            />
+                            Enabled
+                          </label>
+                          {!allowed.includes(action.command) && (
+                            <p>
+                              Unavailable in the current application context.
+                            </p>
+                          )}
+                          <div className="action-editor-tools">
+                            <button
+                              type="button"
+                              disabled={source !== null || i === 0}
+                              aria-label={`Move ${action.label} earlier`}
+                              onClick={() => {
+                                const actions = [...current.actions];
+                                const [moved] = actions.splice(i, 1);
+                                if (moved) {
+                                  actions.splice(i - 1, 0, moved);
+                                  patch({ actions });
+                                }
+                              }}
+                            >
+                              ↑
+                            </button>
+                            <button
+                              type="button"
+                              disabled={
+                                source !== null ||
+                                i === current.actions.length - 1
+                              }
+                              aria-label={`Move ${action.label} later`}
+                              onClick={() => {
+                                const actions = [...current.actions];
+                                const [moved] = actions.splice(i, 1);
+                                if (moved) {
+                                  actions.splice(i + 1, 0, moved);
+                                  patch({ actions });
+                                }
+                              }}
+                            >
+                              ↓
+                            </button>
+                            <button
+                              type="button"
+                              disabled={
+                                source !== null || current.actions.length >= 12
+                              }
+                              onClick={() => {
+                                let id = 1;
+                                while (
+                                  current.actions.some(
+                                    (entry) => entry.id === `action-${id}`,
+                                  )
+                                )
+                                  id++;
+                                patch({
+                                  actions: [
+                                    ...current.actions,
+                                    { ...action, id: `action-${id}` },
+                                  ],
+                                });
+                              }}
+                            >
+                              Duplicate
+                            </button>
+                            <button
+                              type="button"
+                              disabled={source !== null}
+                              onClick={() =>
+                                patch({
+                                  actions: current.actions.filter(
+                                    (_, index) => index !== i,
+                                  ),
+                                })
+                              }
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </fieldset>
+                      ))}
+                      <button
+                        type="button"
+                        disabled={
+                          source !== null || current.actions.length >= 12
+                        }
+                        onClick={() => {
+                          let id = 1;
+                          while (
+                            current.actions.some(
+                              (entry) => entry.id === `action-${id}`,
+                            )
+                          )
+                            id++;
+                          const action = defaultActions(current.application)[0];
+                          if (action)
+                            patch({
+                              actions: [
+                                ...current.actions,
+                                { ...action, id: `action-${id}` },
+                              ],
+                            });
+                        }}
+                      >
+                        Add action
+                      </button>
+                      <button
+                        type="button"
+                        disabled={source !== null}
+                        onClick={() =>
+                          patch({
+                            actions: defaultActions(current.application),
+                          })
+                        }
+                      >
+                        Restore application actions
+                      </button>
+                    </>
+                  )}
                   {name === "Motion & Interaction" && (
-                    <p>
-                      Native SDK keyboard navigation and reduced-motion support
-                      are active. Custom motion parameters are not exposed by
-                      the current configuration contract.
-                    </p>
+                    <>
+                      <label className="inline-check">
+                        <input
+                          type="checkbox"
+                          checked={current.motion}
+                          disabled={source !== null}
+                          onChange={(event) =>
+                            patch({ motion: event.currentTarget.checked })
+                          }
+                        />
+                        Restrained toolbar transitions
+                      </label>
+                      <p>
+                        Reduced motion always overrides presentation motion.
+                        Keyboard and accessible target sizes cannot be disabled.
+                      </p>
+                    </>
                   )}
                   {name === "Context & Capabilities" && (
-                    <p>
-                      The Workspace host owns the task list and allowlists three
-                      local commands. Optional SDK systems, including spatial
-                      coordination, AI and telemetry, are not activated here.
-                    </p>
+                    <>
+                      <label className="inline-check">
+                        <input
+                          type="checkbox"
+                          checked={current.contextual}
+                          disabled={source !== null}
+                          onChange={(event) =>
+                            patch({ contextual: event.currentTarget.checked })
+                          }
+                        />
+                        Selection-aware document formatting
+                      </label>
+                      <p>
+                        The Document Editor reports actual text selection. The
+                        Board reports its selected card. Host authorization
+                        remains authoritative even with context gating disabled.
+                        Optional SDK systems and telemetry are not activated.
+                      </p>
+                    </>
                   )}
                   {name === "Advanced Settings" && (
                     <>
                       <p>
-                        Configuration is schema-validated. Stored drafts are
-                        versioned and restored only after confirmation. A broken
-                        draft never replaces the working preview.
+                        Only design/configuration autosaves. Application text,
+                        task titles and board contents are not retained. All
+                        work stays in this browser.
                       </p>
-                      <p>
-                        Only configuration is saved; task titles remain in
-                        memory. No JavaScript is accepted or evaluated.
-                      </p>
-                      <a href="#versioned-docs">
-                        Read the SDK preview reference
-                      </a>
+                      <a href="#versioned-docs">SDK reference</a>
+                      <label>
+                        Import Playground design
+                        <input
+                          type="file"
+                          accept="application/json,.json"
+                          onChange={(event) => {
+                            const file = event.currentTarget.files?.[0];
+                            if (!file) return;
+                            if (file.size > 65536) {
+                              setStatus("Design exceeds 64 KiB.");
+                              return;
+                            }
+                            void file
+                              .text()
+                              .then((raw) => {
+                                const parsed = parseDesign(raw);
+                                if (!parsed.ok) {
+                                  setStatus(parsed.message);
+                                  return;
+                                }
+                                imported.current = parsed.value;
+                                setStatus(
+                                  "Valid import ready. Confirm below to replace the current design; Undo is available.",
+                                );
+                              })
+                              .catch(() =>
+                                setStatus("Could not read the design file."),
+                              );
+                            event.currentTarget.value = "";
+                          }}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!imported.current) {
+                            setStatus("Choose a valid design file first.");
+                            return;
+                          }
+                          commit(imported.current);
+                          imported.current = null;
+                          setStatus(
+                            "Validated imported design applied. Undo is available.",
+                          );
+                        }}
+                      >
+                        Confirm design import
+                      </button>
                     </>
                   )}
                   {name === "Code & Export" && (
                     <>
-                      <label htmlFor="playground-json">
+                      <label>
                         Playground configuration JSON
+                        <textarea
+                          aria-label="Playground configuration JSON"
+                          spellCheck={false}
+                          rows={14}
+                          maxLength={65536}
+                          value={sourceText}
+                          onChange={(event) =>
+                            setSource(event.currentTarget.value)
+                          }
+                        />
                       </label>
-                      <textarea
-                        id="playground-json"
-                        spellCheck={false}
-                        rows={15}
-                        value={code}
-                        maxLength={65_536}
-                        onChange={(event) =>
-                          setSource(event.currentTarget.value)
-                        }
-                      />
-                      <p>
-                        The global light/dark selection remains authoritative.
-                        Apply replaces configuration only, never host
-                        permissions.
-                      </p>
                       <p className="playground-validation" role="status">
                         {validation.ok
                           ? "SDK schema and Workspace policy validation passed."
@@ -546,29 +1472,33 @@ export function FunctionalPlayground() {
                       </p>
                       <button
                         type="button"
-                        disabled={!validation.ok || !hasUnappliedSource}
+                        disabled={!validation.ok || source === null}
                         onClick={() => {
-                          if (!validation.ok) {
-                            setStatus(validation.message);
-                            return;
-                          }
-                          apply(validation.value);
-                          setStatus(
-                            "Validated configuration applied to the real SDK preview.",
-                          );
+                          if (validation.ok) commit(validation.value);
                         }}
                       >
                         Apply Playground JSON
                       </button>
                       <button
                         type="button"
-                        disabled={!hasUnappliedSource}
+                        disabled={source === null}
                         onClick={() => setSource(null)}
                       >
                         Discard JSON edits
                       </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          download(
+                            JSON.stringify(current, null, 2),
+                            "toolbar.playground.design.json",
+                          )
+                        }
+                      >
+                        Download design
+                      </button>
                       <a href="#quick-start">
-                        View personalized Vanilla code and export
+                        Personalized Vanilla integration
                       </a>
                     </>
                   )}
@@ -576,135 +1506,141 @@ export function FunctionalPlayground() {
               </div>
             ))}
           </aside>
-          <div className="playground-application" data-theme={theme}>
-            <div className="workspace-app-header">
-              <span className="eyebrow">MOORKYZ / PERSONAL WORKSPACE</span>
-              <span>Sample project</span>
-            </div>
-            <div className="workspace-app-content">
-              <p className="eyebrow">TODAY&apos;S FOCUS</p>
-              <h3>A little room to do good work.</h3>
-              <p>
-                {tasks.filter(({ done }) => !done).length} open tasks · local
-                sample data
-              </p>
-              <form
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  if (!title.trim()) {
-                    setStatus("Enter a task title before adding a task.");
-                    return;
-                  }
-                  if (tasks.length >= 50) {
-                    setStatus(
-                      "This sample workspace supports up to 50 tasks. Clear completed tasks or reset the sample.",
-                    );
-                    return;
-                  }
-                  const task = {
-                    id: nextTask.current++,
-                    title: title.trim(),
-                    done: false,
-                  };
-                  setTasks((current) => [...current, task]);
-                  setTitle("");
-                  setStatus(
-                    "Task added to this local workspace. Task contents are not persisted.",
-                  );
-                  taskInput.current?.focus();
-                }}
-              >
-                <label className="sr-only" htmlFor="workspace-task">
-                  New task title
-                </label>
-                <input
-                  ref={taskInput}
-                  id="workspace-task"
-                  placeholder="What needs your attention?"
-                  value={title}
-                  maxLength={100}
-                  onChange={(event) => setTitle(event.currentTarget.value)}
-                />
-                <button type="submit">Add task</button>
-              </form>
-              <ul className="workspace-tasks" aria-label="Workspace tasks">
-                {tasks
-                  .filter(({ done }) => showCompleted || !done)
-                  .map((task) => (
-                    <li key={task.id}>
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={task.done}
-                          onChange={() =>
-                            setTasks((current) =>
-                              current.map((entry) =>
-                                entry.id === task.id
-                                  ? { ...entry, done: !entry.done }
-                                  : entry,
-                              ),
-                            )
-                          }
-                        />
-                        <span
-                          className={task.done ? "task-complete" : undefined}
-                        >
-                          {task.title}
-                        </span>
-                      </label>
-                      <span>{task.done ? "Done" : "To do"}</span>
-                    </li>
-                  ))}
-              </ul>
-              {tasks.filter(({ done }) => showCompleted || !done).length ===
-                0 && (
-                <p>
-                  No tasks in this view. Add a task or show completed tasks.
-                </p>
-              )}
-              <button
-                type="button"
-                className="workspace-reset"
-                onClick={() => {
-                  setTasks(INITIAL_TASKS);
-                  setShowCompleted(true);
-                  setTitle("");
-                  nextTask.current = 4;
-                  setStatus(
-                    "Sample tasks reset. Toolbar configuration is unchanged.",
-                  );
-                }}
-              >
-                Reset sample tasks
-              </button>
-            </div>
+          <button
+            type="button"
+            className="sidebar-resize"
+            aria-label="Resize settings sidebar"
+            onPointerDown={(event) => startDrag(event, "sidebar")}
+            {...dragEvents}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+                event.preventDefault();
+                setSidebarWidth((value) =>
+                  Math.max(
+                    240,
+                    Math.min(
+                      420,
+                      value + (event.key === "ArrowRight" ? 16 : -16),
+                    ),
+                  ),
+                );
+              }
+            }}
+          >
+            ⋮
+          </button>
+          <div
+            ref={mount}
+            id="playground-canvas"
+            className="playground-application"
+            data-theme={theme}
+          >
+            <PlaygroundApplications
+              ref={application}
+              application={current.application}
+              contextual={current.contextual}
+              onStatus={appStatus}
+              onAvailable={onAvailable}
+            />
+            {editMode && (
+              <div className="geometry-handles">
+                <p>Edit Mode · commands paused</p>
+                {(["move", "resize"] as const).map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onPointerDown={(event) => startDrag(event, type)}
+                    {...dragEvents}
+                    onKeyDown={(event) => {
+                      if (
+                        ![
+                          "ArrowLeft",
+                          "ArrowRight",
+                          "ArrowUp",
+                          "ArrowDown",
+                        ].includes(event.key)
+                      )
+                        return;
+                      event.preventDefault();
+                      if (type === "resize")
+                        geometry({
+                          width: Math.max(
+                            180,
+                            Math.min(
+                              1100,
+                              Math.round(
+                                current.geometry.width ||
+                                  mount.current
+                                    ?.querySelector(".mzk-toolbar")
+                                    ?.getBoundingClientRect().width ||
+                                  400,
+                              ) + (event.key === "ArrowLeft" ? -16 : 16),
+                            ),
+                          ),
+                        });
+                      else
+                        geometry({
+                          offsetX: Math.max(
+                            -128,
+                            Math.min(
+                              128,
+                              current.geometry.offsetX +
+                                (event.key === "ArrowLeft"
+                                  ? -8
+                                  : event.key === "ArrowRight"
+                                    ? 8
+                                    : 0),
+                            ),
+                          ),
+                          offsetY: Math.max(
+                            0,
+                            Math.min(
+                              120,
+                              current.geometry.offsetY +
+                                (event.key === "ArrowUp"
+                                  ? 8
+                                  : event.key === "ArrowDown"
+                                    ? -8
+                                    : 0),
+                            ),
+                          ),
+                        });
+                    }}
+                  >
+                    {type === "move" ? "Move toolbar" : "Resize toolbar"}
+                  </button>
+                ))}
+              </div>
+            )}
             <ToolbarMount
               className="playground-toolbar"
-              configuration={INITIAL_PLAYGROUND_CONFIGURATION}
+              configuration={initialConfiguration}
               host={host}
               onController={onController}
               onMountError={onMountError}
             />
-            {previewError !== null && (
-              <p role="alert">Playground toolbar unavailable: {previewError}</p>
-            )}
           </div>
         </div>
         <p className="playground-status" role="status" aria-live="polite">
           {status}
         </p>
-        {hasUnappliedSource && (
+        {source !== null && (
           <p className="playground-hint">
-            JSON edits are not applied. Preview, Quick Start and export retain
-            the last valid configuration. Apply or discard JSON edits before
-            changing visual controls or using history.{" "}
-            <button type="button" onClick={() => setSection("Code & Export")}>
+            JSON edits are not applied. Preview, Quick Start, export and
+            autosave retain the last valid design.{" "}
+            <button
+              type="button"
+              onClick={() => {
+                setSection("Code & Export");
+                setMobileMode("code");
+              }}
+            >
               Return to Code & Export
             </button>
           </p>
         )}
+        {error && <p role="alert">{error}</p>}
       </section>
-
       <section
         className="section-shell personalized-quickstart"
         id="quick-start"
@@ -714,32 +1650,40 @@ export function FunctionalPlayground() {
         <div>
           <p className="eyebrow">PERSONALIZED QUICK START</p>
           <h2 id="personalized-heading">From design to code.</h2>
+          <label>
+            Verified generator
+            <select
+              aria-label="Verified integration environment"
+              value="vanilla"
+              onChange={() =>
+                setStatus("Vanilla is the verified generated integration.")
+              }
+            >
+              <option value="vanilla">Vanilla JavaScript · verified</option>
+            </select>
+          </label>
           <p>
-            The shared SDK generator uses your last applied Playground
-            configuration and current theme. Vanilla JavaScript is the verified
-            generation target.
+            Configuration, geometry, both theme variants, labels and icons are
+            portable. The shared SDK generator supplies the real mount, dispatch
+            and cleanup lifecycle. No privileged user code runs here.
           </p>
           <p>
-            Generated actions report IDs to a demonstration host; application
-            logic stays yours. The starter does not include this task-list
-            application.
-          </p>
-          <p className="playground-hint">
-            The package is not published. In this checkout, build the SDK with{" "}
-            <code>pnpm --filter @moorkyz/toolbar build</code>. Save exported
-            source files into a new folder and follow the generated README for{" "}
+            The SDK is not published. Build it in this checkout with{" "}
+            <code>pnpm --filter @moorkyz/toolbar build</code>. Export files into
+            a new folder and run{" "}
             <code>
               node server.mjs --sdk-path &lt;absolute SDK package path&gt;
-            </code>
-            .
+            </code>{" "}
+            as described in the generated README.
           </p>
           <p>
-            React, Next.js, Vue and Angular have consumer fixtures, not
-            supported starter generators. M10/M11 release gates remain open.
+            React, Next.js, Vue and Angular have{" "}
+            <a href="https://github.com/Moorky/moorkyz-toolbar/tree/master/examples">
+              tested consumer fixtures
+            </a>
+            , not generated starters. Generated sample hosts report action IDs;
+            the four mini-applications are not generated.
           </p>
-          <a href="#starter-gallery">
-            Explore the existing Vanilla starter gallery
-          </a>
         </div>
         <div className="code-panel">
           <div className="code-panel-header">
@@ -747,16 +1691,22 @@ export function FunctionalPlayground() {
             <select
               id="playground-file"
               value={selectedFile}
-              disabled={project === null}
+              disabled={!project}
               onChange={(event) => setSelectedFile(event.currentTarget.value)}
             >
-              {["toolbar.config.js", "app.js", "index.html", "README.md"].map(
-                (path) => (
-                  <option key={path}>{path}</option>
-                ),
-              )}
+              {[
+                "toolbar.config.js",
+                "app.js",
+                "style.css",
+                "presentation.js",
+                "playground.design.json",
+                "index.html",
+                "README.md",
+              ].map((file) => (
+                <option key={file}>{file}</option>
+              ))}
             </select>
-            {generatedFile !== undefined && (
+            {generatedFile && (
               <CopyButton
                 text={generatedFile.content}
                 label="Copy personalized source"
@@ -775,17 +1725,22 @@ export function FunctionalPlayground() {
             <button
               className="button button-primary"
               type="button"
-              disabled={project === null}
-              onClick={download}
+              disabled={!project}
+              onClick={() => {
+                if (project)
+                  download(
+                    JSON.stringify({ version: 1, project }, null, 2),
+                    "toolbar.playground.vanilla.json",
+                  );
+              }}
             >
               Export personalized Vanilla project
             </button>
           </div>
-          {generationError !== null && <p role="alert">{generationError}</p>}
           <p className="code-disclaimer">
-            Export is a versioned JSON file containing all generated source
-            files and integrity metadata, not an archive or an installer.
-            Nothing runs or uploads.
+            Versioned JSON contains all source files and SHA-256 integrity
+            metadata, not an installer. Nothing is installed, uploaded or
+            executed by export.
           </p>
         </div>
       </section>

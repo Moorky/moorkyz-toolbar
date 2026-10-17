@@ -1,72 +1,63 @@
 # Moorkyz Toolbar portal
 
-The portal is a separate Next.js consumer of the workspace library. The landing
-page mounts `@moorkyz/toolbar` directly. The first website/Playground vertical
-slice adds a Modern Workspace task application, real SDK command dispatch,
-configuration history, explicit versioned local save/restore, schema/policy
-validation, and a personalized Vanilla Quick Start powered by the shared SDK
-generator. The existing context picker and SDK-backed Studio labs remain
-available below it.
+The private Next.js portal consumes the real `@moorkyz/toolbar` package. SDK
+contracts, feature defaults and framework-neutral architecture are unchanged.
 
-## Website and Playground status
+## Functional Playground
 
-- The compact hero leads directly to the Playground. The adaptive header hides
-  on downward scroll, returns on upward scroll/focus, and respects reduced motion.
-  Branding uses the existing favicon asset.
-- One global light/dark preference controls the website and new Workspace
-  preview/SDK/generation without replacing the chosen built-in token family.
-- The eight-section settings accordion exposes only supported functionality.
-  The first slice has **one application and one structural style**; six SDK token
-  families are palettes, not six distinct geometry styles.
-- Workspace commands focus task creation, toggle completed visibility, and clear
-  completed sample tasks. Tasks are page-local, bounded to 50, and resettable.
-  Configuration undo/redo does not replay application commands.
-- Save is explicit and configuration-only. Existing local drafts need confirmed
-  replacement; restore is explicit, validated, confirmed and undoable. Corrupt or
-  future-version drafts remain untouched. Storage failures retain in-memory work.
-- JSON edits retain the last valid preview/code until applied. Imports cannot
-  activate optional systems, escape the preview container or authorize commands.
-- Quick Start reflects applied configuration and the global theme. Its versioned
-  JSON export contains generated files and integrity metadata; it is not a ZIP,
-  installer or automatic filesystem writer. The included README explains local
-  SDK usage before publication. Generated host actions report IDs; the task app
-  itself is not generated.
+- Four stateful local applications: Modern Workspace, Document Editor, Analytics
+  Dashboard and Project Board. Toolbar commands operate actual local application
+  state. Selection-aware formatting and board commands demonstrate host context.
+- Ten structural presets, independently selectable from applications. Search,
+  categories, favorites and reversible application/style changes are available.
+- Manual light/dark token variants, contrast validation, opacity, blur, shadow,
+  borders, font/icon sizing; the global theme selects a variant without replacing
+  either palette. Translucency is validated against light and dark backdrops.
+- Geometry includes intrinsic/explicit responsive width, height, gap, radius,
+  position, alignment and offsets. Y=0 is bottom-attached. Explicit Edit Mode
+  provides pointer/keyboard move and resize handles while commands are paused.
+- Actions support add/remove/duplicate/rename/reorder, icons, tooltip, accessible
+  name and allowlisted command selection. Incompatible/context-ineligible actions
+  are disabled. Semantic action groups and arbitrary code are not SDK features.
+- Versioned design JSON is separate from SDK configuration. Validate/import/
+  export, last-valid preview, bounded undo/redo, confirmed reset/restore and
+  configuration-only autosave are implemented. Application contents are never
+  retained. Corrupt/newer autosaves remain preserved until explicit recovery.
+- Desktop sidebar and mobile settings sheet resize by pointer or keyboard.
+  Mobile is preview-first with separate Customize/Code views. Browser fullscreen
+  has an explicitly reported expanded-view fallback and an accessible exit.
+- Personalized Vanilla exports use the SDK generator and add validated styling/
+  presentation files with recomputed SHA-256 integrity. Export is portable JSON
+  containing source files, not an installer. The generated sample host reports
+  action IDs; the four mini-applications are not part of the generated starter.
 
-Next slices add three more distinct applications, 8–12 structural styles, manual
-light/dark variants, geometry/action editing, resizable/fullscreen workspace and
-the remaining website composition/explorers. DM Sans/DM Mono font assets are not
-yet vendored; current typography uses local/system fallbacks. Existing Studio
-labs retain independent experimental controls; synchronizing all advanced custom
-theme experiments with the global variant is still pending.
+Only Vanilla generation is verified. React, Next.js, Vue and Angular consumer
+fixtures are not additional framework generators. Before public distribution,
+use the generated README's local SDK path workflow. The portal uses Light DOM
+presentation hooks privately; these do not extend the public SDK schema.
 
-## Development
-
-From the repository root:
-
-- `pnpm --filter @moorkyz/portal dev` builds the toolbar package and starts the
-  Next.js development server.
-- `pnpm --filter @moorkyz/portal lint`
-- `pnpm --filter @moorkyz/portal typecheck`
-- `pnpm --filter @moorkyz/portal build`
-
-The project and its public API remain in development. Only Vanilla starter
-generation is validated; adapter fixtures are not framework generators.
-See [release readiness](../../docs/engineering/release-readiness.md) for the
-unchanged M10/M11 holds. This slice is not the completed website MVP or release
-authorization.
-
-Focused checks (after `pnpm build`):
+## Development and verification
 
 ```powershell
-node --test tests\tooling\playground-model.test.js
-pnpm exec playwright test 'playground\.spec\.js|portal\.spec\.js|studio\.spec\.js' --workers=3
+pnpm --filter @moorkyz/portal dev
+pnpm --filter @moorkyz/portal build
+pnpm lint
+pnpm format:check
+pnpm typecheck
+node --test tests\tooling\playground-design.test.js tests\tooling\playground-model.test.js
+pnpm exec playwright test 'playground\.spec\.js' --workers=3
 ```
 
-Playwright file arguments are regex selectors, not Windows filesystem paths.
-The Playground suite executes the exported Vanilla files against the actual
-built SDK and verifies action dispatch and `pagehide` disposal.
+Run the production build before browser tests. Playwright selectors are regexes,
+not backslash filesystem paths. Tests execute exported Vanilla presentation and
+SDK lifecycle code, not merely inspect generated text.
 
-Production requests receive a per-request nonce-based Content Security Policy.
-The page uses dynamic rendering so Next.js can nonce its runtime scripts. The
-production policy allows no inline scripts, unsafe-inline styles, or
-`unsafe-eval`; development permits `unsafe-eval` only for Next.js diagnostics.
+Production uses a per-request nonce-based CSP with no unsafe inline scripts,
+unsafe-inline styles or `unsafe-eval`. Development permits `unsafe-eval` only for
+Next.js diagnostics. No visitor data is sent to a server.
+
+The remaining website composition, fonts, compact Studio entry and explorers are
+tracked in the [MVP plan](../../docs/engineering/website-mvp.md). Existing working
+labs remain available during that slice. The [M10/M11 release
+holds](../../docs/engineering/release-readiness.md) are unchanged; a validated
+Playground is not production/distribution authorization.

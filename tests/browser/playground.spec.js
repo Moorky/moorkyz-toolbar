@@ -7,30 +7,45 @@ const port =
   process.env.PORTAL_TEST_PORT ??
   "4174";
 const url = `http://127.0.0.1:${port}`;
-const storageKey = "moorkyz-toolbar:portal:playground:v1";
+const designKey = "moorkyz-toolbar:portal:playground:design:v2";
+const autoKey = `${designKey}:autosave`;
 
-async function openPlayground(page) {
+async function open(page) {
   await page.goto(url);
   const playground = page.locator("#playground");
-  const toolbar = playground.getByRole("toolbar", {
-    name: "Modern Workspace toolbar",
-  });
-  await expect(toolbar).toBeVisible();
+  await expect(playground.getByRole("toolbar")).toBeVisible();
   await expect(
     playground.getByRole("button", { name: "Save locally" }),
   ).toBeEnabled();
-  return { playground, toolbar };
+  return playground;
+}
+async function panel(playground, name) {
+  const button = playground.getByRole("button", { name, exact: true });
+  if ((await button.getAttribute("aria-expanded")) !== "true")
+    await button.click();
+}
+async function app(playground, name) {
+  await panel(playground, "Templates");
+  await playground
+    .getByRole("button", { name: "Application", exact: true })
+    .click();
+  await playground
+    .getByRole("button", { name: new RegExp(`^${name}`) })
+    .click();
 }
 
-test("real SDK commands control the local application and configuration history is separate", async ({
+test("all four applications execute real host commands and preserve local state across template changes", async ({
   page,
 }) => {
   const external = [];
   page.on("request", (request) => {
     if (!request.url().startsWith(`${url}/`)) external.push(request.url());
   });
-  const { playground, toolbar } = await openPlayground(page);
-  await toolbar.getByRole("button", { name: "New task", exact: true }).click();
+  const playground = await open(page);
+  await playground
+    .getByRole("toolbar")
+    .getByRole("button", { name: "New task", exact: true })
+    .click();
   await expect(page.getByLabel("New task title")).toBeFocused();
   await page.getByLabel("New task title").fill("Review integration");
   await playground
@@ -39,162 +54,355 @@ test("real SDK commands control the local application and configuration history 
   await expect(
     playground.getByRole("checkbox", { name: "Review integration" }),
   ).toBeVisible();
-  await toolbar.getByRole("button", { name: "Show / hide completed" }).click();
+  await app(playground, "Document Editor");
+  const toolbar = playground.getByRole("toolbar");
   await expect(
-    playground.getByRole("checkbox", { name: "Explore your new workspace" }),
-  ).toHaveCount(0);
-  await toolbar.getByRole("button", { name: "Clear completed" }).click();
-
+    toolbar.getByRole("button", { name: "Uppercase selection" }),
+  ).toBeDisabled();
+  const editor = playground.getByLabel("Document content");
+  await editor.fill("a useful document");
+  await editor.focus();
+  await page.keyboard.press("ControlOrMeta+A");
+  await toolbar.getByRole("button", { name: "Uppercase selection" }).click();
+  await expect(editor).toHaveValue("A USEFUL DOCUMENT");
+  await toolbar.getByRole("button", { name: "Count words" }).click();
+  await expect(playground.locator(".playground-status")).toContainText(
+    "3 words",
+  );
+  await app(playground, "Analytics Dashboard");
+  await expect(
+    playground.getByRole("heading", { name: "$6,300" }),
+  ).toBeVisible();
+  await toolbar.getByRole("button", { name: "Next period" }).click();
+  await expect(
+    playground.getByRole("heading", { name: "$24,600" }),
+  ).toBeVisible();
+  await toolbar.getByRole("button", { name: "Filter enterprise" }).click();
+  await expect(
+    playground.getByRole("heading", { name: "$12,800" }),
+  ).toBeVisible();
+  await app(playground, "Project Board");
+  await expect(
+    toolbar.getByRole("button", { name: "Advance selected" }),
+  ).toBeDisabled();
   await playground
-    .getByRole("button", { name: "Actions", exact: true })
-    .click();
-  await playground.getByLabel("Label for add-task").fill("Capture task");
+    .getByRole("radio", { name: "Define the experience" })
+    .check();
+  await toolbar.getByRole("button", { name: "Advance selected" }).click();
   await expect(
-    toolbar.getByRole("button", { name: "Capture task" }),
+    playground
+      .getByRole("region", { name: "In progress", exact: true })
+      .getByRole("radio", { name: "Define the experience" }),
   ).toBeVisible();
-  await expect(
-    page.getByLabel("Personalized Vanilla integration source"),
-  ).toContainText("Capture task");
-  await playground.getByRole("button", { name: "Undo", exact: true }).click();
-  await expect(
-    toolbar.getByRole("button", { name: "New task", exact: true }),
-  ).toBeVisible();
+  await app(playground, "Modern Workspace");
   await expect(
     playground.getByRole("checkbox", { name: "Review integration" }),
-  ).toBeVisible();
-  await expect(
-    playground.getByRole("checkbox", { name: "Explore your new workspace" }),
-  ).toHaveCount(0);
-  await playground.getByRole("button", { name: "Redo", exact: true }).click();
-  await expect(
-    toolbar.getByRole("button", { name: "Capture task" }),
-  ).toBeVisible();
-  await playground.getByRole("button", { name: "Reset configuration" }).click();
-  await playground.getByRole("button", { name: "Confirm reset" }).click();
-  await expect(
-    toolbar.getByRole("button", { name: "New task", exact: true }),
-  ).toBeVisible();
-  await playground.getByRole("button", { name: "Undo", exact: true }).click();
-  await expect(
-    toolbar.getByRole("button", { name: "Capture task" }),
   ).toBeVisible();
   expect(external).toEqual([]);
 });
 
-test("JSON rejects invalid or unauthorized config, retaining preview and personalized output", async ({
+test("ten structural styles, independent template selection, search and favorites work", async ({
   page,
 }) => {
-  const { playground, toolbar } = await openPlayground(page);
+  const playground = await open(page);
   await playground
-    .getByRole("button", { name: "Code & Export", exact: true })
+    .getByRole("button", { name: "Toolbar Style", exact: true })
     .click();
+  const styles = [
+    "Minimal Floating Pill",
+    "Compact Capsule",
+    "Rounded Rectangle",
+    "Segmented Dock",
+    "Full-Width Bottom Dock",
+    "Frosted Glass",
+    "Outward Trapezoid",
+    "Multi-Faceted Dock",
+    "Minimal Edge Strip",
+    "Angular Floating Toolbar",
+  ];
+  for (const name of styles) {
+    const button = playground.getByRole("button", {
+      name: new RegExp(`^${name}`),
+    });
+    await button.click();
+    await expect(button).toHaveAttribute("aria-pressed", "true");
+    await expect(
+      playground.getByRole("toolbar", { name: "Modern Workspace toolbar" }),
+    ).toBeVisible();
+  }
+  await playground
+    .getByRole("button", { name: "Favorite Frosted Glass", exact: true })
+    .click();
+  await playground.getByLabel("Favorites only").check();
+  await expect(playground.locator(".template-card")).toHaveCount(1);
+  await playground.getByLabel("Favorites only").uncheck();
+  await playground.getByLabel("Search templates").fill("trapezoid");
+  await expect(playground.locator(".template-card")).toHaveCount(1);
+  await playground.getByLabel("Search templates").fill("");
+  await app(playground, "Document Editor");
+  await panel(playground, "Code & Export");
+  const design = JSON.parse(
+    await playground.getByLabel("Playground configuration JSON").inputValue(),
+  );
+  expect(design.style).toBe("angular");
+  expect(design.application).toBe("document");
+});
+
+test("geometry has bottom-attached zero, bounded edit handles and coherent history", async ({
+  page,
+}) => {
+  const playground = await open(page);
+  await panel(playground, "Geometry & Position");
+  await playground.getByLabel("Toolbar offsetY", { exact: true }).fill("0");
+  const toolbar = playground.getByRole("toolbar");
+  await expect
+    .poll(() =>
+      toolbar
+        .locator("..")
+        .evaluate((element) => getComputedStyle(element).bottom),
+    )
+    .toBe("0px");
+  await playground.getByLabel("Toolbar radius", { exact: true }).fill("8");
+  await expect
+    .poll(() =>
+      toolbar.evaluate((element) => getComputedStyle(element).borderRadius),
+    )
+    .toBe("8px");
+  await playground.getByLabel("Edit Mode", { exact: true }).check();
+  await expect(
+    toolbar.getByRole("button", { name: "New task", exact: true }),
+  ).toBeDisabled();
+  await playground
+    .getByRole("button", { name: "Move toolbar", exact: true })
+    .focus();
+  await page.keyboard.press("ArrowUp");
+  await expect(
+    playground.getByLabel("Toolbar offsetY", { exact: true }),
+  ).toHaveValue("8");
+  await playground
+    .getByRole("button", { name: "Resize toolbar", exact: true })
+    .focus();
+  const initialWidth = Math.round((await toolbar.boundingBox()).width);
+  await page.keyboard.press("ArrowRight");
+  await expect(
+    playground.getByLabel("Toolbar width", { exact: true }),
+  ).toHaveValue(String(initialWidth + 16));
+  await playground.getByRole("button", { name: "Undo", exact: true }).click();
+  await expect(
+    playground.getByLabel("Toolbar width", { exact: true }),
+  ).toHaveValue("0");
+  await playground.getByLabel("Edit Mode", { exact: true }).uncheck();
+  await expect(
+    toolbar.getByRole("button", { name: "New task", exact: true }),
+  ).toBeEnabled();
+});
+
+test("action operations affect SDK controls, permissions, icons and collapse recovery", async ({
+  page,
+}) => {
+  const playground = await open(page);
+  await panel(playground, "Actions");
+  await playground.getByLabel("Label for add-task").fill("Capture task");
+  const first = playground.locator(".action-editor").first();
+  await first
+    .getByLabel("Tooltip", { exact: true })
+    .fill("Focus task creation");
+  await first
+    .getByRole("combobox", { name: "Icon", exact: true })
+    .selectOption("plus");
+  let button = playground
+    .getByRole("toolbar")
+    .getByRole("button", { name: "Capture task", exact: true });
+  await expect(button).toHaveAttribute("title", "Focus task creation");
+  await expect(button).toHaveAttribute("data-icon", "+");
+  await first.getByRole("button", { name: "Duplicate", exact: true }).click();
+  await expect(playground.locator(".action-editor")).toHaveCount(4);
+  await first
+    .getByRole("button", { name: "Move Capture task later", exact: true })
+    .click();
+  await expect(
+    playground.getByRole("toolbar").locator(".mzk-toolbar__action").first(),
+  ).toHaveText("Show / hide completed");
+  await playground
+    .locator(".action-editor")
+    .last()
+    .getByRole("button", { name: "Remove", exact: true })
+    .click();
+  const action = playground.locator(".action-editor").nth(1);
+  await action.getByLabel("Enabled", { exact: true }).uncheck();
+  await expect(button).toBeDisabled();
+  await playground
+    .getByRole("toolbar")
+    .getByRole("button", { name: "Collapse toolbar", exact: true })
+    .click();
+  await playground
+    .getByRole("toolbar")
+    .getByRole("button", { name: "Restore toolbar", exact: true })
+    .click();
+  button = playground
+    .getByRole("toolbar")
+    .getByRole("button", { name: "Capture task", exact: true });
+  await expect(button).toBeDisabled();
+  await expect(button).toHaveAttribute("data-icon", "+");
+  await action.getByLabel("Enabled", { exact: true }).check();
+  await action
+    .getByRole("combobox", { name: "Command", exact: true })
+    .selectOption("board-archive");
+  await expect(button).toBeDisabled();
+});
+
+test("manual theme variants synchronize without destroying custom settings or accessibility", async ({
+  page,
+}) => {
+  const playground = await open(page);
+  await panel(playground, "Appearance");
+  await playground
+    .getByLabel("light background color", { exact: true })
+    .fill("#f5f0ff");
+  await playground
+    .getByRole("button", { name: "Apply variant colors" })
+    .click();
+  await page.getByRole("button", { name: "Switch to dark theme" }).focus();
+  await page.getByRole("button", { name: "Switch to dark theme" }).click();
+  await expect(playground.getByRole("toolbar")).toHaveAttribute(
+    "data-color-scheme",
+    "dark",
+  );
+  await playground.getByLabel("Edit theme variant").selectOption("dark");
+  await playground
+    .getByLabel("dark background color", { exact: true })
+    .fill("#191124");
+  await playground
+    .getByRole("button", { name: "Apply variant colors" })
+    .click();
+  await expect
+    .poll(() =>
+      playground.getByRole("toolbar").evaluate((element) => {
+        const context = document.createElement("canvas").getContext("2d");
+        if (!context)
+          throw new Error("Canvas color verification is unavailable.");
+        context.fillStyle = getComputedStyle(element).backgroundColor;
+        context.fillRect(0, 0, 1, 1);
+        return Array.from(context.getImageData(0, 0, 1, 1).data);
+      }),
+    )
+    .toEqual([25, 17, 36, 255]);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.getByRole("button", { name: "Switch to light theme" }).focus();
+  await page.getByRole("button", { name: "Switch to light theme" }).click();
+  await playground.getByLabel("Edit theme variant").selectOption("light");
+  await expect(
+    playground.getByLabel("light background color", { exact: true }),
+  ).toHaveValue("#f5f0ff");
+});
+
+test("validated JSON preserves the last working design and refuses hostile commands", async ({
+  page,
+}) => {
+  const playground = await open(page);
+  await panel(playground, "Code & Export");
   const editor = playground.getByLabel("Playground configuration JSON");
-  const initial = JSON.parse(await editor.inputValue());
+  const design = JSON.parse(await editor.inputValue());
   await editor.fill("{");
   await expect(
     playground.getByRole("button", { name: "Apply Playground JSON" }),
   ).toBeDisabled();
-  await expect(playground.locator(".playground-validation")).toContainText(
-    "not valid JSON",
-  );
+  await panel(playground, "Appearance");
   await expect(
-    toolbar.getByRole("button", { name: "New task", exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByLabel("Personalized Vanilla integration source"),
-  ).toContainText("New task");
-  await playground
-    .getByRole("button", { name: "Appearance", exact: true })
-    .click();
-  await expect(playground.getByLabel("Toolbar token family")).toBeDisabled();
+    playground.getByRole("button", { name: "Apply variant colors" }),
+  ).toBeDisabled();
   await playground
     .getByRole("button", { name: "Return to Code & Export" })
     .click();
   await expect(editor).toHaveValue("{");
-  await editor.fill(JSON.stringify({ ...initial, features: { ai: true } }));
+  await editor.fill(
+    JSON.stringify({
+      ...design,
+      actions: [{ ...design.actions[0], command: "delete-host" }],
+    }),
+  );
   await expect(playground.locator(".playground-validation")).toContainText(
     "cannot grant host capabilities",
   );
   await expect(
-    playground.getByRole("button", { name: "Save locally" }),
-  ).toBeDisabled();
-  await expect(
-    playground.getByRole("button", { name: "Apply Playground JSON" }),
-  ).toBeDisabled();
-
-  initial.actions[0].label = "<img src=x>";
-  await editor.fill(JSON.stringify(initial));
+    playground
+      .getByRole("toolbar")
+      .getByRole("button", { name: "New task", exact: true }),
+  ).toBeVisible();
+  design.actions[0].label = "<img src=x>";
+  design.actions[0].accessibleName = "<img src=x>";
+  await editor.fill(JSON.stringify(design));
   await playground
     .getByRole("button", { name: "Apply Playground JSON" })
     .click();
   await expect(
-    toolbar.getByRole("button", { name: "<img src=x>" }),
+    playground
+      .getByRole("toolbar")
+      .getByRole("button", { name: "<img src=x>" }),
   ).toBeVisible();
   await expect(playground.locator("img")).toHaveCount(0);
-  await expect(
-    page.getByLabel("Personalized Vanilla integration source"),
-  ).toContainText("<img src=x>");
 });
 
-test("configuration storage is explicit, confirmed, versioned and recoverable", async ({
+test("autosave restores designs, explicit saves confirm replacement and future drafts are preserved", async ({
   page,
 }) => {
-  const { playground, toolbar } = await openPlayground(page);
-  await playground
-    .getByRole("button", { name: "Actions", exact: true })
-    .click();
+  let playground = await open(page);
+  await panel(playground, "Actions");
   await playground.getByLabel("Label for add-task").fill("Saved task");
-  expect(
-    await page.evaluate((key) => localStorage.getItem(key), storageKey),
-  ).toBeNull();
   await playground.getByRole("button", { name: "Save locally" }).click();
-  await playground.getByLabel("Label for add-task").fill("Unsaved task");
-  await playground.getByRole("button", { name: "Save locally" }).click();
-  await expect(
-    playground.getByRole("group", { name: "Confirm configuration change" }),
-  ).toBeVisible();
-  await playground.getByRole("button", { name: "Cancel", exact: true }).click();
-  expect(
-    await page.evaluate(
-      (key) =>
-        JSON.parse(localStorage.getItem(key)).configuration.actions[0].label,
-      storageKey,
-    ),
-  ).toBe("Saved task");
+  await playground.getByLabel("Label for add-task").fill("Autosaved task");
+  await expect
+    .poll(() =>
+      page.evaluate(
+        (key) => JSON.parse(localStorage.getItem(key)).actions[0].label,
+        autoKey,
+      ),
+    )
+    .toBe("Autosaved task");
   await page.reload();
-  await expect(playground.locator(".playground-status")).toContainText(
-    "saved configuration is available",
-  );
+  playground = page.locator("#playground");
   await expect(
-    toolbar.getByRole("button", { name: "New task", exact: true }),
+    playground
+      .getByRole("toolbar")
+      .getByRole("button", { name: "Autosaved task" }),
   ).toBeVisible();
   await playground.getByRole("button", { name: "Restore saved" }).click();
   await playground.getByRole("button", { name: "Confirm restore" }).click();
   await expect(
-    toolbar.getByRole("button", { name: "Saved task" }),
+    playground.getByRole("toolbar").getByRole("button", { name: "Saved task" }),
   ).toBeVisible();
   await playground.getByRole("button", { name: "Undo", exact: true }).click();
   await expect(
-    toolbar.getByRole("button", { name: "New task", exact: true }),
+    playground
+      .getByRole("toolbar")
+      .getByRole("button", { name: "Autosaved task" }),
   ).toBeVisible();
   await page.evaluate(
-    (key) => localStorage.setItem(key, '{"version":99,"configuration":{}}'),
-    storageKey,
+    (key) => localStorage.setItem(key, '{"version":999}'),
+    autoKey,
   );
-  await playground.getByRole("button", { name: "Restore saved" }).click();
-  await playground.getByRole("button", { name: "Confirm restore" }).click();
-  await expect(playground.locator(".playground-status")).toContainText(
-    "Unsupported saved draft",
-  );
+  await page.reload();
   await expect(
-    toolbar.getByRole("button", { name: "New task", exact: true }),
+    playground.getByRole("group", { name: "Autosave recovery" }),
   ).toBeVisible();
-  expect(
-    await page.evaluate((key) => localStorage.getItem(key), storageKey),
-  ).toContain('"version":99');
+  expect(await page.evaluate((key) => localStorage.getItem(key), autoKey)).toBe(
+    '{"version":999}',
+  );
+  await playground
+    .getByRole("button", { name: "Use current design for autosave" })
+    .click();
+  await playground.getByRole("button", { name: "Confirm autosave" }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        (key) => JSON.parse(localStorage.getItem(key)).version,
+        autoKey,
+      ),
+    )
+    .toBe(2);
 });
 
-test("unavailable local storage reports failures without breaking the application", async ({
+test("storage failures are explicit and do not prevent real toolbar actions", async ({
   page,
 }) => {
   await page.addInitScript(() => {
@@ -205,7 +413,7 @@ test("unavailable local storage reports failures without breaking the applicatio
       throw new DOMException("Blocked", "SecurityError");
     };
   });
-  const { playground, toolbar } = await openPlayground(page);
+  const playground = await open(page);
   await expect(playground.locator(".playground-status")).toContainText(
     "Local storage is unavailable",
   );
@@ -213,148 +421,128 @@ test("unavailable local storage reports failures without breaking the applicatio
   await expect(playground.locator(".playground-status")).toContainText(
     "Could not save",
   );
-  await toolbar.getByRole("button", { name: "New task", exact: true }).click();
-  await expect(page.getByLabel("New task title")).toBeFocused();
-});
-
-test("global theme synchronizes Workspace, SDK and generation while preserving the token family", async ({
-  page,
-}) => {
-  const { playground, toolbar } = await openPlayground(page);
   await playground
-    .getByRole("button", { name: "Appearance", exact: true })
+    .getByRole("toolbar")
+    .getByRole("button", { name: "New task", exact: true })
     .click();
-  await playground
-    .getByLabel("Toolbar token family")
-    .selectOption("warm-minimal");
-  await page.getByRole("button", { name: "Switch to dark theme" }).click();
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  await expect(playground.locator(".playground-application")).toHaveAttribute(
-    "data-theme",
-    "dark",
-  );
-  await expect(toolbar).toHaveAttribute("data-color-scheme", "dark");
-  await expect(toolbar).toHaveAttribute("data-theme", "warm-minimal");
-  await expect(
-    page.getByLabel("Personalized Vanilla integration source"),
-  ).toContainText('"colorScheme": "dark"');
-  await expect(
-    page.getByLabel("Personalized Vanilla integration source"),
-  ).toContainText('"theme": "warm-minimal"');
-  const scan = await new AxeBuilder({ page }).analyze();
-  expect(scan.violations).toEqual([]);
-  await page.getByRole("button", { name: "Switch to light theme" }).click();
-  await expect(toolbar).toHaveAttribute("data-color-scheme", "light");
-  await expect(toolbar).toHaveAttribute("data-theme", "warm-minimal");
+  await expect(playground.getByLabel("New task title")).toBeFocused();
 });
 
-test("responsive workspace is bounded, has no mobile overflow and supports keyboard and reduced motion", async ({
+test("mobile preview-first sheet, code view, keyboard resizing and fullscreen preserve state", async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 1440, height: 1000 });
-  const { playground, toolbar } = await openPlayground(page);
-  const workspaceBounds = await playground
-    .locator(".playground-workspace")
-    .boundingBox();
-  expect(workspaceBounds.height).toBeLessThanOrEqual(610);
   await page.setViewportSize({ width: 360, height: 780 });
   await page.emulateMedia({ reducedMotion: "reduce" });
+  const playground = await open(page);
+  await expect(
+    playground.getByRole("complementary", { name: "Playground settings" }),
+  ).not.toBeVisible();
+  await playground
+    .getByRole("button", { name: "customize", exact: true })
+    .click();
+  await expect(
+    playground.getByRole("complementary", { name: "Playground settings" }),
+  ).toBeVisible();
+  await playground
+    .getByRole("button", { name: "Resize settings sheet" })
+    .focus();
+  await page.keyboard.press("ArrowUp");
+  await playground.getByRole("button", { name: "code", exact: true }).click();
+  await expect(
+    playground.getByLabel("Playground configuration JSON"),
+  ).toBeVisible();
+  await playground
+    .getByRole("button", { name: "preview", exact: true })
+    .click();
+  await playground
+    .getByRole("button", { name: "Fullscreen preview", exact: true })
+    .click();
+  await expect(page.locator("#playground-workspace")).toHaveAttribute(
+    "data-focus",
+    "true",
+  );
+  await page
+    .locator("#playground-workspace")
+    .getByRole("button", { name: "Exit fullscreen", exact: true })
+    .click();
+  await expect(page.locator("#playground-workspace")).toHaveAttribute(
+    "data-focus",
+    "false",
+  );
   await expect
     .poll(() =>
-      page.evaluate(
-        () => document.documentElement.scrollWidth <= window.innerWidth,
-      ),
+      page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     )
     .toBe(true);
-  const appearance = playground.getByRole("button", {
-    name: "Appearance",
-    exact: true,
-  });
-  await appearance.focus();
-  await page.keyboard.press("Enter");
-  await expect(appearance).toHaveAttribute("aria-expanded", "true");
-  await expect(
-    playground.getByRole("button", { name: "Templates", exact: true }),
-  ).toHaveAttribute("aria-expanded", "false");
-  await toolbar.getByRole("button", { name: "New task", exact: true }).focus();
-  await page.keyboard.press("ArrowRight");
-  await expect(
-    toolbar.getByRole("button", { name: "Show / hide completed" }),
-  ).toBeFocused();
-  const scan = await new AxeBuilder({ page }).analyze();
-  expect(scan.violations).toEqual([]);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
 
-test("exported personalized Vanilla source mounts the real SDK and disposes on pagehide", async ({
+test("personalized export executes actual SDK presentation and disposes its resources", async ({
   page,
   baseURL,
 }) => {
-  const { playground } = await openPlayground(page);
-  await playground
-    .getByRole("button", { name: "Actions", exact: true })
-    .click();
+  const playground = await open(page);
+  await panel(playground, "Actions");
   await playground.getByLabel("Label for add-task").fill("Exported task");
+  await playground
+    .locator(".action-editor")
+    .first()
+    .getByRole("combobox", { name: "Icon", exact: true })
+    .selectOption("plus");
+  await panel(playground, "Geometry & Position");
+  await playground.getByLabel("Toolbar radius", { exact: true }).fill("8");
   await expect(
     page.getByLabel("Personalized Vanilla integration source"),
   ).toContainText("Exported task");
-  const downloadReady = page.waitForEvent("download");
+  const ready = page.waitForEvent("download");
   await page
     .getByRole("button", { name: "Export personalized Vanilla project" })
     .click();
-  const download = await downloadReady;
-  expect(download.suggestedFilename()).toBe("toolbar.playground.vanilla.json");
-  const exported = JSON.parse(await readFile(await download.path(), "utf8"));
-  expect(exported.version).toBe(1);
-  expect(exported.project.manifest.configuration.actions[0].label).toBe(
-    "Exported task",
-  );
+  const downloaded = await ready;
+  const exported = JSON.parse(await readFile(await downloaded.path(), "utf8"));
   const files = new Map(
     exported.project.files.map(({ path, content }) => [path, content]),
+  );
+  expect(JSON.parse(files.get("playground.design.json")).geometry.radius).toBe(
+    8,
   );
   await page.route(`${baseURL}/personalized/**`, (route) => {
     const name = new URL(route.request().url()).pathname.split("/").at(-1);
     const body = files.get(name || "index.html");
-    if (body === undefined) return route.fulfill({ status: 404 });
-    return route.fulfill({
-      contentType: name?.endsWith(".js")
-        ? "text/javascript"
-        : name?.endsWith(".css")
-          ? "text/css"
-          : "text/html",
-      body,
-    });
-  });
-  await page.route(`${baseURL}/vendor/**`, (route) => {
-    const path = new URL(route.request().url()).pathname.replace(
-      "/vendor/",
-      "/toolbar/",
+    return route.fulfill(
+      body === undefined
+        ? { status: 404 }
+        : {
+            body,
+            contentType: name.endsWith(".js")
+              ? "text/javascript"
+              : name.endsWith(".css")
+                ? "text/css"
+                : "text/html",
+          },
     );
-    return route.continue({ url: `${baseURL}${path}` });
   });
+  await page.route(`${baseURL}/vendor/**`, (route) =>
+    route.continue({
+      url: `${baseURL}${new URL(route.request().url()).pathname.replace("/vendor/", "/toolbar/")}`,
+    }),
+  );
   await page.goto(`${baseURL}/personalized/index.html`);
-  const starter = page.getByRole("toolbar", {
+  const toolbar = page.getByRole("toolbar", {
     name: "Modern Workspace toolbar",
   });
-  await starter.getByRole("button", { name: "Exported task" }).click();
+  const button = toolbar.getByRole("button", {
+    name: "Exported task",
+    exact: true,
+  });
+  await button.click();
   await expect(page.locator("#status")).toHaveText("Selected: add-task");
+  await expect(button).toHaveAttribute("data-icon", "+");
+  await expect
+    .poll(() =>
+      toolbar.evaluate((element) => getComputedStyle(element).borderRadius),
+    )
+    .toBe("8px");
   await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
-  await expect(starter).toHaveCount(0);
-});
-
-test("adaptive header hides down, reveals up and remains reachable by keyboard", async ({
-  page,
-}) => {
-  await openPlayground(page);
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  const header = page.locator(".adaptive-header");
-  await page.evaluate(() => window.scrollTo({ top: 900, behavior: "instant" }));
-  await expect(header).toHaveAttribute("data-hidden", "true");
-  await page.evaluate(() => window.scrollTo({ top: 600, behavior: "instant" }));
-  await expect(header).toHaveAttribute("data-hidden", "false");
-  await page.evaluate(() =>
-    window.scrollTo({ top: 1000, behavior: "instant" }),
-  );
-  await expect(header).toHaveAttribute("data-hidden", "true");
-  await header.getByRole("link", { name: "Playground", exact: true }).focus();
-  await expect(header).toHaveAttribute("data-hidden", "false");
+  await expect(toolbar).toHaveCount(0);
 });

@@ -62,7 +62,7 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <FunctionalPlayground />
+        <FunctionalPlayground nonce={nonce} />
 
         <section
           className="section-shell environment-section"
