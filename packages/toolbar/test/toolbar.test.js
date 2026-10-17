@@ -853,3 +853,98 @@ test("disabling search clears its UI and aborts active provider work", (t) => {
   assert.equal(shadow.querySelector('[data-toolbar-control="search"]'), null);
   assert.equal(shadow.querySelector(".mzk-toolbar__search-panel"), null);
 });
+
+test("AI panel runs only on explicit submit and renders host text safely", async (t) => {
+  const requests = [];
+  const reported = [];
+  const current = fixture(
+    { features: { ai: true } },
+    {
+      aiAdapter: {
+        async complete(prompt, signal) {
+          requests.push([prompt, signal]);
+          return { ok: true, text: "<img src=x onerror=alert(1)>" };
+        },
+      },
+      onAIError: (error) => reported.push(error),
+    },
+  );
+  t.after(() => disposeFixture(current));
+  assert.equal(current.toolbar.mount(current.target).ok, true);
+
+  const shadow = current.target.firstElementChild.shadowRoot;
+  const button = shadow.querySelector('[data-toolbar-control="ai"]');
+  const panel = shadow.querySelector(".mzk-toolbar__ai-panel");
+  assert.ok(button);
+  assert.ok(panel);
+  assert.equal(panel.hidden, true);
+  assert.equal(requests.length, 0);
+
+  button.click();
+  assert.equal(panel.hidden, false);
+  const prompt = panel.querySelector("textarea");
+  prompt.value = "  summarize this  ";
+  panel.querySelector("form").dispatchEvent(
+    new current.window.Event("submit", {
+      bubbles: true,
+      cancelable: true,
+    }),
+  );
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0][0], "  summarize this  ");
+  const response = panel.querySelector(".mzk-toolbar__ai-response");
+  assert.equal(response.textContent, "<img src=x onerror=alert(1)>");
+  assert.equal(response.querySelector("img"), null);
+  assert.deepEqual(reported, []);
+
+  prompt.dispatchEvent(
+    new current.window.KeyboardEvent("keydown", {
+      key: "Escape",
+      bubbles: true,
+      cancelable: true,
+    }),
+  );
+  assert.equal(panel.hidden, true);
+  assert.equal(prompt.value, "");
+  assert.equal(response.textContent, "");
+});
+
+test("closing the AI panel aborts an active host request", async (t) => {
+  let signal;
+  const current = fixture(
+    { features: { ai: true } },
+    {
+      aiAdapter: {
+        complete(_prompt, activeSignal) {
+          signal = activeSignal;
+          return new Promise((_resolve, reject) => {
+            activeSignal.addEventListener(
+              "abort",
+              () => reject(new Error("aborted")),
+              { once: true },
+            );
+          });
+        },
+      },
+    },
+  );
+  t.after(() => disposeFixture(current));
+  assert.equal(current.toolbar.mount(current.target).ok, true);
+
+  const shadow = current.target.firstElementChild.shadowRoot;
+  shadow.querySelector('[data-toolbar-control="ai"]').click();
+  const panel = shadow.querySelector(".mzk-toolbar__ai-panel");
+  panel.querySelector("textarea").value = "a request";
+  panel.querySelector("form").dispatchEvent(
+    new current.window.Event("submit", {
+      bubbles: true,
+      cancelable: true,
+    }),
+  );
+  assert.ok(signal);
+  assert.equal(signal.aborted, false);
+  shadow.querySelector('[data-toolbar-control="ai"]').click();
+  assert.equal(signal.aborted, true);
+  assert.equal(panel.hidden, true);
+});

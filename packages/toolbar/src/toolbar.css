@@ -314,7 +314,8 @@
 
 .mzk-toolbar__task-center,
 .mzk-toolbar__notification-center,
-.mzk-toolbar__search-panel {
+.mzk-toolbar__search-panel,
+.mzk-toolbar__ai-panel {
   position: absolute;
   z-index: 3;
   inset-inline-end: 0;
@@ -334,20 +335,23 @@
 
 .mzk-toolbar__task-center[hidden],
 .mzk-toolbar__notification-center[hidden],
-.mzk-toolbar__search-panel[hidden] {
+.mzk-toolbar__search-panel[hidden],
+.mzk-toolbar__ai-panel[hidden] {
   display: none !important;
 }
 
 .mzk-toolbar__task-center h2,
 .mzk-toolbar__notification-center h2,
-.mzk-toolbar__search-panel h2 {
+.mzk-toolbar__search-panel h2,
+.mzk-toolbar__ai-panel h2 {
   margin: 0 0 0.75rem;
   font-size: 1rem;
 }
 
 .mzk-toolbar__task-center p,
 .mzk-toolbar__notification-center p,
-.mzk-toolbar__search-panel p {
+.mzk-toolbar__search-panel p,
+.mzk-toolbar__ai-panel p {
   margin: 0;
 }
 
@@ -453,9 +457,84 @@
   outline-color: #005fcc;
 }
 
+.mzk-toolbar__ai-form {
+  display: grid;
+  gap: 0.5rem;
+  margin-block-end: 0.75rem;
+}
+
+.mzk-toolbar__ai-form label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.875rem;
+}
+
+.mzk-toolbar__ai-form textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 6rem;
+  resize: vertical;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid currentColor;
+  border-radius: 0.6rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.mzk-toolbar__ai-form button {
+  justify-self: start;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid currentColor;
+  border-radius: 0.6rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.mzk-toolbar__ai-form button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.mzk-toolbar__ai-form textarea:focus-visible,
+.mzk-toolbar__ai-form button:focus-visible {
+  outline: 3px solid #315bd6;
+  outline-offset: 2px;
+}
+
+.mzk-toolbar__ai-panel[data-theme="midnight"] textarea:focus-visible,
+.mzk-toolbar__ai-panel[data-theme="midnight"] button:focus-visible {
+  outline-color: #afc6ff;
+}
+
+.mzk-toolbar__ai-panel[data-theme="warm-minimal"] textarea:focus-visible,
+.mzk-toolbar__ai-panel[data-theme="warm-minimal"] button:focus-visible {
+  outline-color: #7d4019;
+}
+
+.mzk-toolbar__ai-panel[data-theme="high-contrast"] textarea:focus-visible,
+.mzk-toolbar__ai-panel[data-theme="high-contrast"] button:focus-visible {
+  outline-color: #005fcc;
+}
+
+.mzk-toolbar__ai-disclosure {
+  font-size: 0.875rem;
+}
+
+.mzk-toolbar__ai-response {
+  max-height: 12rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .mzk-toolbar__task-center[data-theme="midnight"],
 .mzk-toolbar__notification-center[data-theme="midnight"],
-.mzk-toolbar__search-panel[data-theme="midnight"] {
+.mzk-toolbar__search-panel[data-theme="midnight"],
+.mzk-toolbar__ai-panel[data-theme="midnight"] {
   border-color: #536079;
   background: #161c2a;
   color: #f4f6fc;
@@ -463,7 +542,8 @@
 
 .mzk-toolbar__task-center[data-theme="warm-minimal"],
 .mzk-toolbar__notification-center[data-theme="warm-minimal"],
-.mzk-toolbar__search-panel[data-theme="warm-minimal"] {
+.mzk-toolbar__search-panel[data-theme="warm-minimal"],
+.mzk-toolbar__ai-panel[data-theme="warm-minimal"] {
   border-color: #b9a98c;
   background: #fff8ec;
   color: #302317;
@@ -471,7 +551,8 @@
 
 .mzk-toolbar__task-center[data-theme="high-contrast"],
 .mzk-toolbar__notification-center[data-theme="high-contrast"],
-.mzk-toolbar__search-panel[data-theme="high-contrast"] {
+.mzk-toolbar__search-panel[data-theme="high-contrast"],
+.mzk-toolbar__ai-panel[data-theme="high-contrast"] {
   border: 2px solid #000000;
   background: #ffffff;
   color: #000000;
@@ -495,6 +576,14 @@
 }
 
 .mzk-toolbar__search-panel[data-color-scheme="dark"]:not(
+    [data-theme="midnight"]
+  ):not([data-theme="warm-minimal"]):not([data-theme="high-contrast"]) {
+  border-color: #435046;
+  background: #1d2432;
+  color: #f1f4fb;
+}
+
+.mzk-toolbar__ai-panel[data-color-scheme="dark"]:not(
     [data-theme="midnight"]
   ):not([data-theme="warm-minimal"]):not([data-theme="high-contrast"]) {
   border-color: #435046;
@@ -545,6 +634,14 @@
     background: #1d2432;
     color: #f1f4fb;
   }
+
+  .mzk-toolbar__ai-panel[data-color-scheme="system"]:not(
+      [data-theme="midnight"]
+    ):not([data-theme="warm-minimal"]):not([data-theme="high-contrast"]) {
+    border-color: #435046;
+    background: #1d2432;
+    color: #f1f4fb;
+  }
 }
 
 .mzk-toolbar button:focus-visible {
@@ -570,7 +667,8 @@
 
   .mzk-toolbar__task-center,
   .mzk-toolbar__notification-center,
-  .mzk-toolbar__search-panel {
+  .mzk-toolbar__search-panel,
+  .mzk-toolbar__ai-panel {
     border: 1px solid CanvasText;
     background: Canvas;
     color: CanvasText;
@@ -580,7 +678,9 @@
 
   .mzk-toolbar button:focus-visible,
   .mzk-toolbar__search-panel input:focus-visible,
-  .mzk-toolbar__search-panel button:focus-visible {
+  .mzk-toolbar__search-panel button:focus-visible,
+  .mzk-toolbar__ai-form textarea:focus-visible,
+  .mzk-toolbar__ai-form button:focus-visible {
     outline-color: Highlight;
   }
 }

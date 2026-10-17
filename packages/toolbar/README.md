@@ -200,7 +200,7 @@ const controller = new AbortController();
 const outcome = await ai.complete(userPrompt, controller.signal);
 ```
 
-The provider receives only the explicit prompt and signal. It must honor cancellation cooperatively and return bounded plain text. The host owns context selection, data handling, provider/network policy, and safe text presentation.
+When `features.ai` is explicitly enabled, the toolbar exposes a user-opened AI panel. It does not call the provider when the panel opens: the user must submit a prompt. The provider receives only that prompt and signal, must honor cancellation cooperatively, and must return bounded plain text. Closing the panel, disabling AI, or disposing the toolbar aborts work and clears the prompt/response. The host owns context selection, data handling, provider/network policy, and safe text presentation.
 
 ## Quiet notification center
 

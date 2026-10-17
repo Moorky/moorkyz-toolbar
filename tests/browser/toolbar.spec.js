@@ -536,6 +536,41 @@ test("search panel is keyboard-usable and dispatches local results only through 
   await expect(panel).toBeHidden();
 });
 
+test("AI panel waits for a user prompt and renders plain-text provider output", async ({
+  page,
+}) => {
+  await page.evaluate(() => {
+    window.toolbar.dispose();
+    window.mountAIToolbar();
+  });
+  const toolbar = page.getByRole("toolbar", { name: "AI test toolbar" });
+  const button = page.getByRole("button", { name: "Ask AI" });
+  await expect(button).toBeVisible();
+  await expect(page.locator(".mzk-toolbar__ai-panel")).toBeHidden();
+  expect(await page.evaluate(() => window.aiRequests)).toEqual([]);
+
+  await button.click();
+  const panel = page.getByRole("region", { name: "AI assistant" });
+  await expect(panel).toBeVisible();
+  const prompt = page.getByRole("textbox", { name: "Prompt" });
+  await prompt.fill("Summarize this note");
+  expect(await page.evaluate(() => window.aiRequests)).toEqual([]);
+  await page.getByRole("button", { name: "Generate response" }).click();
+  await expect(panel).toContainText("<img src=x onerror=alert(1)> AI response");
+  await expect(panel.locator("img")).toHaveCount(0);
+  expect(await page.evaluate(() => window.aiRequests)).toEqual([
+    "Summarize this note",
+  ]);
+
+  const { violations } = await new AxeBuilder({ page }).analyze();
+  expect(violations).toEqual([]);
+
+  await page.keyboard.press("Escape");
+  await expect(panel).toBeHidden();
+  await expect(page.locator(".mzk-toolbar__ai-panel textarea")).toHaveValue("");
+  await expect(toolbar).toHaveAttribute("data-collapsed", "false");
+});
+
 test("dispose removes the mounted interface", async ({ page }) => {
   await page.evaluate(() => window.toolbar.dispose());
   await expect(page.getByRole("toolbar")).toHaveCount(0);

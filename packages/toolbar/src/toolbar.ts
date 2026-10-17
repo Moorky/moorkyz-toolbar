@@ -4,6 +4,7 @@ import {
   type ToolbarConfiguration,
   type ToolbarConfigurationInput,
 } from "./configuration.js";
+import type { AICompletionOutcome, HostAuthorizedAIAdapter } from "./ai.js";
 import type {
   PreferenceDiagnostic,
   ToolbarPreferenceStore,
@@ -48,6 +49,8 @@ export interface ToolbarHost {
     resultId: string,
   ) => void;
   readonly onSearchError?: (error: unknown, query: string) => void;
+  readonly aiAdapter?: HostAuthorizedAIAdapter;
+  readonly onAIError?: (error: unknown) => void;
 }
 
 export type ToolbarErrorCode =
@@ -111,6 +114,7 @@ type SearchDisplayResult =
 
 const MAX_SEARCH_DISPLAY_RESULTS = 50;
 const MAX_SEARCH_QUERY = 256;
+const MAX_AI_PROMPT = 8_000;
 
 function orderActions(
   actions: ToolbarConfiguration["actions"],
@@ -169,6 +173,21 @@ function searchOutcomeMessage(outcome: FederatedSearchOutcome): string {
     return "Some search sources were unavailable.";
   }
   return outcome.results.length === 0 ? "No results." : "Search complete.";
+}
+
+function aiOutcomeMessage(outcome: AICompletionOutcome): string {
+  if (outcome.ok) return "Response ready.";
+  if (outcome.error.code === "AI_DISABLED") {
+    return "AI is disabled by host policy.";
+  }
+  if (outcome.error.code === "AI_PERMISSION_DENIED") {
+    return "AI use is not authorized.";
+  }
+  if (outcome.error.code === "AI_CANCELLED") return "AI request was cancelled.";
+  if (outcome.error.code === "AI_INVALID_PROMPT") {
+    return "Enter a valid prompt.";
+  }
+  return "AI response is unavailable.";
 }
 
 function failure(
@@ -247,6 +266,17 @@ class ToolbarControllerImpl implements ToolbarController {
   private searchAbortController: AbortController | null = null;
   private searchRequestVersion = 0;
   private searchResults: readonly SearchDisplayResult[] = Object.freeze([]);
+  private aiPanelOpen = false;
+  private aiButtonElement: HTMLButtonElement | null = null;
+  private aiPanelElement: HTMLElement | null = null;
+  private aiFormElement: HTMLFormElement | null = null;
+  private aiPromptElement: HTMLTextAreaElement | null = null;
+  private aiStatusElement: HTMLParagraphElement | null = null;
+  private aiResponseElement: HTMLDivElement | null = null;
+  private aiSubmitHandler: ((event: SubmitEvent) => void) | null = null;
+  private aiKeydownHandler: ((event: KeyboardEvent) => void) | null = null;
+  private aiAbortController: AbortController | null = null;
+  private aiRequestVersion = 0;
 
   constructor(configuration: ToolbarConfiguration, host: ToolbarHost) {
     this.configuration = configuration;
@@ -439,6 +469,7 @@ class ToolbarControllerImpl implements ToolbarController {
       this.connectivityStatus = "unknown";
     }
     if (!this.configuration.features.search) this.resetSearchState();
+    if (!this.configuration.features.ai) this.resetAIState();
     if (!this.configuration.features.customize) this.editing = false;
     if (this.toolbarElement !== null) {
       this.render();
@@ -587,6 +618,7 @@ class ToolbarControllerImpl implements ToolbarController {
     this.taskPanelOpen = false;
     this.notificationPanelOpen = false;
     this.resetSearchState();
+    this.resetAIState();
     const persistenceResult = this.persistCurrentPreferences();
     this.render();
     return persistenceResult;
@@ -618,8 +650,10 @@ class ToolbarControllerImpl implements ToolbarController {
 
   private clearMountReferences(): void {
     this.clearOverflowMonitoring();
+    this.resetSearchState();
+    this.resetAIState();
     this.detachSearchPanelHandlers();
-    this.cancelSearchRequest();
+    this.detachAIPanelHandlers();
     this.mountTarget = null;
     this.hostElement = null;
     this.renderRoot = null;
@@ -646,6 +680,15 @@ class ToolbarControllerImpl implements ToolbarController {
     this.searchResultsClickHandler = null;
     this.searchPanelOpen = false;
     this.searchResults = Object.freeze([]);
+    this.aiButtonElement = null;
+    this.aiPanelElement = null;
+    this.aiFormElement = null;
+    this.aiPromptElement = null;
+    this.aiStatusElement = null;
+    this.aiResponseElement = null;
+    this.aiSubmitHandler = null;
+    this.aiKeydownHandler = null;
+    this.aiPanelOpen = false;
     this.keydownHandler = null;
     this.clickHandler = null;
   }
@@ -888,6 +931,20 @@ class ToolbarControllerImpl implements ToolbarController {
     } else {
       this.searchButtonElement = null;
     }
+    if (this.configuration.features.ai) {
+      const aiButton = document.createElement("button");
+      aiButton.className = "mzk-toolbar__ai";
+      aiButton.type = "button";
+      aiButton.textContent = "AI";
+      aiButton.setAttribute("aria-label", "Ask AI");
+      aiButton.setAttribute("data-toolbar-control", "ai");
+      aiButton.setAttribute("aria-expanded", String(this.aiPanelOpen));
+      aiButton.tabIndex = -1;
+      this.aiButtonElement = aiButton;
+      controls.push(aiButton);
+    } else {
+      this.aiButtonElement = null;
+    }
     if (this.configuration.features.tasks) {
       const tasksButton = document.createElement("button");
       tasksButton.className = "mzk-toolbar__tasks";
@@ -990,11 +1047,23 @@ class ToolbarControllerImpl implements ToolbarController {
       this.searchStatusElement = null;
       this.searchResultsElement = null;
     }
+    if (this.configuration.features.ai) {
+      this.ensureAIPanel(root, document);
+    } else {
+      this.detachAIPanelHandlers();
+      this.aiPanelElement?.remove();
+      this.aiPanelElement = null;
+      this.aiFormElement = null;
+      this.aiPromptElement = null;
+      this.aiStatusElement = null;
+      this.aiResponseElement = null;
+    }
     this.updateTaskButton();
     this.renderTaskCenter();
     this.updateNotificationButton();
     this.renderNotificationCenter();
     this.renderSearchPanel();
+    this.renderAIPanel();
     this.actionsElement = actions;
     this.startOverflowMonitoring();
     this.updateOverflowControls();
@@ -1073,14 +1142,44 @@ class ToolbarControllerImpl implements ToolbarController {
       if (this.searchPanelOpen) {
         this.resetSearchState();
       } else {
+        this.taskPanelOpen = false;
+        this.notificationPanelOpen = false;
+        this.resetAIState();
         this.searchPanelOpen = true;
+        this.updateTaskButton();
+        this.renderTaskCenter();
+        this.updateNotificationButton();
+        this.renderNotificationCenter();
         this.updateSearchButton();
         this.renderSearchPanel();
         this.searchInputElement?.focus();
       }
       return;
     }
+    if (control === "ai") {
+      if (this.aiPanelOpen) {
+        this.resetAIState();
+      } else {
+        this.resetSearchState();
+        this.taskPanelOpen = false;
+        this.notificationPanelOpen = false;
+        this.updateTaskButton();
+        this.renderTaskCenter();
+        this.updateNotificationButton();
+        this.renderNotificationCenter();
+        this.aiPanelOpen = true;
+        this.updateAIButton();
+        this.renderAIPanel();
+        this.aiPromptElement?.focus();
+      }
+      return;
+    }
     if (control === "tasks") {
+      const willOpen = !this.taskPanelOpen;
+      if (willOpen) {
+        this.resetSearchState();
+        this.resetAIState();
+      }
       this.taskPanelOpen = !this.taskPanelOpen;
       this.notificationPanelOpen = false;
       this.updateTaskButton();
@@ -1090,6 +1189,11 @@ class ToolbarControllerImpl implements ToolbarController {
       return;
     }
     if (control === "notifications") {
+      const willOpen = !this.notificationPanelOpen;
+      if (willOpen) {
+        this.resetSearchState();
+        this.resetAIState();
+      }
       this.notificationPanelOpen = !this.notificationPanelOpen;
       this.taskPanelOpen = false;
       this.updateNotificationButton();
@@ -1624,6 +1728,188 @@ class ToolbarControllerImpl implements ToolbarController {
       this.statusKind = "search";
     }
     this.host.onSearchResultError?.(cause, result.providerId, result.id);
+  }
+
+  private ensureAIPanel(root: RenderRoot, document: Document): void {
+    if (this.aiPanelElement !== null) return;
+    const panel = document.createElement("section");
+    panel.className = "mzk-toolbar__ai-panel";
+    panel.setAttribute("role", "region");
+    panel.setAttribute("aria-label", "AI assistant");
+    panel.hidden = true;
+
+    const heading = document.createElement("h2");
+    heading.textContent = "Ask AI";
+    const form = document.createElement("form");
+    form.className = "mzk-toolbar__ai-form";
+    const label = document.createElement("label");
+    label.textContent = "Prompt";
+    const prompt = document.createElement("textarea");
+    prompt.maxLength = MAX_AI_PROMPT;
+    prompt.rows = 4;
+    prompt.setAttribute("data-toolbar-ai-prompt", "");
+    label.appendChild(prompt);
+    const disclosure = document.createElement("p");
+    disclosure.className = "mzk-toolbar__ai-disclosure";
+    disclosure.textContent =
+      "Only include information approved by your app for AI processing.";
+    const submit = document.createElement("button");
+    submit.type = "submit";
+    submit.textContent = "Generate response";
+    submit.disabled = this.host.aiAdapter === undefined;
+    const status = document.createElement("p");
+    status.className = "mzk-toolbar__ai-status";
+    status.setAttribute("role", "status");
+    status.setAttribute("aria-live", "polite");
+    if (this.host.aiAdapter === undefined) {
+      status.textContent = "No host AI provider is configured.";
+    }
+    const response = document.createElement("div");
+    response.className = "mzk-toolbar__ai-response";
+    response.setAttribute("aria-live", "polite");
+    response.setAttribute("aria-atomic", "true");
+    form.append(label, disclosure, submit);
+    panel.append(heading, form, status, response);
+    root.insertBefore(panel, this.statusElement);
+
+    this.aiPanelElement = panel;
+    this.aiFormElement = form;
+    this.aiPromptElement = prompt;
+    this.aiStatusElement = status;
+    this.aiResponseElement = response;
+    this.aiSubmitHandler = (event) => {
+      event.preventDefault();
+      void this.submitAI();
+    };
+    this.aiKeydownHandler = (event) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      this.resetAIState();
+      this.aiButtonElement?.focus();
+    };
+    form.addEventListener("submit", this.aiSubmitHandler);
+    panel.addEventListener("keydown", this.aiKeydownHandler);
+  }
+
+  private detachAIPanelHandlers(): void {
+    if (this.aiFormElement !== null && this.aiSubmitHandler !== null) {
+      this.aiFormElement.removeEventListener("submit", this.aiSubmitHandler);
+    }
+    if (this.aiPanelElement !== null && this.aiKeydownHandler !== null) {
+      this.aiPanelElement.removeEventListener("keydown", this.aiKeydownHandler);
+    }
+    this.aiSubmitHandler = null;
+    this.aiKeydownHandler = null;
+  }
+
+  private updateAIButton(): void {
+    this.aiButtonElement?.setAttribute(
+      "aria-expanded",
+      String(this.aiPanelOpen),
+    );
+  }
+
+  private renderAIPanel(): void {
+    const panel = this.aiPanelElement;
+    if (panel === null) return;
+    panel.hidden = !this.aiPanelOpen;
+    panel.dataset.theme = this.configuration.theme;
+    panel.dataset.colorScheme = this.configuration.colorScheme;
+    this.updateAIButton();
+  }
+
+  private cancelAIRequest(): void {
+    this.aiRequestVersion += 1;
+    this.aiAbortController?.abort();
+    this.aiAbortController = null;
+  }
+
+  private resetAIState(): void {
+    this.cancelAIRequest();
+    this.aiPanelOpen = false;
+    if (this.aiPromptElement !== null) this.aiPromptElement.value = "";
+    if (this.aiStatusElement !== null) {
+      this.aiStatusElement.textContent =
+        this.host.aiAdapter === undefined
+          ? "No host AI provider is configured."
+          : "";
+    }
+    if (this.aiResponseElement !== null) {
+      this.aiResponseElement.textContent = "";
+    }
+    this.updateAIButton();
+    this.renderAIPanel();
+  }
+
+  private async submitAI(): Promise<void> {
+    const promptElement = this.aiPromptElement;
+    const status = this.aiStatusElement;
+    const response = this.aiResponseElement;
+    if (
+      promptElement === null ||
+      status === null ||
+      response === null ||
+      !this.aiPanelOpen ||
+      !this.configuration.features.ai
+    ) {
+      return;
+    }
+    this.cancelAIRequest();
+    const prompt = promptElement.value;
+    if (prompt.trim().length === 0 || prompt.length > MAX_AI_PROMPT) {
+      status.textContent = "Enter a prompt of 1 to 8,000 characters.";
+      response.textContent = "";
+      return;
+    }
+    const adapter = this.host.aiAdapter;
+    if (adapter === undefined) {
+      status.textContent = "No host AI provider is configured.";
+      response.textContent = "";
+      return;
+    }
+
+    const version = this.aiRequestVersion;
+    const abortController = new AbortController();
+    this.aiAbortController = abortController;
+    status.textContent = "Generating response…";
+    response.textContent = "";
+    try {
+      let outcome: AICompletionOutcome;
+      try {
+        outcome = await adapter.complete(prompt, abortController.signal);
+      } catch (cause) {
+        if (
+          version !== this.aiRequestVersion ||
+          abortController.signal.aborted ||
+          !this.aiPanelOpen
+        ) {
+          return;
+        }
+        status.textContent = "AI response is unavailable.";
+        this.host.onAIError?.(cause);
+        return;
+      }
+      if (
+        version !== this.aiRequestVersion ||
+        abortController.signal.aborted ||
+        !this.aiPanelOpen
+      ) {
+        return;
+      }
+      status.textContent = aiOutcomeMessage(outcome);
+      if (outcome.ok) {
+        response.textContent = outcome.text;
+      } else if (
+        outcome.error.cause !== undefined ||
+        outcome.error.code === "AI_PROVIDER_FAILED"
+      ) {
+        this.host.onAIError?.(outcome.error);
+      }
+    } finally {
+      if (this.aiAbortController === abortController) {
+        this.aiAbortController = null;
+      }
+    }
   }
 
   private startOverflowMonitoring(): void {

@@ -128,9 +128,9 @@ The caller supplies an `AbortSignal`; providers must cooperate with cancellation
 
 ## M6 host-authorized AI adapter draft
 
-`createHostAuthorizedAIAdapter(provider, policy)` requires an explicit provider, an `isEnabled()` gate, a host authorization callback, and an `AbortSignal` for each completion. The feature gate is evaluated before authorization or provider execution; authorization is evaluated for each request. The `ai` feature default remains false. Prompt input is trimmed and limited to 8,000 characters; provider responses must be plain text, non-empty, and no more than 20,000 characters. Provider failures, cancellation, invalid data, disabled state, and denial return structured diagnostics. Providers must cooperatively honor cancellation.
+`createHostAuthorizedAIAdapter(provider, policy)` requires an explicit provider, an `isEnabled()` gate, a host authorization callback, and an `AbortSignal` for each completion. The feature gate is evaluated before authorization or provider execution; authorization is evaluated for each request. The `ai` feature default remains false. When explicitly enabled, the controller shows a user-opened prompt panel; opening it does not invoke the provider. Prompt input is trimmed and limited to 8,000 characters; provider responses must be plain text, non-empty, and no more than 20,000 characters. Provider failures, cancellation, invalid data, disabled state, and denial return structured diagnostics. Providers must cooperatively honor cancellation. Closing the panel, disabling AI, or disposing the controller aborts in-flight work and clears prompt/response text.
 
-The adapter does not select or augment prompts with host context, render model output, persist prompts/responses, retry, log usage, or contact a default AI service. Host code owns provider/network choice, authorization, sensitive-data handling, and safe text presentation. This is a headless adapter only; interactive AI UI and broader data policy documentation remain future work.
+The adapter does not select or augment prompts with host context, persist prompts/responses, retry, log usage, or contact a default AI service. Output is inserted as text, not HTML. Host code owns provider/network choice, authorization, sensitive-data handling, and any broader context policy.
 
 ## M6 quiet notification presentation draft
 

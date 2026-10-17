@@ -105,6 +105,30 @@ window.mountGestureManager = (enabled) => {
   window.gestureResults = gestures;
 };
 
+window.mountAIToolbar = () => {
+  window.aiRequests = [];
+  const aiToolbar = createToolbar(
+    {
+      features: { ai: true },
+      label: "AI test toolbar",
+    },
+    {
+      aiAdapter: {
+        async complete(prompt) {
+          window.aiRequests.push(prompt);
+          return {
+            ok: true,
+            text: "<img src=x onerror=alert(1)> AI response",
+          };
+        },
+      },
+    },
+  );
+  const outcome = aiToolbar.mount(document.querySelector("#ai-target"));
+  if (!outcome.ok) throw new Error(outcome.error.message);
+  window.aiToolbar = aiToolbar;
+};
+
 window.mountShortcutManager = () => {
   let activeScope = "app:editor";
   const shortcutManager = createShortcutManager(target, {
