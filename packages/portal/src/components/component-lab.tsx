@@ -117,6 +117,7 @@ export function ComponentLab() {
           host={host}
           onController={onController}
           onMountError={onMountError}
+          role="region"
           aria-label="Live component preview"
         />
       </div>

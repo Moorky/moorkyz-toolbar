@@ -527,6 +527,7 @@ export function VisualConfigurator() {
               configuration={appliedConfiguration}
               host={host}
               onMountError={onMountError}
+              role="region"
               aria-label="Live toolbar preview"
             />
           </div>

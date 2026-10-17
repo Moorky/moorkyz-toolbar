@@ -28,7 +28,7 @@ test("portal mounts the actual library and updates its actions by context", asyn
     name: "Moorkyz Toolbar website navigation",
   });
   await expect(toolbar).toBeVisible();
-  await expect(page.getByRole("button", { name: "Explore" })).toBeVisible();
+  await expect(toolbar.getByRole("button", { name: "Explore" })).toBeVisible();
 
   await page.getByRole("button", { name: "Dashboard" }).click();
   await expect(
@@ -239,6 +239,62 @@ test("component lab runs real overflow, search, and collapse states", async ({
   ).toBeVisible();
   await lab.getByRole("button", { name: "Expand preview toolbar" }).click();
   await expect(preview.getByRole("button", { name: "Home" })).toBeVisible();
+
+  const { violations } = await new AxeBuilder({ page }).analyze();
+  expect(violations).toEqual([]);
+});
+
+test("Scenario Lab replays deterministic permission, fault, time, and viewport snapshots", async ({
+  page,
+}) => {
+  await page.goto(portalUrl);
+  const lab = page.locator("#scenario-lab");
+  const toolbar = lab.getByRole("toolbar", { name: "Scenario Lab toolbar" });
+  const permission = lab.getByLabel("Host allows navigation");
+  const simulatedTime = lab.getByLabel(/Simulated time/);
+
+  await lab.getByLabel("Simulated context").selectOption("dashboard");
+  await expect(
+    toolbar.getByRole("button", { name: "Built for control" }),
+  ).toBeVisible();
+  await permission.uncheck();
+  await toolbar.getByRole("button", { name: "Built for control" }).click();
+  await expect(lab.locator(".scenario-lab-status")).toContainText(
+    'Simulated host denied "engineering"',
+  );
+
+  await simulatedTime.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(lab.locator('label[for="scenario-time"]')).toContainText(
+    "00:05",
+  );
+  await permission.check();
+  await lab.getByLabel("Simulate host action failure").check();
+  await toolbar.getByRole("button", { name: "Built for control" }).click();
+  await expect(lab.locator(".scenario-lab-status")).toContainText(
+    'Simulated host failure for "engineering" was reported.',
+  );
+
+  await lab.getByRole("button", { name: "Capture snapshot" }).click();
+  await expect(
+    lab.getByRole("region", { name: "Scenario Lab preview" }),
+  ).toBeVisible();
+  await expect(lab.getByLabel("Scenario snapshot JSON")).toContainText(
+    '"simulatedMinute": 5',
+  );
+
+  await lab.getByLabel("Simulated context").selectOption("editor");
+  await lab.getByLabel("Simulated viewport").selectOption("compact");
+  await permission.uncheck();
+  await lab.getByLabel("Simulate host action failure").uncheck();
+  await lab.getByRole("button", { name: "Replay snapshot" }).click();
+  await expect(lab.getByLabel("Simulated context")).toHaveValue("dashboard");
+  await expect(lab.getByLabel("Simulated viewport")).toHaveValue("wide");
+  await expect(permission).toBeChecked();
+  await expect(lab.getByLabel("Simulate host action failure")).toBeChecked();
+  await expect(lab.locator('label[for="scenario-time"]')).toContainText(
+    "00:05",
+  );
 
   const { violations } = await new AxeBuilder({ page }).analyze();
   expect(violations).toEqual([]);

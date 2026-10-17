@@ -2,6 +2,7 @@ import { CopyButton } from "../components/copy-button";
 import { ComponentLab } from "../components/component-lab";
 import { EnvironmentExplorer } from "../components/environment-explorer";
 import { ThemeToggle } from "../components/portal-shell";
+import { ScenarioLab } from "../components/scenario-lab";
 import { VisualConfigurator } from "../components/visual-configurator";
 
 const repository = "https://github.com/Moorky/moorkyz-toolbar";
@@ -29,7 +30,7 @@ window.addEventListener("pagehide", () => toolbar.dispose(), { once: true });`;
 const studioCapabilities = [
   ["Visual configuration", "Available preview"],
   ["Component Lab", "Available preview"],
-  ["Scenario Lab", "Planned"],
+  ["Scenario Lab", "Available preview"],
   ["Theme and extension studios", "Planned"],
   ["Code and starter generation", "Planned"],
 ];
@@ -162,6 +163,27 @@ export default function HomePage() {
             </p>
           </div>
           <ComponentLab />
+        </section>
+
+        <section
+          className="section-shell scenario-lab-section"
+          id="scenario-lab"
+          tabIndex={-1}
+        >
+          <div className="section-heading">
+            <p className="eyebrow">SCENARIO LAB · DETERMINISTIC SIMULATION</p>
+            <h2>
+              Change the context.
+              <br />
+              Replay the outcome.
+            </h2>
+            <p>
+              Simulate viewport, time, host authorization, and action failures
+              against a real toolbar. Snapshots stay in memory and copied JSON
+              never executes.
+            </p>
+          </div>
+          <ScenarioLab />
         </section>
 
         <section
@@ -324,9 +346,10 @@ export default function HomePage() {
               is on the roadmap.
             </h2>
             <p>
-              A schema-validated configurator and a small component lab are
-              available below. The full Studio will add broader scenarios,
-              themes, and starter generation; those tools remain on the roadmap.
+              A schema-validated configurator, a component lab, and a
+              deterministic scenario simulator are available below. The full
+              Studio will add themes and starter generation; those tools remain
+              on the roadmap.
             </p>
             <a
               className="button button-primary"
@@ -341,6 +364,9 @@ export default function HomePage() {
             </a>
             <a className="text-link" href="#component-lab">
               Explore the Component Lab <span aria-hidden="true">↓</span>
+            </a>
+            <a className="text-link" href="#scenario-lab">
+              Try the Scenario Lab <span aria-hidden="true">↓</span>
             </a>
           </div>
           <div className="studio-status">
