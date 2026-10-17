@@ -1,0 +1,10 @@
+.git
+.github
+.moorkyz
+**/node_modules
+**/.next
+**/dist
+coverage
+playwright-report
+playwright/.cache
+test-results

@@ -6,8 +6,8 @@
   "scripts": {
     "build": "pnpm --filter @moorkyz/portal build",
     "check": "pnpm lint && pnpm format:check && pnpm test && pnpm test:browser && pnpm typecheck",
-    "format": "prettier --write package.json pnpm-workspace.yaml tsconfig.base.json eslint.config.mjs playwright.config.mjs packages/toolbar packages/portal examples/vanilla-consumer examples/react-consumer tests/browser",
-    "format:check": "prettier --check package.json pnpm-workspace.yaml tsconfig.base.json eslint.config.mjs playwright.config.mjs packages/toolbar packages/portal examples/vanilla-consumer examples/react-consumer tests/browser",
+    "format": "prettier --write package.json pnpm-workspace.yaml tsconfig.base.json .prettierrc.json eslint.config.mjs playwright.config.mjs packages/toolbar packages/portal examples/vanilla-consumer examples/react-consumer tests/browser",
+    "format:check": "prettier --check package.json pnpm-workspace.yaml tsconfig.base.json .prettierrc.json eslint.config.mjs playwright.config.mjs packages/toolbar packages/portal examples/vanilla-consumer examples/react-consumer tests/browser",
     "lint": "eslint packages/toolbar/src packages/toolbar/test packages/portal/src examples/vanilla-consumer/src examples/react-consumer/src tests/browser playwright.config.mjs",
     "test": "pnpm build && node --test",
     "test:browser": "playwright test",

@@ -1,4 +1,13 @@
 import { defineConfig } from "@playwright/test";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const portalTestPort = process.env.PORTAL_TEST_PORT ?? "4174";
+const repositoryRoot = path.dirname(fileURLToPath(import.meta.url));
+const standaloneRoot = path.resolve(
+  repositoryRoot,
+  "packages/portal/.next/standalone",
+);
 
 export default defineConfig({
   testDir: "./tests/browser",
@@ -18,12 +27,17 @@ export default defineConfig({
       timeout: 30_000,
     },
     {
-      command:
-        "pnpm --filter @moorkyz/portal exec next start --hostname 127.0.0.1 --port 4174",
-      url: "http://127.0.0.1:4174",
+      command: "node packages/portal/server.js",
+      url: `http://127.0.0.1:${portalTestPort}`,
       reuseExistingServer: !process.env.CI,
       timeout: 30_000,
-      env: { NEXT_TELEMETRY_DISABLED: "1" },
+      cwd: standaloneRoot,
+      env: {
+        HOSTNAME: "127.0.0.1",
+        NEXT_TELEMETRY_DISABLED: "1",
+        NODE_ENV: "production",
+        PORT: portalTestPort,
+      },
     },
   ],
 });

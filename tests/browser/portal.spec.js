@@ -1,7 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
-const portalUrl = "http://127.0.0.1:4174";
+const portalTestPort = process.env.PORTAL_TEST_PORT ?? "4174";
+const portalUrl = `http://127.0.0.1:${portalTestPort}`;
 
 test("portal mounts the actual library and updates its actions by context", async ({
   page,
