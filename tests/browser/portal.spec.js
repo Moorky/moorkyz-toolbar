@@ -206,6 +206,44 @@ test("visual configurator rejects invalid local drafts without replacing current
   await expect(page.getByLabel("Action label")).toHaveValue("Documentation");
 });
 
+test("component lab runs real overflow, search, and collapse states", async ({
+  page,
+}) => {
+  await page.goto(portalUrl);
+  const lab = page.locator("#component-lab");
+  const preview = lab.getByRole("toolbar", { name: "Component lab toolbar" });
+
+  await lab.getByRole("button", { name: "Narrow action row" }).click();
+  await expect(
+    preview.getByRole("button", {
+      name: "Scroll toolbar actions toward end",
+    }),
+  ).toBeVisible();
+  await lab.getByRole("button", { name: "Search enabled" }).click();
+  await expect(preview.getByRole("button", { name: "Search" })).toBeVisible();
+  await preview.getByRole("button", { name: "Search" }).click();
+  await expect(
+    lab.getByRole("searchbox", {
+      name: "Search toolbar actions and content",
+    }),
+  ).toBeVisible();
+  const searchOpenScan = await new AxeBuilder({ page }).analyze();
+  expect(searchOpenScan.violations).toEqual([]);
+
+  const collapse = lab.getByRole("button", {
+    name: "Collapse preview toolbar",
+  });
+  await collapse.click();
+  await expect(
+    preview.getByRole("button", { name: "Restore toolbar" }),
+  ).toBeVisible();
+  await lab.getByRole("button", { name: "Expand preview toolbar" }).click();
+  await expect(preview.getByRole("button", { name: "Home" })).toBeVisible();
+
+  const { violations } = await new AxeBuilder({ page }).analyze();
+  expect(violations).toEqual([]);
+});
+
 test("toolbar preferences persist in the portal's explicit local namespace", async ({
   page,
 }) => {

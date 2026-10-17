@@ -1094,6 +1094,87 @@ html[data-theme="dark"] .configurator-validation {
   margin-top: 1rem;
 }
 
+.component-lab-section {
+  padding-block: clamp(5.5rem, 10vw, 8rem);
+  border-top: 1px solid var(--line);
+}
+
+.component-lab-section > .section-heading {
+  max-width: 48rem;
+}
+
+.component-lab {
+  margin-top: 2rem;
+}
+
+.component-lab-scenarios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.component-lab-scenario {
+  min-height: 2.7rem;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.component-lab-scenario[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.component-lab-description {
+  margin: 0.75rem 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.component-lab-frame {
+  position: relative;
+  width: 100%;
+  min-height: 11rem;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--surface-muted);
+  transition: max-width 180ms ease;
+}
+
+.component-lab-frame--narrow {
+  max-width: 22rem;
+}
+
+.component-lab-mount {
+  position: relative;
+  display: block;
+  min-height: 11rem;
+}
+
+.component-lab-mount > .mzk-toolbar-host {
+  z-index: 2;
+}
+
+.component-lab-controls {
+  margin-top: 0.8rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.component-lab-status {
+  margin: 0;
+  color: var(--faint);
+  font-size: 0.76rem;
+}
+
 .docs-section {
   padding-block: clamp(5.5rem, 10vw, 8rem);
   border-top: 1px solid var(--line);

@@ -1,4 +1,5 @@
 import { CopyButton } from "../components/copy-button";
+import { ComponentLab } from "../components/component-lab";
 import { EnvironmentExplorer } from "../components/environment-explorer";
 import { ThemeToggle } from "../components/portal-shell";
 import { VisualConfigurator } from "../components/visual-configurator";
@@ -27,7 +28,8 @@ window.addEventListener("pagehide", () => toolbar.dispose(), { once: true });`;
 
 const studioCapabilities = [
   ["Visual configuration", "Available preview"],
-  ["Component and scenario labs", "Planned"],
+  ["Component Lab", "Available preview"],
+  ["Scenario Lab", "Planned"],
   ["Theme and extension studios", "Planned"],
   ["Code and starter generation", "Planned"],
 ];
@@ -139,6 +141,27 @@ export default function HomePage() {
             </p>
           </div>
           <VisualConfigurator />
+        </section>
+
+        <section
+          className="section-shell component-lab-section"
+          id="component-lab"
+          tabIndex={-1}
+        >
+          <div className="section-heading">
+            <p className="eyebrow">COMPONENT LAB · REAL SDK STATES</p>
+            <h2>
+              Try the controls.
+              <br />
+              See the state change.
+            </h2>
+            <p>
+              Switch between repeatable component scenarios, test native
+              overflow controls, open local search, or collapse the live
+              toolbar. Every preview uses the workspace library.
+            </p>
+          </div>
+          <ComponentLab />
         </section>
 
         <section
@@ -301,9 +324,9 @@ export default function HomePage() {
               is on the roadmap.
             </h2>
             <p>
-              A first schema-validated configurator is available below. The full
-              Studio will add component exploration, scenarios, themes, and
-              starter generation; those tools remain on the roadmap.
+              A schema-validated configurator and a small component lab are
+              available below. The full Studio will add broader scenarios,
+              themes, and starter generation; those tools remain on the roadmap.
             </p>
             <a
               className="button button-primary"
@@ -315,6 +338,9 @@ export default function HomePage() {
             </a>
             <a className="text-link" href="#configurator">
               Try the local configurator <span aria-hidden="true">↓</span>
+            </a>
+            <a className="text-link" href="#component-lab">
+              Explore the Component Lab <span aria-hidden="true">↓</span>
             </a>
           </div>
           <div className="studio-status">
