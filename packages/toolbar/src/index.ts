@@ -4,6 +4,7 @@ export * from "./capabilities.js";
 export * from "./commands.js";
 export * from "./context.js";
 export * from "./diagnostics.js";
+export * from "./discovery.js";
 export * from "./gestures.js";
 export * from "./input.js";
 export * from "./lifecycle.js";

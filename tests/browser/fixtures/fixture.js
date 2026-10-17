@@ -145,6 +145,18 @@ window.mountAIToolbar = () => {
   window.aiToolbar = aiToolbar;
 };
 
+window.mountDiscoveryToolbar = () => {
+  const discoveryToolbar = createToolbar({
+    features: { discovery: true },
+    label: "Discovery test toolbar",
+  });
+  const outcome = discoveryToolbar.mount(
+    document.querySelector("#discovery-target"),
+  );
+  if (!outcome.ok) throw new Error(outcome.error.message);
+  window.discoveryToolbar = discoveryToolbar;
+};
+
 window.mountShortcutManager = () => {
   let activeScope = "app:editor";
   const shortcutManager = createShortcutManager(target, {

@@ -4,6 +4,11 @@ import {
   type ToolbarConfiguration,
   type ToolbarConfigurationInput,
 } from "./configuration.js";
+import {
+  validateDiscoverySnapshot,
+  type DiscoveryDiagnostic,
+  type ToolbarDiscoveryHint,
+} from "./discovery.js";
 import type { AICompletionOutcome, HostAuthorizedAIAdapter } from "./ai.js";
 import type {
   PreferenceDiagnostic,
@@ -75,7 +80,9 @@ export type ToolbarErrorCode =
   | "INVALID_NOTIFICATION_SNAPSHOT"
   | "OFFLINE_DISABLED"
   | "INVALID_CONNECTIVITY_STATUS"
-  | "GESTURE_HANDLER_REQUIRED";
+  | "GESTURE_HANDLER_REQUIRED"
+  | "DISCOVERY_DISABLED"
+  | "INVALID_DISCOVERY_SNAPSHOT";
 
 export interface ToolbarRuntimeError {
   readonly code: ToolbarErrorCode;
@@ -84,6 +91,7 @@ export interface ToolbarRuntimeError {
   readonly diagnostics?: readonly ConfigurationDiagnostic[];
   readonly taskDiagnostics?: readonly TaskDiagnostic[];
   readonly notificationDiagnostics?: readonly NotificationDiagnostic[];
+  readonly discoveryDiagnostics?: readonly DiscoveryDiagnostic[];
 }
 
 export type ToolbarResult =
@@ -109,6 +117,7 @@ export interface ToolbarController {
   updateTasks(snapshot: unknown): ToolbarResult;
   updateNotifications(snapshot: unknown): ToolbarResult;
   updateConnectivityStatus(status: unknown): ToolbarResult;
+  updateDiscoveryHints(snapshot: unknown): ToolbarResult;
   collapse(): ToolbarResult;
   expand(): ToolbarResult;
   dispose(): void;
@@ -205,6 +214,7 @@ function failure(
     diagnostics?: readonly ConfigurationDiagnostic[];
     taskDiagnostics?: readonly TaskDiagnostic[];
     notificationDiagnostics?: readonly NotificationDiagnostic[];
+    discoveryDiagnostics?: readonly DiscoveryDiagnostic[];
   } = {},
 ): ToolbarResult {
   return {
@@ -222,6 +232,9 @@ function failure(
       ...(details.notificationDiagnostics === undefined
         ? {}
         : { notificationDiagnostics: details.notificationDiagnostics }),
+      ...(details.discoveryDiagnostics === undefined
+        ? {}
+        : { discoveryDiagnostics: details.discoveryDiagnostics }),
     },
   };
 }
@@ -285,6 +298,10 @@ class ToolbarControllerImpl implements ToolbarController {
   private aiAbortController: AbortController | null = null;
   private aiRequestVersion = 0;
   private gestureManager: GestureManager | null = null;
+  private discoveryHints: readonly ToolbarDiscoveryHint[] = Object.freeze([]);
+  private discoveryPanelOpen = false;
+  private discoveryPanelElement: HTMLElement | null = null;
+  private discoveryButtonElement: HTMLButtonElement | null = null;
 
   constructor(configuration: ToolbarConfiguration, host: ToolbarHost) {
     this.configuration = configuration;
@@ -495,6 +512,10 @@ class ToolbarControllerImpl implements ToolbarController {
     if (!this.configuration.features.offline) {
       this.connectivityStatus = "unknown";
     }
+    if (!this.configuration.features.discovery) {
+      this.discoveryHints = Object.freeze([]);
+      this.discoveryPanelOpen = false;
+    }
     if (!this.configuration.features.search) this.resetSearchState();
     if (!this.configuration.features.ai) this.resetAIState();
     if (!this.configuration.features.customize) this.editing = false;
@@ -637,6 +658,32 @@ class ToolbarControllerImpl implements ToolbarController {
     return { ok: true };
   }
 
+  updateDiscoveryHints(snapshot: unknown): ToolbarResult {
+    if (this.disposed) {
+      return failure(
+        "DISPOSED",
+        "Discovery hints cannot be updated after disposal.",
+      );
+    }
+    if (!this.configuration.features.discovery) {
+      return failure(
+        "DISCOVERY_DISABLED",
+        "Progressive discovery is disabled by configuration.",
+      );
+    }
+    const validation = validateDiscoverySnapshot(snapshot);
+    if (!validation.ok) {
+      return failure(
+        "INVALID_DISCOVERY_SNAPSHOT",
+        "Discovery hints were not changed.",
+        { discoveryDiagnostics: validation.errors },
+      );
+    }
+    this.discoveryHints = validation.value;
+    this.renderDiscoveryPanel();
+    return { ok: true };
+  }
+
   collapse(): ToolbarResult {
     if (this.disposed) {
       return failure("DISPOSED", "A disposed toolbar cannot be collapsed.");
@@ -645,6 +692,7 @@ class ToolbarControllerImpl implements ToolbarController {
     this.collapsed = true;
     this.taskPanelOpen = false;
     this.notificationPanelOpen = false;
+    this.discoveryPanelOpen = false;
     this.resetSearchState();
     this.resetAIState();
     const persistenceResult = this.persistCurrentPreferences();
@@ -697,6 +745,10 @@ class ToolbarControllerImpl implements ToolbarController {
     this.notificationButtonElement = null;
     this.notificationItems = Object.freeze([]);
     this.notificationPanelOpen = false;
+    this.discoveryPanelElement = null;
+    this.discoveryButtonElement = null;
+    this.discoveryHints = Object.freeze([]);
+    this.discoveryPanelOpen = false;
     this.connectivityStatus = "unknown";
     this.connectivityElement = null;
     this.searchButtonElement = null;
@@ -1020,6 +1072,23 @@ class ToolbarControllerImpl implements ToolbarController {
     } else {
       this.notificationButtonElement = null;
     }
+    if (this.configuration.features.discovery) {
+      const discoveryButton = document.createElement("button");
+      discoveryButton.className = "mzk-toolbar__discovery";
+      discoveryButton.type = "button";
+      discoveryButton.textContent = "Tips";
+      discoveryButton.setAttribute("aria-label", "Tips and guidance");
+      discoveryButton.setAttribute("data-toolbar-control", "discovery");
+      discoveryButton.setAttribute(
+        "aria-expanded",
+        String(this.discoveryPanelOpen),
+      );
+      discoveryButton.tabIndex = -1;
+      this.discoveryButtonElement = discoveryButton;
+      controls.push(discoveryButton);
+    } else {
+      this.discoveryButtonElement = null;
+    }
     if (this.configuration.features.offline) {
       const status = document.createElement("span");
       status.className = "mzk-toolbar__connectivity";
@@ -1084,6 +1153,12 @@ class ToolbarControllerImpl implements ToolbarController {
       this.notificationPanelElement?.remove();
       this.notificationPanelElement = null;
     }
+    if (this.configuration.features.discovery) {
+      this.ensureDiscoveryPanel(root, document);
+    } else {
+      this.discoveryPanelElement?.remove();
+      this.discoveryPanelElement = null;
+    }
     if (this.configuration.features.search) {
       this.ensureSearchPanel(root, document);
     } else {
@@ -1110,6 +1185,8 @@ class ToolbarControllerImpl implements ToolbarController {
     this.renderTaskCenter();
     this.updateNotificationButton();
     this.renderNotificationCenter();
+    this.updateDiscoveryButton();
+    this.renderDiscoveryPanel();
     this.renderSearchPanel();
     this.renderAIPanel();
     this.actionsElement = actions;
@@ -1192,12 +1269,15 @@ class ToolbarControllerImpl implements ToolbarController {
       } else {
         this.taskPanelOpen = false;
         this.notificationPanelOpen = false;
+        this.discoveryPanelOpen = false;
         this.resetAIState();
         this.searchPanelOpen = true;
         this.updateTaskButton();
         this.renderTaskCenter();
         this.updateNotificationButton();
         this.renderNotificationCenter();
+        this.updateDiscoveryButton();
+        this.renderDiscoveryPanel();
         this.updateSearchButton();
         this.renderSearchPanel();
         this.searchInputElement?.focus();
@@ -1211,10 +1291,13 @@ class ToolbarControllerImpl implements ToolbarController {
         this.resetSearchState();
         this.taskPanelOpen = false;
         this.notificationPanelOpen = false;
+        this.discoveryPanelOpen = false;
         this.updateTaskButton();
         this.renderTaskCenter();
         this.updateNotificationButton();
         this.renderNotificationCenter();
+        this.updateDiscoveryButton();
+        this.renderDiscoveryPanel();
         this.aiPanelOpen = true;
         this.updateAIButton();
         this.renderAIPanel();
@@ -1227,6 +1310,7 @@ class ToolbarControllerImpl implements ToolbarController {
       if (willOpen) {
         this.resetSearchState();
         this.resetAIState();
+        this.discoveryPanelOpen = false;
       }
       this.taskPanelOpen = !this.taskPanelOpen;
       this.notificationPanelOpen = false;
@@ -1234,6 +1318,8 @@ class ToolbarControllerImpl implements ToolbarController {
       this.renderTaskCenter();
       this.updateNotificationButton();
       this.renderNotificationCenter();
+      this.updateDiscoveryButton();
+      this.renderDiscoveryPanel();
       return;
     }
     if (control === "notifications") {
@@ -1241,6 +1327,7 @@ class ToolbarControllerImpl implements ToolbarController {
       if (willOpen) {
         this.resetSearchState();
         this.resetAIState();
+        this.discoveryPanelOpen = false;
       }
       this.notificationPanelOpen = !this.notificationPanelOpen;
       this.taskPanelOpen = false;
@@ -1248,6 +1335,29 @@ class ToolbarControllerImpl implements ToolbarController {
       this.renderNotificationCenter();
       this.updateTaskButton();
       this.renderTaskCenter();
+      this.updateDiscoveryButton();
+      this.renderDiscoveryPanel();
+      return;
+    }
+    if (control === "discovery") {
+      const willOpen = !this.discoveryPanelOpen;
+      if (willOpen) {
+        this.resetSearchState();
+        this.resetAIState();
+        this.taskPanelOpen = false;
+        this.notificationPanelOpen = false;
+      }
+      this.discoveryPanelOpen = willOpen;
+      this.updateSearchButton();
+      this.renderSearchPanel();
+      this.updateAIButton();
+      this.renderAIPanel();
+      this.updateTaskButton();
+      this.renderTaskCenter();
+      this.updateNotificationButton();
+      this.renderNotificationCenter();
+      this.updateDiscoveryButton();
+      this.renderDiscoveryPanel();
       return;
     }
     if (control === "customize") {
@@ -1464,6 +1574,58 @@ class ToolbarControllerImpl implements ToolbarController {
         notification.unread ? " · Unread" : ""
       }`;
       item.append(title, message, metadata);
+      list.appendChild(item);
+    }
+    panel.appendChild(list);
+  }
+
+  private ensureDiscoveryPanel(root: RenderRoot, document: Document): void {
+    if (this.discoveryPanelElement !== null) return;
+    const panel = document.createElement("section");
+    panel.className = "mzk-toolbar__discovery-panel";
+    panel.setAttribute("role", "region");
+    panel.setAttribute("aria-label", "Tips and guidance");
+    panel.hidden = true;
+    root.insertBefore(panel, this.statusElement);
+    this.discoveryPanelElement = panel;
+  }
+
+  private updateDiscoveryButton(): void {
+    this.discoveryButtonElement?.setAttribute(
+      "aria-expanded",
+      String(this.discoveryPanelOpen),
+    );
+  }
+
+  private renderDiscoveryPanel(): void {
+    const panel = this.discoveryPanelElement;
+    if (panel === null) return;
+    panel.hidden = !this.discoveryPanelOpen;
+    panel.dataset.theme = this.configuration.theme;
+    panel.dataset.colorScheme = this.configuration.colorScheme;
+    panel.replaceChildren();
+    if (!this.discoveryPanelOpen) return;
+
+    const document = panel.ownerDocument;
+    const heading = document.createElement("h2");
+    heading.textContent = "Tips and guidance";
+    panel.appendChild(heading);
+    if (this.discoveryHints.length === 0) {
+      const emptyState = document.createElement("p");
+      emptyState.textContent = "No tips are available.";
+      panel.appendChild(emptyState);
+      return;
+    }
+
+    const list = document.createElement("ul");
+    for (const hint of this.discoveryHints) {
+      const item = document.createElement("li");
+      item.className = "mzk-toolbar__discovery-hint";
+      const title = document.createElement("strong");
+      title.textContent = hint.title;
+      const message = document.createElement("p");
+      message.textContent = hint.message;
+      item.append(title, message);
       list.appendChild(item);
     }
     panel.appendChild(list);

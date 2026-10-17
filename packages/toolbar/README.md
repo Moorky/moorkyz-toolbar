@@ -223,6 +223,23 @@ toolbar.updateNotifications([
 
 The notification list is neither persisted nor automatically announced while closed. With `features.notifications: false`, incoming values are not inspected and no notification UI is created.
 
+## Skippable discovery hints
+
+Discovery is disabled by default. When enabled, the host may provide a bounded list of hints with `updateDiscoveryHints()`. The Tips panel opens only when the user activates it; updating hints never opens the panel, expands a collapsed dock, records completion, or learns from usage. Hints contain plain text and are cleared when discovery is disabled or the toolbar is disposed.
+
+```ts
+toolbar.update({ features: { discovery: true } });
+toolbar.updateDiscoveryHints([
+  {
+    id: "keyboard",
+    title: "Keyboard navigation",
+    message: "Use the arrow keys to move between toolbar controls.",
+  },
+]);
+```
+
+The host owns when hints are appropriate and how they are updated. The controller stores no discovery history or completion state.
+
 ## Opt-in local diagnostics
 
 The diagnostics recorder is in-memory only and starts disabled. The host must enable it from its current `features.diagnostics` policy and provide a redactor before any record can be accepted. Disabling or disposing clears the buffer; no timestamps, causes, prompts, network requests, or persistence are added by the recorder.

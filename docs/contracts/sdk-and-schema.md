@@ -166,5 +166,9 @@ The utility does not scan the DOM, install observers, mutate host layout/padding
 
 The existing `features.offline` flag remains false by default. When explicitly enabled, `ToolbarController.updateConnectivityStatus(status)` accepts only `unknown`, `online`, or `offline` from the host and shows a small static status label. It does not query browser connectivity APIs, install listeners, poll, queue work, retry, cache, persist, or automatically restore a collapsed toolbar. Disabling the feature clears the status and removes the label. Offline queue/retry remains blocked by open validation V09 pending host idempotency, authorization, and storage-retention decisions.
 
+## M6 skippable discovery hints draft
+
+`features.discovery` remains false by default. With it enabled, the host supplies at most 10 plain-text hints through `ToolbarController.updateDiscoveryHints()`. Each hint has a unique bounded ID, non-empty title (100 characters max), and message (400 characters max). Invalid records, accessors, unknown properties, sparse entries, and duplicates return structured `discoveryDiagnostics`. The controller adds a Tips button and a labeled panel but never opens it on its own; updates do not expand the dock, mutate completion state, persist hints, or infer user behavior. Disabling discovery removes its panel and clears its in-memory snapshot; disposal does the same.
+
 ## Schema validation gate
 Schema definitions must be the shared source for typed validation, Studio controls, CLI validation, generator, reference docs and representative consumer fixtures. The code generator must not independently invent a second config interpretation.

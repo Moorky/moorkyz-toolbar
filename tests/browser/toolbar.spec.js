@@ -645,6 +645,52 @@ test("AI panel waits for a user prompt and renders plain-text provider output", 
   await expect(toolbar).toHaveAttribute("data-collapsed", "false");
 });
 
+test("discovery hints remain skippable and never auto-expand the dock", async ({
+  page,
+}) => {
+  await page.evaluate(() => {
+    window.toolbar.dispose();
+    window.mountDiscoveryToolbar();
+  });
+  const toolbar = page.getByRole("toolbar", {
+    name: "Discovery test toolbar",
+  });
+  const button = page.getByRole("button", { name: "Tips and guidance" });
+  const initial = await page.evaluate(() =>
+    window.discoveryToolbar.updateDiscoveryHints([
+      {
+        id: "safe-search",
+        title: "Find actions",
+        message: "<img src=x onerror=alert(1)>",
+      },
+    ]),
+  );
+  expect(initial.ok).toBe(true);
+  const panel = page.getByRole("region", { name: "Tips and guidance" });
+  await expect(panel).toBeHidden();
+  await page.evaluate(() => window.discoveryToolbar.collapse());
+  await expect(toolbar).toHaveAttribute("data-collapsed", "true");
+
+  await button.focus();
+  await page.keyboard.press("Enter");
+  await expect(panel).toBeVisible();
+  await expect(panel).toContainText("<img src=x onerror=alert(1)>");
+  await expect(panel.locator("img")).toHaveCount(0);
+  await expect(toolbar).toHaveAttribute("data-collapsed", "true");
+
+  const { violations } = await new AxeBuilder({ page }).analyze();
+  expect(violations).toEqual([]);
+
+  await button.focus();
+  await page.keyboard.press("Enter");
+  await expect(panel).toBeHidden();
+  await expect(toolbar).toHaveAttribute("data-collapsed", "true");
+  await page.evaluate(() =>
+    window.discoveryToolbar.update({ features: { discovery: false } }),
+  );
+  await expect(panel).toHaveCount(0);
+});
+
 test("dispose removes the mounted interface", async ({ page }) => {
   await page.evaluate(() => window.toolbar.dispose());
   await expect(page.getByRole("toolbar")).toHaveCount(0);

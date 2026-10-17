@@ -880,6 +880,92 @@ test("disabling search clears its UI and aborts active provider work", (t) => {
   assert.equal(shadow.querySelector(".mzk-toolbar__search-panel"), null);
 });
 
+test("progressive discovery is host-fed, user-opened, and skippable", (t) => {
+  const current = fixture({ features: { discovery: true } });
+  t.after(() => disposeFixture(current));
+  assert.equal(current.toolbar.mount(current.target).ok, true);
+  const shadow = current.target.firstElementChild.shadowRoot;
+  let button = shadow.querySelector('[data-toolbar-control="discovery"]');
+  const panel = shadow.querySelector(".mzk-toolbar__discovery-panel");
+
+  assert.ok(button);
+  assert.ok(panel);
+  assert.equal(panel.hidden, true);
+  assert.equal(
+    current.toolbar.updateDiscoveryHints([
+      {
+        id: "safe-search",
+        title: "Find actions",
+        message: "<img src=x onerror=alert(1)>",
+      },
+    ]).ok,
+    true,
+  );
+  assert.equal(panel.hidden, true);
+  assert.equal(button.getAttribute("aria-expanded"), "false");
+
+  assert.equal(current.toolbar.collapse().ok, true);
+  assert.equal(current.toolbar.isCollapsed, true);
+  button = shadow.querySelector('[data-toolbar-control="discovery"]');
+  button.click();
+  assert.equal(panel.hidden, false);
+  assert.equal(current.toolbar.isCollapsed, true);
+  assert.equal(
+    panel.querySelector(".mzk-toolbar__discovery-hint").querySelector("p")
+      .textContent,
+    "<img src=x onerror=alert(1)>",
+  );
+  assert.equal(panel.querySelector("img"), null);
+
+  button.click();
+  assert.equal(panel.hidden, true);
+  assert.equal(current.toolbar.isCollapsed, true);
+  assert.equal(
+    current.toolbar.update({ features: { discovery: false } }).ok,
+    true,
+  );
+  assert.equal(shadow.querySelector(".mzk-toolbar__discovery-panel"), null);
+  assert.equal(
+    current.toolbar.update({ features: { discovery: true } }).ok,
+    true,
+  );
+  assert.equal(
+    shadow
+      .querySelector('[data-toolbar-control="discovery"]')
+      .getAttribute("aria-expanded"),
+    "false",
+  );
+});
+
+test("disabled discovery does not inspect or retain host hints", (t) => {
+  const current = fixture();
+  t.after(() => disposeFixture(current));
+  assert.equal(current.toolbar.mount(current.target).ok, true);
+  let invoked = false;
+  const hostile = Object.defineProperty([], "0", {
+    configurable: true,
+    get() {
+      invoked = true;
+      return {
+        id: "hint",
+        title: "Hint",
+        message: "Body",
+      };
+    },
+  });
+
+  const result = current.toolbar.updateDiscoveryHints(hostile);
+  assert.equal(result.ok, false);
+  if (!result.ok) assert.equal(result.error.code, "DISCOVERY_DISABLED");
+  assert.equal(invoked, false);
+  assert.equal(
+    current.target.firstElementChild.shadowRoot.querySelector(
+      ".mzk-toolbar__discovery-panel",
+    ),
+    null,
+  );
+});
+
 test("AI panel runs only on explicit submit and renders host text safely", async (t) => {
   const requests = [];
   const reported = [];
