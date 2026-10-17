@@ -32,7 +32,7 @@ export function SiteHeader({ homePath = "" }: { readonly homePath?: string }) {
       onFocusCapture={() => setHidden(false)}
     >
       <a className="brand" href={`${homePath}#home`}>
-        <img src="/favicon-32x32.png" width={28} height={28} alt="" />
+        <img src="/android-chrome-192x192.png" width={56} height={56} alt="" />
         <span>
           <strong>moorkyz</strong>{" "}
           <span className="brand-product">toolbar</span>

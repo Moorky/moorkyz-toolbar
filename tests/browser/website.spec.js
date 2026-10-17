@@ -3,6 +3,59 @@ import AxeBuilder from "@axe-core/playwright";
 
 const origin = `http://127.0.0.1:${process.env.MOORKYZ_TOOLBAR_PORTAL_PORT ?? process.env.PORTAL_TEST_PORT ?? "4174"}`;
 
+test("header logo is twice its original size without clipping or hiding responsive navigation", async ({
+  page,
+}, testInfo) => {
+  for (const route of ["/", "/studio", "/contributing"]) {
+    await page.goto(`${origin}${route}`);
+    const header = page.locator(".adaptive-header");
+    const logo = header.locator(".brand img");
+    await expect(logo).toHaveJSProperty("naturalWidth", 192);
+    await expect(logo).toHaveAttribute("src", "/android-chrome-192x192.png");
+    for (const width of [320, 390, 768, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      const bounds = await logo.boundingBox();
+      const parent = await header.boundingBox();
+      expect(bounds.width).toBeCloseTo(56, 2);
+      expect(bounds.height).toBeCloseTo(56, 2);
+      expect(bounds.y).toBeGreaterThanOrEqual(parent.y);
+      expect(bounds.y + bounds.height).toBeLessThanOrEqual(
+        parent.y + parent.height + 1,
+      );
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () => document.documentElement.scrollWidth <= innerWidth,
+          ),
+        )
+        .toBe(true);
+      await expect(
+        header.getByRole("link", { name: "Playground", exact: true }),
+      ).toBeVisible();
+      await expect(
+        header.getByRole("button", {
+          name: "Search documentation and navigation",
+          exact: true,
+        }),
+      ).toBeVisible();
+      if (route === "/" && (width === 320 || width === 1440)) {
+        const path = testInfo.outputPath(`header-logo-${width}.png`);
+        await header.screenshot({ path });
+        await testInfo.attach(`Header logo at ${width}px`, {
+          path,
+          contentType: "image/png",
+        });
+      }
+    }
+    expect(
+      (await new AxeBuilder({ page }).include(".adaptive-header").analyze())
+        .violations,
+    ).toEqual([]);
+    await header.locator(".brand").focus();
+    await expect(header.locator(".brand")).toBeFocused();
+  }
+});
+
 test("landing structure, real links, local typography and exact footer branding match the MVP", async ({
   page,
 }) => {

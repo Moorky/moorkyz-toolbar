@@ -85,6 +85,8 @@ Explorer, open source, final CTAs and two-tier footer. The adaptive header and
 working SDK page-navigation dock remain keyboard reachable. Ctrl/Cmd K opens
 local reference/navigation search without overriding inputs/editors or reserved
 modified shortcuts.
+The header logo renders at 56px square using the existing 192px branding asset
+for sharp display; the image's fixed dimensions reserve its layout space.
 
 The Playground retains its original responsive outer gutters; the rest of the
 website retains its shared content alignment. Its bottom toolbar stays clear of the page dock while
