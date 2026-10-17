@@ -32,6 +32,35 @@ const INITIAL_DRAFT: ConfiguratorDraft = Object.freeze({
 
 const COLOR_SCHEMES = ["system", "light", "dark"] as const;
 const PLACEMENT_MODES = ["viewport", "container", "fullscreen"] as const;
+const SAVED_DRAFT_KEY = "moorkyz-toolbar:portal:visual-configurator:v1";
+const SAVED_DRAFT_VERSION = 1;
+
+type SavedDraftResult =
+  | {
+      readonly ok: true;
+      readonly draft: ConfiguratorDraft;
+      readonly configuration: ToolbarConfigurationInput;
+    }
+  | { readonly ok: false; readonly message: string };
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
+function hasExactKeys(
+  record: Record<string, unknown>,
+  keys: readonly string[],
+): boolean {
+  const actualKeys = Object.keys(record);
+  return (
+    actualKeys.length === keys.length &&
+    keys.every((key) => Object.hasOwn(record, key))
+  );
+}
 
 function createConfiguration(
   draft: ConfiguratorDraft,
@@ -47,6 +76,96 @@ function createConfiguration(
   };
 }
 
+function parseSavedDraft(raw: string): SavedDraftResult {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return {
+      ok: false,
+      message:
+        "Saved draft is not valid JSON. Your current draft is unchanged.",
+    };
+  }
+  if (
+    !isPlainRecord(parsed) ||
+    !hasExactKeys(parsed, ["version", "draft"]) ||
+    parsed.version !== SAVED_DRAFT_VERSION
+  ) {
+    return {
+      ok: false,
+      message:
+        "Saved draft has an unsupported format or version. Your current draft is unchanged.",
+    };
+  }
+
+  const savedDraft = parsed.draft;
+  if (
+    !isPlainRecord(savedDraft) ||
+    !hasExactKeys(savedDraft, [
+      "label",
+      "actionLabel",
+      "theme",
+      "colorScheme",
+      "placement",
+      "search",
+    ])
+  ) {
+    return {
+      ok: false,
+      message:
+        "Saved draft has an unsupported format or version. Your current draft is unchanged.",
+    };
+  }
+
+  const theme =
+    typeof savedDraft.theme === "string"
+      ? THEME_NAMES.find((name) => name === savedDraft.theme)
+      : undefined;
+  const colorScheme =
+    typeof savedDraft.colorScheme === "string"
+      ? COLOR_SCHEMES.find((scheme) => scheme === savedDraft.colorScheme)
+      : undefined;
+  const placement =
+    typeof savedDraft.placement === "string"
+      ? PLACEMENT_MODES.find((mode) => mode === savedDraft.placement)
+      : undefined;
+  if (
+    typeof savedDraft.label !== "string" ||
+    typeof savedDraft.actionLabel !== "string" ||
+    theme === undefined ||
+    colorScheme === undefined ||
+    placement === undefined ||
+    typeof savedDraft.search !== "boolean"
+  ) {
+    return {
+      ok: false,
+      message:
+        "Saved draft fields are invalid. Your current draft is unchanged.",
+    };
+  }
+
+  const draft: ConfiguratorDraft = {
+    label: savedDraft.label,
+    actionLabel: savedDraft.actionLabel,
+    theme,
+    colorScheme,
+    placement,
+    search: savedDraft.search,
+  };
+  const validation = validateConfiguration(createConfiguration(draft));
+  if (!validation.ok) {
+    const details = validation.errors
+      .map(({ path, message }) => `${path}: ${message}`)
+      .join(" ");
+    return {
+      ok: false,
+      message: `Saved draft failed schema validation: ${details} Your current draft is unchanged.`,
+    };
+  }
+  return { ok: true, draft, configuration: validation.value };
+}
+
 export function VisualConfigurator() {
   const [draft, setDraft] = useState(INITIAL_DRAFT);
   const [appliedConfiguration, setAppliedConfiguration] =
@@ -56,6 +175,12 @@ export function VisualConfigurator() {
   const [previewMessage, setPreviewMessage] = useState(
     "Apply a valid draft to update the preview.",
   );
+  const [storageMessage, setStorageMessage] = useState(
+    "Drafts are stored only when you choose Save draft locally.",
+  );
+  const [pendingStorageAction, setPendingStorageAction] = useState<
+    "replace" | "delete" | null
+  >(null);
 
   const validation = useMemo(
     () => validateConfiguration(createConfiguration(draft)),
@@ -77,12 +202,112 @@ export function VisualConfigurator() {
     value: ConfiguratorDraft[Key],
   ) {
     setDraft((current) => ({ ...current, [key]: value }));
+    setStorageMessage("Unsaved changes are stored only in this page.");
+    setPendingStorageAction(null);
   }
 
   function applyConfiguration() {
     if (!validation.ok) return;
     setAppliedConfiguration(validation.value);
     setPreviewMessage("Validated configuration applied to the live preview.");
+  }
+
+  function persistDraftLocally() {
+    if (!validation.ok) {
+      setStorageMessage("Fix validation errors before saving this draft.");
+      return;
+    }
+    try {
+      window.localStorage.setItem(
+        SAVED_DRAFT_KEY,
+        JSON.stringify({
+          version: SAVED_DRAFT_VERSION,
+          draft,
+        }),
+      );
+      setStorageMessage("Draft saved in this browser only.");
+    } catch {
+      setStorageMessage(
+        "Could not save the local draft. No data was sent elsewhere.",
+      );
+    }
+    setPendingStorageAction(null);
+  }
+
+  function requestSaveDraftLocally() {
+    if (!validation.ok) {
+      setStorageMessage("Fix validation errors before saving this draft.");
+      return;
+    }
+    let existingDraft: string | null;
+    try {
+      existingDraft = window.localStorage.getItem(SAVED_DRAFT_KEY);
+    } catch {
+      setStorageMessage(
+        "Could not check for an existing local draft. Your saved draft was not changed.",
+      );
+      return;
+    }
+    if (existingDraft !== null) {
+      setPendingStorageAction("replace");
+      setStorageMessage("A saved draft already exists. Confirm to replace it.");
+      return;
+    }
+    persistDraftLocally();
+  }
+
+  function restoreDraftLocally() {
+    setPendingStorageAction(null);
+    let raw: string | null;
+    try {
+      raw = window.localStorage.getItem(SAVED_DRAFT_KEY);
+    } catch {
+      setStorageMessage(
+        "Could not read local drafts in this browser. Your current draft is unchanged.",
+      );
+      return;
+    }
+    if (raw === null) {
+      setStorageMessage("No saved local draft was found.");
+      return;
+    }
+    const restored = parseSavedDraft(raw);
+    if (!restored.ok) {
+      setStorageMessage(restored.message);
+      return;
+    }
+    setDraft(restored.draft);
+    setAppliedConfiguration(restored.configuration);
+    setPreviewMessage("Restored a validated local draft to the live preview.");
+    setStorageMessage("Draft restored from this browser only.");
+  }
+
+  function confirmDeleteDraftLocally() {
+    try {
+      window.localStorage.removeItem(SAVED_DRAFT_KEY);
+      setStorageMessage("Saved local draft deleted.");
+    } catch {
+      setStorageMessage("Could not delete the local draft in this browser.");
+    }
+    setPendingStorageAction(null);
+  }
+
+  function requestDeleteDraftLocally() {
+    let existingDraft: string | null;
+    try {
+      existingDraft = window.localStorage.getItem(SAVED_DRAFT_KEY);
+    } catch {
+      setStorageMessage(
+        "Could not check for a saved draft in this browser. No data was deleted.",
+      );
+      return;
+    }
+    if (existingDraft === null) {
+      setStorageMessage("No saved local draft was found.");
+      return;
+    }
+    setPendingStorageAction("delete");
+    setStorageMessage("Confirm deleting the saved draft from this browser.");
   }
 
   return (
@@ -206,6 +431,87 @@ export function VisualConfigurator() {
         </button>
         <p className="configurator-status" role="status" aria-live="polite">
           {previewMessage}
+        </p>
+        <div className="configurator-storage-controls">
+          {pendingStorageAction === "replace" ? (
+            <div className="configurator-storage-confirmation">
+              <span>A local draft already exists. Replace it?</span>
+              <button
+                className="button button-secondary"
+                type="button"
+                onClick={persistDraftLocally}
+              >
+                Confirm replace
+              </button>
+              <button
+                className="button button-secondary"
+                type="button"
+                onClick={() => {
+                  setPendingStorageAction(null);
+                  setStorageMessage("The existing saved draft was kept.");
+                }}
+              >
+                Keep saved draft
+              </button>
+            </div>
+          ) : (
+            <button
+              className="button button-secondary"
+              type="button"
+              disabled={!validation.ok}
+              onClick={requestSaveDraftLocally}
+            >
+              Save draft locally
+            </button>
+          )}
+          <button
+            className="button button-secondary"
+            type="button"
+            onClick={restoreDraftLocally}
+          >
+            Restore local draft
+          </button>
+          {pendingStorageAction === "delete" ? (
+            <div className="configurator-storage-confirmation">
+              <span>Delete the saved draft from this browser?</span>
+              <button
+                className="button button-secondary"
+                type="button"
+                onClick={confirmDeleteDraftLocally}
+              >
+                Confirm delete
+              </button>
+              <button
+                className="button button-secondary"
+                type="button"
+                onClick={() => {
+                  setPendingStorageAction(null);
+                  setStorageMessage("The saved draft was kept.");
+                }}
+              >
+                Keep draft
+              </button>
+            </div>
+          ) : (
+            <button
+              className="button button-secondary"
+              type="button"
+              onClick={requestDeleteDraftLocally}
+            >
+              Delete saved draft
+            </button>
+          )}
+        </div>
+        <p className="configurator-storage-note">
+          Local drafts stay in this browser until deleted. Replacing and
+          deleting saved drafts require confirmation; drafts are never uploaded.
+        </p>
+        <p
+          className="configurator-storage-status"
+          role="status"
+          aria-live="polite"
+        >
+          {storageMessage}
         </p>
       </form>
 

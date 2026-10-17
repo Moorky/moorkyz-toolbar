@@ -66,6 +66,11 @@ test("visual configurator validates drafts before applying a real preview", asyn
   page,
 }) => {
   await page.goto(portalUrl);
+  expect(
+    await page.evaluate(() =>
+      localStorage.getItem("moorkyz-toolbar:portal:visual-configurator:v1"),
+    ),
+  ).toBeNull();
   const actionLabel = page.getByRole("textbox", { name: "Action label" });
   const apply = page.getByRole("button", { name: "Apply to live preview" });
   const preview = page.getByRole("toolbar", { name: "Preview toolbar" });
@@ -104,6 +109,101 @@ test("visual configurator validates drafts before applying a real preview", asyn
   await expect(
     page.getByRole("toolbar", { name: "Preview toolbar" }),
   ).toHaveAttribute("data-theme", "signature");
+});
+
+test("visual configurator saves only explicit versioned local drafts", async ({
+  page,
+}) => {
+  const storageKey = "moorkyz-toolbar:portal:visual-configurator:v1";
+  await page.goto(portalUrl);
+  await page.getByLabel("Action label").fill("Saved docs");
+  await page.getByLabel("Theme", { exact: true }).selectOption("warm-minimal");
+  expect(
+    await page.evaluate((key) => localStorage.getItem(key), storageKey),
+  ).toBeNull();
+  await page.getByRole("button", { name: "Save draft locally" }).click();
+
+  const savedDraft = await page.evaluate((key) => {
+    const raw = localStorage.getItem(key);
+    return raw === null ? null : JSON.parse(raw);
+  }, storageKey);
+  expect(savedDraft).not.toBeNull();
+  expect(savedDraft.version).toBe(1);
+  expect(savedDraft.draft.actionLabel).toBe("Saved docs");
+
+  await page.getByLabel("Action label").fill("Replacement docs");
+  await page.getByRole("button", { name: "Save draft locally" }).click();
+  await expect(
+    page.getByText("A local draft already exists. Replace it?"),
+  ).toBeVisible();
+  const originalSavedLabel = await page.evaluate((key) => {
+    const raw = localStorage.getItem(key);
+    return raw === null ? null : JSON.parse(raw).draft.actionLabel;
+  }, storageKey);
+  expect(originalSavedLabel).toBe("Saved docs");
+  await page.getByRole("button", { name: "Confirm replace" }).click();
+
+  await page.reload();
+  await expect(page.getByLabel("Action label")).toHaveValue("Documentation");
+  await page.getByRole("button", { name: "Restore local draft" }).click();
+  await expect(page.getByLabel("Action label")).toHaveValue("Replacement docs");
+  await expect(
+    page.getByRole("toolbar", { name: "Preview toolbar" }),
+  ).toHaveAttribute("data-theme", "warm-minimal");
+
+  await page.getByRole("button", { name: "Delete saved draft" }).click();
+  await expect(
+    page.getByText("Delete the saved draft from this browser?"),
+  ).toBeVisible();
+  expect(
+    await page.evaluate((key) => localStorage.getItem(key), storageKey),
+  ).not.toBeNull();
+  await page.getByRole("button", { name: "Confirm delete" }).click();
+  expect(
+    await page.evaluate((key) => localStorage.getItem(key), storageKey),
+  ).toBeNull();
+});
+
+test("visual configurator rejects invalid local drafts without replacing current state", async ({
+  page,
+}) => {
+  const storageKey = "moorkyz-toolbar:portal:visual-configurator:v1";
+  await page.addInitScript((key) => {
+    localStorage.setItem(
+      key,
+      JSON.stringify({
+        version: 1,
+        draft: {
+          label: "",
+          actionLabel: "Injected",
+          theme: "signature",
+          colorScheme: "system",
+          placement: "container",
+          search: true,
+        },
+      }),
+    );
+  }, storageKey);
+  await page.goto(portalUrl);
+
+  await page.getByRole("button", { name: "Restore local draft" }).click();
+  await expect(page.locator(".configurator-storage-status")).toContainText(
+    "Saved draft failed schema validation",
+  );
+  await expect(page.getByLabel("Toolbar label")).toHaveValue("Preview toolbar");
+  await expect(page.getByLabel("Action label")).toHaveValue("Documentation");
+  await expect(
+    page.getByRole("toolbar", { name: "Preview toolbar" }),
+  ).toHaveAttribute("data-theme", "signature");
+
+  await page.evaluate((key) => {
+    localStorage.setItem(key, JSON.stringify({ version: 2, draft: {} }));
+  }, storageKey);
+  await page.getByRole("button", { name: "Restore local draft" }).click();
+  await expect(page.locator(".configurator-storage-status")).toContainText(
+    "unsupported format or version",
+  );
+  await expect(page.getByLabel("Action label")).toHaveValue("Documentation");
 });
 
 test("toolbar preferences persist in the portal's explicit local namespace", async ({

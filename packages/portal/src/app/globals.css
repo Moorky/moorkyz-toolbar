@@ -963,6 +963,40 @@ h1 span {
   margin-top: 0.25rem;
 }
 
+.configurator-storage-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.25rem;
+}
+
+.configurator-storage-controls .button {
+  min-height: 2.55rem;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.72rem;
+}
+
+.configurator-storage-confirmation {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--surface-muted);
+  color: var(--ink);
+  font-size: 0.76rem;
+}
+
+.configurator-storage-note,
+.configurator-storage-status {
+  margin: 0;
+  color: var(--faint);
+  font-size: 0.73rem;
+}
+
 .configurator-validation {
   padding: 0.8rem;
   border: 1px solid #a54b43;
