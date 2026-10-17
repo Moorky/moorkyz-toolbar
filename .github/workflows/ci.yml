@@ -22,3 +22,80 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm check
+
+  container:
+    runs-on: ubuntu-latest
+    needs: verify
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build production image
+        run: docker build --tag moorkyz-toolbar-portal:${{ github.sha }} .
+      - name: Smoke-test production container
+        shell: bash
+        run: |
+          cleanup() {
+            docker rm --force moorkyz-toolbar-portal >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          docker run --detach --name moorkyz-toolbar-portal \
+            --publish 127.0.0.1::3000 \
+            moorkyz-toolbar-portal:${{ github.sha }}
+
+          published_port="$(docker port moorkyz-toolbar-portal 3000/tcp | sed 's/.*://')"
+          if [[ -z "$published_port" ]]; then
+            echo "::error title=Container port was not published::Could not find the container's mapped HTTP port."
+            docker logs moorkyz-toolbar-portal
+            exit 1
+          fi
+
+          for attempt in {1..30}; do
+            if curl --fail --silent "http://127.0.0.1:${published_port}/" >/dev/null; then
+              echo "Production container returned HTTP 200."
+              exit 0
+            fi
+            sleep 2
+          done
+
+          docker logs moorkyz-toolbar-portal
+          exit 1
+
+  deploy:
+    name: Deploy to Coolify
+    runs-on: ubuntu-latest
+    needs: [verify, container]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    concurrency:
+      group: moorkyz-toolbar-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Skip stale commit deployments
+        id: current_commit
+        shell: bash
+        run: |
+          latest_sha="$(git ls-remote origin refs/heads/master | cut -f1)"
+          if [[ -z "$latest_sha" ]]; then
+            echo "::error title=Could not verify the current commit::Unable to read the master branch head from GitHub."
+            exit 1
+          fi
+          if [[ "$latest_sha" != "$GITHUB_SHA" ]]; then
+            echo "current=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Skipping stale deployment::A newer commit is already on master."
+          else
+            echo "current=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Trigger production deployment
+        if: steps.current_commit.outputs.current == 'true'
+        shell: bash
+        env:
+          COOLIFY_WEBHOOK: ${{ secrets.COOLIFY_WEBHOOK }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+        run: |
+          if [[ -z "$COOLIFY_WEBHOOK" || -z "$COOLIFY_TOKEN" ]]; then
+            echo "::error title=Coolify is not configured::Add COOLIFY_WEBHOOK and COOLIFY_TOKEN as repository Actions secrets."
+            exit 1
+          fi
+
+          curl --fail --silent --show-error --request POST "$COOLIFY_WEBHOOK" \
+            --header "Authorization: Bearer $COOLIFY_TOKEN"

@@ -1297,6 +1297,117 @@ html[data-theme="dark"] .configurator-validation {
   z-index: 2;
 }
 
+.theme-studio-section {
+  padding-block: clamp(5.5rem, 10vw, 8rem);
+  border-top: 1px solid var(--line);
+}
+
+.theme-studio-section > .section-heading {
+  max-width: 48rem;
+}
+
+.theme-studio {
+  margin-top: 2rem;
+}
+
+.theme-studio-output {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(18rem, 0.9fr);
+  align-items: start;
+  gap: 1.25rem;
+}
+
+.theme-studio-controls,
+.theme-studio-preview,
+.theme-studio-export {
+  min-width: 0;
+  padding: clamp(1rem, 2.5vw, 1.5rem);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--surface);
+}
+
+.theme-studio-controls {
+  margin-bottom: 1.25rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.theme-studio-controls label {
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.theme-studio-controls select {
+  width: 100%;
+  min-height: 2.7rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 0.45rem;
+  background: var(--page);
+  color: var(--ink);
+  font: inherit;
+}
+
+.theme-studio-controls > p {
+  margin: 0;
+  color: var(--faint);
+  font-size: 0.78rem;
+}
+
+.theme-studio-validation {
+  color: var(--accent-strong) !important;
+  font-weight: 600;
+}
+
+.theme-token-list {
+  margin: 1.1rem 0 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.theme-token-list > div {
+  min-width: 0;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 0.45rem;
+}
+
+.theme-token-list dt {
+  color: var(--muted);
+  font-size: 0.68rem;
+  text-transform: capitalize;
+}
+
+.theme-token-list dd {
+  margin: 0.15rem 0 0;
+  overflow-wrap: anywhere;
+  font-size: 0.76rem;
+}
+
+.theme-studio-export {
+  display: grid;
+  gap: 1rem;
+}
+
+.theme-studio-export pre {
+  max-height: 22rem;
+  margin: 0;
+  overflow: auto;
+  padding: 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--code);
+  color: var(--ink);
+  font:
+    0.7rem/1.55 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Consolas,
+    monospace;
+}
+
 .docs-section {
   padding-block: clamp(5.5rem, 10vw, 8rem);
   border-top: 1px solid var(--line);
@@ -1498,6 +1609,7 @@ html[data-theme="dark"]
   .studio-section,
   .configurator-workspace,
   .scenario-lab,
+  .theme-studio-output,
   .open-source-section {
     grid-template-columns: 1fr;
   }

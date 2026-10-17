@@ -1,7 +1,11 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
-const portalUrl = `http://127.0.0.1:${process.env.MOORKYZ_TOOLBAR_PORTAL_PORT ?? "4174"}`;
+const portalPort =
+  process.env.MOORKYZ_TOOLBAR_PORTAL_PORT ??
+  process.env.PORTAL_TEST_PORT ??
+  "4174";
+const portalUrl = `http://127.0.0.1:${portalPort}`;
 
 test("portal mounts the actual library and updates its actions by context", async ({
   page,
@@ -295,6 +299,37 @@ test("Scenario Lab replays deterministic permission, fault, time, and viewport s
   await expect(lab.locator('label[for="scenario-time"]')).toContainText(
     "00:05",
   );
+
+  const { violations } = await new AxeBuilder({ page }).analyze();
+  expect(violations).toEqual([]);
+});
+
+test("Theme Studio inspects built-in tokens and exports versioned validated data", async ({
+  page,
+}) => {
+  await page.goto(portalUrl);
+  const studio = page.locator("#theme-studio");
+  const selection = studio.getByLabel("Built-in theme");
+
+  for (const theme of [
+    "signature",
+    "frosted-glass",
+    "midnight",
+    "warm-minimal",
+    "high-contrast",
+    "project-adaptive",
+  ]) {
+    await selection.selectOption(theme);
+    await expect(
+      studio.getByRole("toolbar", { name: `${theme} theme preview` }),
+    ).toHaveAttribute("data-theme", theme);
+    await expect(studio).toContainText("Token validation passed.");
+    const exportedTheme = await studio
+      .locator(".theme-studio-export pre")
+      .textContent();
+    expect(JSON.parse(exportedTheme).version).toBe(1);
+    expect(JSON.parse(exportedTheme).theme).toBe(theme);
+  }
 
   const { violations } = await new AxeBuilder({ page }).analyze();
   expect(violations).toEqual([]);

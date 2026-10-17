@@ -6,6 +6,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
+const net = require("node:net");
 const { spawn, spawnSync } = require("node:child_process");
 
 const ROOT = process.cwd();
@@ -82,6 +83,52 @@ function projectUrl(value, name) {
   } catch {
     die(`Invalid URL for '${name}'. Use an http or https URL.`);
   }
+}
+function portHosts(url) {
+  if (url.hostname === "localhost") return ["127.0.0.1", "::1"];
+  const hostname = url.hostname.replace(/^\[|\]$/g, "");
+  return net.isIP(hostname) ? [hostname] : ["127.0.0.1", "::1"];
+}
+function canListen(port, host) {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.once("error", (error) => {
+      if (["EADDRINUSE", "EACCES"].includes(error.code)) resolve(false);
+      else if (["EAFNOSUPPORT", "EADDRNOTAVAIL"].includes(error.code)) resolve(true);
+      else reject(error);
+    });
+    server.listen(port, host, () =>
+      server.close((error) => (error ? reject(error) : resolve(true))),
+    );
+  });
+}
+async function findAvailablePort(project) {
+  const url = new URL(project.url);
+  const basePort = Number(url.port || (url.protocol === "https:" ? 443 : 80));
+  if (!Number.isInteger(basePort) || basePort < 1 || basePort > 65535)
+    die(`Invalid starting port for '${project.name}'.`);
+  const hosts = portHosts(url);
+  for (let port = basePort; port <= Math.min(65535, basePort + 999); port++) {
+    let available = true;
+    for (const host of hosts) {
+      if (!(await canListen(port, host))) {
+        available = false;
+        break;
+      }
+    }
+    if (available) return port;
+  }
+  die(`No available port found for '${project.name}' starting at ${basePort}.`);
+}
+function urlForPort(value, port) {
+  const url = new URL(value);
+  url.port = String(port);
+  return url.toString().replace(/\/$/, "");
+}
+function runtimeUrl(project, entry) {
+  if (entry?.url) return entry.url;
+  if (Number.isInteger(entry?.port)) return urlForPort(project.url, entry.port);
+  return project.url;
 }
 function folderFor(input) {
   if (typeof input !== "string") die("Configured cwd must be a string.");
@@ -182,7 +229,7 @@ function writeJsonAtomic(file, value) {
     }
   }
 }
-function withProjectLock(name, operation) {
+async function withProjectLock(name, operation) {
   fs.mkdirSync(STATE, { recursive: true });
   folderFor(".moorkyz");
   const file = path.join(STATE, `${name}.lock.json`);
@@ -225,7 +272,7 @@ function withProjectLock(name, operation) {
   process.once("SIGINT", interrupt);
   process.once("SIGTERM", terminate);
   try {
-    return operation();
+    return await operation();
   } finally {
     release();
     process.removeListener("exit", release);
@@ -358,6 +405,7 @@ function worker(argv) {
     child = spawn(command, argv, {
       cwd: project.cwd,
       stdio: "inherit",
+      env: { ...process.env, PORT: String(state.port) },
       windowsHide: true,
     });
   } catch (e) {
@@ -397,12 +445,12 @@ function worker(argv) {
     cleanup(code || 0);
   });
 }
-function startOne(project, mode) {
+async function startOne(project, mode) {
   const name = project.name;
-  if (running(name)) {
-    info(`Already running: ${name} — URL: ${project.url}`);
-    openBrowser(project.url);
-    return true;
+  const active = running(name);
+  if (active) {
+    info(`Stopping the existing managed instance of '${name}' before starting it again.`);
+    stopOne(project);
   }
   const previous = readState(name);
   if (previous && alive(previous.pid))
@@ -414,6 +462,8 @@ function startOne(project, mode) {
   if (!hasScript(packageScripts(project), script))
     die(`${name}: package.json does not declare '${script}'.`);
   requirePnpm();
+  const port = await findAvailablePort(project);
+  const url = urlForPort(project.url, port);
   fs.mkdirSync(STATE, { recursive: true });
   const token = crypto.randomBytes(16).toString("hex");
   const state = {
@@ -422,6 +472,8 @@ function startOne(project, mode) {
     token,
     pid: null,
     script,
+    port,
+    url,
     startedAt: new Date().toISOString(),
   };
   // Publish the token before the supervisor can read it. The project lock
@@ -449,21 +501,22 @@ function startOne(project, mode) {
     sleep(150);
     if (running(name)) {
       info(
-        `Started '${name}' (${mode}; supervisor PID ${proc.pid}). URL: ${project.url}. Logs: .moorkyz/${name}.log`,
+        `Started '${name}' (${mode}; supervisor PID ${proc.pid}). URL: ${url}. Logs: .moorkyz/${name}.log`,
       );
-      openBrowser(project.url);
+      openBrowser(url);
       return true;
     }
     if (!alive(proc.pid)) break;
   }
   console.error(
-    `Could not confirm startup for '${name}' at ${project.url}. Inspect logs with: moorkyz logs ${name}`,
+    `Could not confirm startup for '${name}' at ${url}. Inspect logs with: moorkyz logs ${name}`,
   );
   return false;
 }
 function stopOne(project) {
-  const { name, url } = project;
+  const { name } = project;
   const entry = readState(name);
+  const url = runtimeUrl(project, entry);
   if (!entry) {
     info(`Not running: ${name} — URL: ${url}`);
     return true;
@@ -503,8 +556,9 @@ function stopOne(project) {
   }
 }
 function statusOne(project) {
-  const { name, url } = project;
+  const { name } = project;
   const entry = running(name);
+  const url = runtimeUrl(project, entry);
   if (entry)
     info(
       `${name}: RUNNING (${entry.mode}, PID ${entry.pid}, started ${entry.startedAt}) — URL: ${url}`,
@@ -590,8 +644,9 @@ function createAudit(title) {
 }
 function listProjects(config) {
   for (const project of Object.values(config.projects)) {
+    const url = runtimeUrl(project, running(project.name));
     info(
-      `${project.name}${config.defaultProject === project.name ? " (default)" : ""}: ${path.relative(ROOT, project.cwd) || "."} — dev:${project.dev} prod:${project.prod}`,
+      `${project.name}${config.defaultProject === project.name ? " (default)" : ""}: ${path.relative(ROOT, project.cwd) || "."} — dev:${project.dev} prod:${project.prod} — URL: ${url}`,
     );
   }
 }
@@ -666,7 +721,7 @@ function help(command) {
     info("Local state/logs are stored under .moorkyz/ (gitignored).");
   }
 }
-function main() {
+async function main() {
   const [command = "help", ...args] = process.argv.slice(2);
   if (command === "__run") {
     worker(args);
@@ -707,16 +762,16 @@ function main() {
     for (const n of names) {
       if (command === "status") statusOne(config.projects[n]);
       else
-        withProjectLock(n, () => {
+        await withProjectLock(n, async () => {
           if (command === "start")
             failed =
-              !startOne(config.projects[n], prod ? "prod" : "dev") || failed;
+              !(await startOne(config.projects[n], prod ? "prod" : "dev")) || failed;
           else if (command === "stop")
             failed = !stopOne(config.projects[n]) || failed;
           else {
             stopOne(config.projects[n]);
             failed =
-              !startOne(config.projects[n], prod ? "prod" : "dev") || failed;
+              !(await startOne(config.projects[n], prod ? "prod" : "dev")) || failed;
           }
         });
     }
@@ -797,4 +852,7 @@ function main() {
   }
   die(`Unknown command '${command}'. Run 'moorkyz help'.`);
 }
-main();
+main().catch((error) => {
+  console.error(`Error: ${error.message}`);
+  process.exitCode = 1;
+});

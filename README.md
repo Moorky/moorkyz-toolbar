@@ -7,7 +7,7 @@
 
 **License:** Apache License 2.0. See [`LICENSE`](LICENSE).
 
-This repository consolidates the 80 confirmed architecture questionnaire decisions into an implementation plan. **Implementation is in progress**; the current code includes an early configuration contract, DOM dock, and portal foundation, not the complete product. Public API declarations are not finalized or approved, and unapproved method names, feature keys, performance thresholds, and browser matrices remain *proposed contracts* or *validation items*.
+This repository consolidates the 80 confirmed architecture questionnaire decisions into an implementation plan. **Implementation is in progress**; the current code includes an early configuration contract, DOM dock, and portal foundation, not the complete product. Public API declarations are not finalized or approved, and unapproved method names, feature keys, performance thresholds, and browser matrices remain _proposed contracts_ or _validation items_.
 
 ## Local development
 
@@ -19,6 +19,10 @@ pnpm --filter @moorkyz/portal dev
 ```
 
 The checks build the package and portal, run unit/Chromium accessibility tests, and typecheck the consumer fixtures. See the [implementation checklist](docs/engineering/implementation-status.md) for incomplete milestones and release restrictions.
+
+## Production deployment
+
+The portal has a standalone Docker image and a CI-gated Coolify deployment path. See the [Coolify setup guide](docs/deployment/coolify.md) for the server settings and required GitHub secrets.
 
 ## Implementation status
 

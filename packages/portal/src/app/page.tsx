@@ -3,6 +3,7 @@ import { ComponentLab } from "../components/component-lab";
 import { EnvironmentExplorer } from "../components/environment-explorer";
 import { ThemeToggle } from "../components/portal-shell";
 import { ScenarioLab } from "../components/scenario-lab";
+import { ThemeStudio } from "../components/theme-studio";
 import { VisualConfigurator } from "../components/visual-configurator";
 
 const repository = "https://github.com/Moorky/moorkyz-toolbar";
@@ -31,7 +32,8 @@ const studioCapabilities = [
   ["Visual configuration", "Available preview"],
   ["Component Lab", "Available preview"],
   ["Scenario Lab", "Available preview"],
-  ["Theme and extension studios", "Planned"],
+  ["Theme Design Studio", "Available preview"],
+  ["Extension Studio", "Planned"],
   ["Code and starter generation", "Planned"],
 ];
 
@@ -187,6 +189,27 @@ export default function HomePage() {
         </section>
 
         <section
+          className="section-shell theme-studio-section"
+          id="theme-studio"
+          tabIndex={-1}
+        >
+          <div className="section-heading">
+            <p className="eyebrow">THEME DESIGN STUDIO · BUILT-IN TOKENS</p>
+            <h2>
+              Inspect the palette.
+              <br />
+              Check the contrast.
+            </h2>
+            <p>
+              Browse the built-in themes, inspect their actual SDK tokens,
+              validate contrast, and copy a versioned token file. This preview
+              does not change the portal theme or edit runtime styles.
+            </p>
+          </div>
+          <ThemeStudio />
+        </section>
+
+        <section
           className="section-shell quickstart-section"
           id="quick-start"
           tabIndex={-1}
@@ -310,8 +333,8 @@ export default function HomePage() {
               presentation follows this site.
             </p>
             <p className="section-footnote">
-              Runtime theme tokens and the named theme families are planned;
-              they are not part of the current SDK.
+              The SDK includes built-in token families and contrast validation.
+              Custom theme authoring remains in the Studio roadmap.
             </p>
           </div>
           <div className="theme-sample" aria-hidden="true">
@@ -368,6 +391,9 @@ export default function HomePage() {
             <a className="text-link" href="#scenario-lab">
               Try the Scenario Lab <span aria-hidden="true">↓</span>
             </a>
+            <a className="text-link" href="#theme-studio">
+              Inspect built-in themes <span aria-hidden="true">↓</span>
+            </a>
           </div>
           <div className="studio-status">
             <div className="studio-status-head">
@@ -383,8 +409,8 @@ export default function HomePage() {
               ))}
             </ul>
             <p>
-              The configurator previews the real workspace package. Edits are
-              not persisted or sent to a server.
+              Configurator drafts are local, and built-in theme tokens can be
+              inspected and exported. Custom theme authoring remains planned.
             </p>
           </div>
         </section>
