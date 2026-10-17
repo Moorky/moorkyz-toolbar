@@ -3,6 +3,15 @@ import AxeBuilder from "@axe-core/playwright";
 
 const origin = `http://127.0.0.1:${process.env.MOORKYZ_TOOLBAR_PORTAL_PORT ?? process.env.PORTAL_TEST_PORT ?? "4174"}`;
 
+async function waitForViewportPaint(page) {
+  await page.evaluate(
+    () =>
+      new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      ),
+  );
+}
+
 test("header uses the supplied logo at the current size without clipping responsive navigation", async ({
   page,
 }, testInfo) => {
@@ -14,6 +23,7 @@ test("header uses the supplied logo at the current size without clipping respons
     await expect(logo).toHaveAttribute("src", "/moorkyz-toolbar-logo.png");
     for (const width of [320, 390, 768, 1440]) {
       await page.setViewportSize({ width, height: 900 });
+      await waitForViewportPaint(page);
       const bounds = await logo.boundingBox();
       const parent = await header.boundingBox();
       expect(bounds.width).toBeCloseTo(112, 2);

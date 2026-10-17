@@ -127,7 +127,6 @@ body[data-theme="dark"] {
 
 html {
   min-width: 320px;
-  overflow-x: clip;
   scroll-behavior: smooth;
   scroll-padding-top: 6rem;
 }

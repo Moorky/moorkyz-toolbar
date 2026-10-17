@@ -57,6 +57,7 @@ for (const route of ["/", "/studio", "/contributing"]) {
       page.getByRole("button", { name: "Switch to dark theme" }),
     ).toBeEnabled();
     await page.evaluate(() => document.fonts.ready);
+    await waitForViewportPaint(page);
     for (const theme of ["light", "dark"]) {
       if (theme === "dark") {
         await page
@@ -68,6 +69,7 @@ for (const route of ["/", "/studio", "/contributing"]) {
       }
       for (const width of widths) {
         await page.setViewportSize({ width, height: 900 });
+        await waitForViewportPaint(page);
         await expect
           .poll(() =>
             page.evaluate(
@@ -117,6 +119,7 @@ test("large text reflows without horizontal page overflow and keeps the search d
       style.textContent = "html { font-size: 200%; }";
       document.head.append(style);
     });
+    await waitForViewportPaint(page);
     await expect
       .poll(() =>
         page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
