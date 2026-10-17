@@ -13,6 +13,45 @@ async function waitForViewportPaint(page) {
   );
 }
 
+async function readPageOverflowState(page) {
+  return page.evaluate(() => {
+    const viewportWidth = window.innerWidth;
+    const documentWidth = document.documentElement.scrollWidth;
+    if (documentWidth <= viewportWidth) return { fits: true };
+
+    const overflowingElements = [...document.body.querySelectorAll("*")]
+      .map((element) => {
+        const bounds = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return {
+          tag: element.tagName.toLowerCase(),
+          id: element.id,
+          className:
+            typeof element.className === "string" ? element.className : "",
+          text: element.textContent?.trim().replace(/\s+/g, " ").slice(0, 50),
+          left: Math.round(bounds.left),
+          right: Math.round(bounds.right),
+          width: Math.round(bounds.width),
+          position: style.position,
+          overflowX: style.overflowX,
+        };
+      })
+      .filter((element) => element.right > viewportWidth + 1)
+      .sort((left, right) => right.right - left.right)
+      .slice(0, 10);
+
+    return {
+      fits: false,
+      viewportWidth,
+      documentWidth,
+      bodyWidth: document.body.scrollWidth,
+      htmlOverflowX: getComputedStyle(document.documentElement).overflowX,
+      bodyOverflowX: getComputedStyle(document.body).overflowX,
+      overflowingElements,
+    };
+  });
+}
+
 test("Playground retains its original responsive gutters while other sections stay aligned", async ({
   page,
 }) => {
@@ -37,10 +76,8 @@ test("Playground retains its original responsive gutters while other sections st
       .poll(async () => (await page.locator("#playground").boundingBox()).x)
       .toBeCloseTo(gutter, 1);
     await expect
-      .poll(() =>
-        page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
-      )
-      .toBe(true);
+      .poll(() => readPageOverflowState(page))
+      .toMatchObject({ fits: true });
   }
 });
 
@@ -71,12 +108,8 @@ for (const route of ["/", "/studio", "/contributing"]) {
         await page.setViewportSize({ width, height: 900 });
         await waitForViewportPaint(page);
         await expect
-          .poll(() =>
-            page.evaluate(
-              () => document.documentElement.scrollWidth <= innerWidth,
-            ),
-          )
-          .toBe(true);
+          .poll(() => readPageOverflowState(page))
+          .toMatchObject({ fits: true });
         await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
         await expect(page.locator("body")).toHaveAttribute("data-theme", theme);
         await waitForViewportPaint(page);
@@ -121,10 +154,8 @@ test("large text reflows without horizontal page overflow and keeps the search d
     });
     await waitForViewportPaint(page);
     await expect
-      .poll(() =>
-        page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
-      )
-      .toBe(true);
+      .poll(() => readPageOverflowState(page))
+      .toMatchObject({ fits: true });
     await page
       .getByRole("button", {
         name: "Search documentation and navigation",

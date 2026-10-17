@@ -12,6 +12,45 @@ async function waitForViewportPaint(page) {
   );
 }
 
+async function readPageOverflowState(page) {
+  return page.evaluate(() => {
+    const viewportWidth = window.innerWidth;
+    const documentWidth = document.documentElement.scrollWidth;
+    if (documentWidth <= viewportWidth) return { fits: true };
+
+    const overflowingElements = [...document.body.querySelectorAll("*")]
+      .map((element) => {
+        const bounds = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return {
+          tag: element.tagName.toLowerCase(),
+          id: element.id,
+          className:
+            typeof element.className === "string" ? element.className : "",
+          text: element.textContent?.trim().replace(/\s+/g, " ").slice(0, 50),
+          left: Math.round(bounds.left),
+          right: Math.round(bounds.right),
+          width: Math.round(bounds.width),
+          position: style.position,
+          overflowX: style.overflowX,
+        };
+      })
+      .filter((element) => element.right > viewportWidth + 1)
+      .sort((left, right) => right.right - left.right)
+      .slice(0, 10);
+
+    return {
+      fits: false,
+      viewportWidth,
+      documentWidth,
+      bodyWidth: document.body.scrollWidth,
+      htmlOverflowX: getComputedStyle(document.documentElement).overflowX,
+      bodyOverflowX: getComputedStyle(document.body).overflowX,
+      overflowingElements,
+    };
+  });
+}
+
 test("header uses the supplied logo at the current size without clipping responsive navigation", async ({
   page,
 }, testInfo) => {
@@ -34,12 +73,8 @@ test("header uses the supplied logo at the current size without clipping respons
         parent.y + parent.height + 1,
       );
       await expect
-        .poll(() =>
-          page.evaluate(
-            () => document.documentElement.scrollWidth <= innerWidth,
-          ),
-        )
-        .toBe(true);
+        .poll(() => readPageOverflowState(page))
+        .toMatchObject({ fits: true });
       await expect(
         header.getByRole("link", { name: "Playground", exact: true }),
       ).toBeVisible();
