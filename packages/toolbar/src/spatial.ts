@@ -57,6 +57,7 @@ export type SpatialErrorCode =
 export interface SpatialError {
   readonly code: SpatialErrorCode;
   readonly message: string;
+  readonly cause?: unknown;
 }
 
 export type SpatialOutcome<Value> =

@@ -124,12 +124,94 @@ test("positions container and fullscreen mounts within their host element", asyn
   ).toBe(targetPosition);
 });
 
+test("spatial placement uses host zones and releases resize listeners when disabled", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.evaluate(() => window.mountSpatialToolbar());
+  const toolbar = page.getByRole("toolbar", { name: "Spatial toolbar" });
+  const bounds = await toolbar.boundingBox();
+  expect(bounds).not.toBeNull();
+
+  const result = await page.evaluate((dock) => {
+    return window.spatialToolbar.updateSpatialZones([
+      {
+        id: "center-reserved",
+        x: window.innerWidth / 2 - 4,
+        y: window.innerHeight - 12 - dock.height,
+        width: 8,
+        height: dock.height,
+      },
+    ]);
+  }, bounds);
+  expect(result.ok).toBe(true);
+
+  const host = page.locator("#spatial-target .mzk-toolbar-host");
+  await expect(host).toHaveAttribute("data-spatial-anchor", "bottom-start");
+  expect(
+    await host.evaluate((element) => getComputedStyle(element).justifyContent),
+  ).toBe("flex-start");
+
+  const callsBeforeResize = await page.evaluate(() =>
+    window.spatialViewportCalls(),
+  );
+  await page.evaluate(() => window.dispatchEvent(new Event("resize")));
+  expect(await page.evaluate(() => window.spatialViewportCalls())).toBe(
+    callsBeforeResize + 1,
+  );
+
+  await page.evaluate(() =>
+    window.spatialToolbar.update({ features: { spatialCoordination: false } }),
+  );
+  await expect(host).not.toHaveAttribute("data-spatial-anchor");
+  const callsAfterDisable = await page.evaluate(() =>
+    window.spatialViewportCalls(),
+  );
+  await page.evaluate(() => window.dispatchEvent(new Event("resize")));
+  expect(await page.evaluate(() => window.spatialViewportCalls())).toBe(
+    callsAfterDisable,
+  );
+  const { violations } = await new AxeBuilder({ page }).analyze();
+  expect(violations).toEqual([]);
+});
+
+test("spatial placement resolves safe anchors in the host container coordinate space", async ({
+  page,
+}) => {
+  await page.evaluate(() => window.mountSpatialToolbar("container"));
+  const toolbar = page.getByRole("toolbar", { name: "Spatial toolbar" });
+  const bounds = await toolbar.boundingBox();
+  expect(bounds).not.toBeNull();
+
+  const result = await page.evaluate((dock) => {
+    const frame = document.querySelector("#container-target");
+    return window.spatialToolbar.updateSpatialZones([
+      {
+        id: "container-bottom-reserved",
+        x: 0,
+        y: frame.clientHeight - 12 - dock.height,
+        width: frame.clientWidth,
+        height: dock.height,
+      },
+    ]);
+  }, bounds);
+  expect(result.ok).toBe(true);
+
+  const host = page.locator("#container-target .mzk-toolbar-host");
+  await expect(host).toHaveAttribute("data-spatial-anchor", "top-center");
+  await expect(host).toHaveCSS("position", "absolute");
+  expect(await host.evaluate((element) => getComputedStyle(element).top)).toBe(
+    "12px",
+  );
+});
+
 test("honors reduced motion and loads only local CSS under a restrictive CSP", async ({
   page,
 }) => {
   const externalRequests = [];
+  const fixtureOrigin = new URL(page.url()).origin;
   page.on("request", (request) => {
-    if (!request.url().startsWith("http://127.0.0.1:4173/")) {
+    if (new URL(request.url()).origin !== fixtureOrigin) {
       externalRequests.push(request.url());
     }
   });
@@ -370,8 +452,9 @@ test("offline status is explicit host state and does not change collapse or fetc
   page,
 }) => {
   const externalRequests = [];
+  const fixtureOrigin = new URL(page.url()).origin;
   page.on("request", (request) => {
-    if (!request.url().startsWith("http://127.0.0.1:4173/")) {
+    if (new URL(request.url()).origin !== fixtureOrigin) {
       externalRequests.push(request.url());
     }
   });

@@ -275,6 +275,141 @@ test("supports Light DOM, idempotent mount, and complete disposal", (t) => {
   current.toolbar.dispose();
 });
 
+test("spatial zones are inert when disabled and require a host viewport when enabled", (t) => {
+  const disabled = fixture();
+  t.after(() => disposeFixture(disabled));
+  let inspected = false;
+  const hostileZone = Object.defineProperty({}, "id", {
+    enumerable: true,
+    get() {
+      inspected = true;
+      return "unsafe";
+    },
+  });
+  const disabledResult = disabled.toolbar.updateSpatialZones([hostileZone]);
+  assert.equal(disabledResult.ok, false);
+  if (!disabledResult.ok) {
+    assert.equal(disabledResult.error.code, "SPATIAL_DISABLED");
+  }
+  assert.equal(inspected, false);
+
+  const enabled = fixture({ features: { spatialCoordination: true } });
+  t.after(() => disposeFixture(enabled));
+  const missingViewport = enabled.toolbar.updateSpatialZones([
+    { id: "reserved", x: 0, y: 0, width: 20, height: 20 },
+  ]);
+  assert.equal(missingViewport.ok, false);
+  if (!missingViewport.ok) {
+    assert.equal(missingViewport.error.code, "SPATIAL_VIEWPORT_REQUIRED");
+  }
+});
+
+test("spatial placement uses only host zones and cleans resize work when disabled", (t) => {
+  let viewportCalls = 0;
+  const current = fixture(
+    { features: { spatialCoordination: true } },
+    {
+      getSpatialViewport: () => {
+        viewportCalls += 1;
+        return {
+          width: 1200,
+          height: 800,
+          safeArea: { top: 12, right: 12, bottom: 12, left: 12 },
+        };
+      },
+    },
+  );
+  t.after(() => disposeFixture(current));
+  current.toolbar.mount(current.target);
+  const hostElement = current.target.firstElementChild;
+  const toolbar = hostElement.shadowRoot.querySelector('[role="toolbar"]');
+  toolbar.getBoundingClientRect = () => ({ width: 200, height: 80 });
+
+  const result = current.toolbar.updateSpatialZones([
+    { id: "center-dock", x: 500, y: 708, width: 200, height: 80 },
+  ]);
+  assert.equal(result.ok, true);
+  assert.equal(hostElement.dataset.spatialAnchor, "bottom-start");
+  assert.equal(viewportCalls, 1);
+
+  current.window.dispatchEvent(new current.window.Event("resize"));
+  assert.equal(viewportCalls, 2);
+  assert.equal(
+    current.toolbar.update({ features: { spatialCoordination: false } }).ok,
+    true,
+  );
+  assert.equal(hostElement.dataset.spatialAnchor, undefined);
+  assert.equal(hostElement.dataset.spatialConflict, undefined);
+  const callsAfterDisable = viewportCalls;
+  current.window.dispatchEvent(new current.window.Event("resize"));
+  assert.equal(viewportCalls, callsAfterDisable);
+});
+
+test("spatial no-safe-placement is surfaced without forcing an anchor", (t) => {
+  const reported = [];
+  const current = fixture(
+    { features: { spatialCoordination: true } },
+    {
+      getSpatialViewport: () => ({ width: 1200, height: 800 }),
+      onSpatialError: (error) => reported.push(error.code),
+    },
+  );
+  t.after(() => disposeFixture(current));
+  current.toolbar.mount(current.target);
+  const hostElement = current.target.firstElementChild;
+  const toolbar = hostElement.shadowRoot.querySelector('[role="toolbar"]');
+  toolbar.getBoundingClientRect = () => ({ width: 200, height: 80 });
+
+  assert.equal(
+    current.toolbar.updateSpatialZones([
+      { id: "center-dock", x: 500, y: 720, width: 200, height: 80 },
+    ]).ok,
+    true,
+  );
+  assert.equal(hostElement.dataset.spatialAnchor, "bottom-start");
+
+  const result = current.toolbar.updateSpatialZones([
+    { id: "full-frame", x: 0, y: 0, width: 1200, height: 800 },
+  ]);
+  assert.equal(result.ok, true);
+  if (result.ok) {
+    assert.equal(result.spatialWarning.code, "SPATIAL_NO_SAFE_PLACEMENT");
+  }
+  assert.equal(hostElement.dataset.spatialAnchor, "bottom-start");
+  assert.equal(hostElement.dataset.spatialConflict, "true");
+  assert.deepEqual(reported, ["SPATIAL_NO_SAFE_PLACEMENT"]);
+});
+
+test("spatial resize work is removed on disposal", (t) => {
+  let viewportCalls = 0;
+  const current = fixture(
+    { features: { spatialCoordination: true } },
+    {
+      getSpatialViewport: () => {
+        viewportCalls += 1;
+        return { width: 1200, height: 800 };
+      },
+    },
+  );
+  t.after(() => disposeFixture(current));
+  current.toolbar.mount(current.target);
+  const toolbar =
+    current.target.firstElementChild.shadowRoot.querySelector(
+      '[role="toolbar"]',
+    );
+  toolbar.getBoundingClientRect = () => ({ width: 200, height: 80 });
+  assert.equal(
+    current.toolbar.updateSpatialZones([
+      { id: "reserved", x: 0, y: 0, width: 20, height: 20 },
+    ]).ok,
+    true,
+  );
+  const callsBeforeDispose = viewportCalls;
+  current.toolbar.dispose();
+  current.window.dispatchEvent(new current.window.Event("resize"));
+  assert.equal(viewportCalls, callsBeforeDispose);
+});
+
 test("rejects invalid construction with machine-readable diagnostics", () => {
   assert.throws(
     () => createToolbar({ features: { spatialCoordination: "yes" } }),

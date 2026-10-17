@@ -157,6 +157,35 @@ window.mountDiscoveryToolbar = () => {
   window.discoveryToolbar = discoveryToolbar;
 };
 
+window.mountSpatialToolbar = (mode = "viewport") => {
+  let viewportCalls = 0;
+  const target = document.querySelector(
+    mode === "container" ? "#container-target" : "#spatial-target",
+  );
+  const spatialToolbar = createToolbar(
+    {
+      features: { spatialCoordination: true },
+      ...(mode === "viewport" ? {} : { placement: { mode, anchor: "bottom" } }),
+      label: "Spatial toolbar",
+    },
+    {
+      getSpatialViewport() {
+        viewportCalls += 1;
+        return {
+          width: mode === "container" ? target.clientWidth : window.innerWidth,
+          height:
+            mode === "container" ? target.clientHeight : window.innerHeight,
+          safeArea: { top: 12, right: 12, bottom: 12, left: 12 },
+        };
+      },
+    },
+  );
+  const outcome = spatialToolbar.mount(target);
+  if (!outcome.ok) throw new Error(outcome.error.message);
+  window.spatialToolbar = spatialToolbar;
+  window.spatialViewportCalls = () => viewportCalls;
+};
+
 window.mountShortcutManager = () => {
   let activeScope = "app:editor";
   const shortcutManager = createShortcutManager(target, {

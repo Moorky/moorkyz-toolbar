@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
-const portalUrl = "http://127.0.0.1:4174";
+const portalUrl = `http://127.0.0.1:${process.env.MOORKYZ_TOOLBAR_PORTAL_PORT ?? "4174"}`;
 
 test("portal mounts the actual library and updates its actions by context", async ({
   page,

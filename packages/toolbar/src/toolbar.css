@@ -54,6 +54,22 @@
     max(0.75rem, env(safe-area-inset-right, 0px));
 }
 
+.mzk-toolbar-host[data-spatial-anchor^="top"],
+:host(.mzk-toolbar-host[data-spatial-anchor^="top"]) {
+  top: max(0.75rem, env(safe-area-inset-top, 0px));
+  bottom: auto;
+}
+
+.mzk-toolbar-host[data-spatial-anchor$="start"],
+:host(.mzk-toolbar-host[data-spatial-anchor$="start"]) {
+  justify-content: flex-start;
+}
+
+.mzk-toolbar-host[data-spatial-anchor$="end"],
+:host(.mzk-toolbar-host[data-spatial-anchor$="end"]) {
+  justify-content: flex-end;
+}
+
 .mzk-toolbar {
   --mzk-toolbar-background: var(--dock-bg, rgb(255 255 255 / 82%));
   --mzk-toolbar-foreground: var(--dock-ink, #172033);

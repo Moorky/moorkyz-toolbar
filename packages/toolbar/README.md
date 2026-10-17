@@ -179,7 +179,21 @@ const placement = spatial.resolve(
 );
 ```
 
-The host owns zone freshness and applying or rejecting the returned placement. Disabling coordination clears zones; an unsuccessful calculation does not collapse or move the toolbar.
+For a mounted toolbar, enable `features.spatialCoordination` and provide `getSpatialViewport()` in the host. The host-supplied zone and viewport coordinate spaces must match, and safe-area values must match the dock's CSS safe insets; represent additional reserved margins as exclusion zones. Refresh zones when their geometry changes. The controller measures only its own dock, applies one of the six supported anchors through scoped CSS attributes, and listens for viewport resize only while enabled with at least one zone. It never scans the page, mutates host padding, or moves the dock when no safe candidate exists; it returns a structured warning and calls `onSpatialError`. Disabling coordination clears zones, placement state, and resize listeners.
+
+```ts
+const toolbar = createToolbar(
+  { features: { spatialCoordination: true } },
+  {
+    getSpatialViewport: () => hostLayout.getViewportFrame(),
+    onSpatialError(error) {
+      reportLayoutConflict(error.code);
+    },
+  },
+);
+toolbar.mount(target);
+toolbar.updateSpatialZones(hostExclusionZones);
+```
 
 ## Host-fed offline status
 

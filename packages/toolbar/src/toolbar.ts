@@ -42,6 +42,12 @@ import {
   type TaskDiagnostic,
   type ToolbarTask,
 } from "./tasks.js";
+import {
+  createSpatialCoordinator,
+  type SpatialCoordinator,
+  type SpatialError,
+  type SpatialViewport,
+} from "./spatial.js";
 
 export interface ToolbarHost {
   readonly dispatchAction?: (actionId: string) => void | Promise<void>;
@@ -62,6 +68,8 @@ export interface ToolbarHost {
   readonly aiAdapter?: HostAuthorizedAIAdapter;
   readonly onAIError?: (error: unknown) => void;
   readonly onGesture?: (intent: GestureIntent) => void;
+  readonly onSpatialError?: (error: SpatialError) => void;
+  readonly getSpatialViewport?: () => SpatialViewport;
 }
 
 export type ToolbarErrorCode =
@@ -82,7 +90,10 @@ export type ToolbarErrorCode =
   | "INVALID_CONNECTIVITY_STATUS"
   | "GESTURE_HANDLER_REQUIRED"
   | "DISCOVERY_DISABLED"
-  | "INVALID_DISCOVERY_SNAPSHOT";
+  | "INVALID_DISCOVERY_SNAPSHOT"
+  | "SPATIAL_DISABLED"
+  | "INVALID_SPATIAL_ZONES"
+  | "SPATIAL_VIEWPORT_REQUIRED";
 
 export interface ToolbarRuntimeError {
   readonly code: ToolbarErrorCode;
@@ -92,10 +103,15 @@ export interface ToolbarRuntimeError {
   readonly taskDiagnostics?: readonly TaskDiagnostic[];
   readonly notificationDiagnostics?: readonly NotificationDiagnostic[];
   readonly discoveryDiagnostics?: readonly DiscoveryDiagnostic[];
+  readonly spatialDiagnostics?: readonly SpatialError[];
 }
 
 export type ToolbarResult =
-  | { readonly ok: true; readonly warning?: PreferenceDiagnostic }
+  | {
+      readonly ok: true;
+      readonly warning?: PreferenceDiagnostic;
+      readonly spatialWarning?: SpatialError;
+    }
   | { readonly ok: false; readonly error: ToolbarRuntimeError };
 
 export class ToolbarConfigurationError extends Error {
@@ -118,6 +134,7 @@ export interface ToolbarController {
   updateNotifications(snapshot: unknown): ToolbarResult;
   updateConnectivityStatus(status: unknown): ToolbarResult;
   updateDiscoveryHints(snapshot: unknown): ToolbarResult;
+  updateSpatialZones(snapshot: unknown): ToolbarResult;
   collapse(): ToolbarResult;
   expand(): ToolbarResult;
   dispose(): void;
@@ -215,6 +232,7 @@ function failure(
     taskDiagnostics?: readonly TaskDiagnostic[];
     notificationDiagnostics?: readonly NotificationDiagnostic[];
     discoveryDiagnostics?: readonly DiscoveryDiagnostic[];
+    spatialDiagnostics?: readonly SpatialError[];
   } = {},
 ): ToolbarResult {
   return {
@@ -235,6 +253,9 @@ function failure(
       ...(details.discoveryDiagnostics === undefined
         ? {}
         : { discoveryDiagnostics: details.discoveryDiagnostics }),
+      ...(details.spatialDiagnostics === undefined
+        ? {}
+        : { spatialDiagnostics: details.spatialDiagnostics }),
     },
   };
 }
@@ -298,6 +319,17 @@ class ToolbarControllerImpl implements ToolbarController {
   private aiAbortController: AbortController | null = null;
   private aiRequestVersion = 0;
   private gestureManager: GestureManager | null = null;
+  private spatialCoordinator: SpatialCoordinator | null = null;
+  private spatialAnchor:
+    | "bottom-center"
+    | "bottom-start"
+    | "bottom-end"
+    | "top-center"
+    | "top-start"
+    | "top-end" = "bottom-center";
+  private spatialWindow: Window | null = null;
+  private spatialResizeHandler: (() => void) | null = null;
+  private spatialWarningCode: SpatialError["code"] | null = null;
   private discoveryHints: readonly ToolbarDiscoveryHint[] = Object.freeze([]);
   private discoveryPanelOpen = false;
   private discoveryPanelElement: HTMLElement | null = null;
@@ -516,6 +548,9 @@ class ToolbarControllerImpl implements ToolbarController {
       this.discoveryHints = Object.freeze([]);
       this.discoveryPanelOpen = false;
     }
+    if (!this.configuration.features.spatialCoordination) {
+      this.clearSpatialState();
+    }
     if (!this.configuration.features.search) this.resetSearchState();
     if (!this.configuration.features.ai) this.resetAIState();
     if (!this.configuration.features.customize) this.editing = false;
@@ -684,6 +719,103 @@ class ToolbarControllerImpl implements ToolbarController {
     return { ok: true };
   }
 
+  updateSpatialZones(snapshot: unknown): ToolbarResult {
+    if (this.disposed) {
+      return failure(
+        "DISPOSED",
+        "Spatial zones cannot be updated after disposal.",
+      );
+    }
+    if (!this.configuration.features.spatialCoordination) {
+      return failure(
+        "SPATIAL_DISABLED",
+        "Spatial coordination is disabled by configuration.",
+      );
+    }
+    if (!Array.isArray(snapshot)) {
+      return failure(
+        "INVALID_SPATIAL_ZONES",
+        "Spatial zones must be an array containing at most 64 entries.",
+      );
+    }
+
+    const coordinator = createSpatialCoordinator(true);
+    try {
+      const length = snapshot.length;
+      if (length > 64) {
+        return failure(
+          "INVALID_SPATIAL_ZONES",
+          "Spatial zones must be an array containing at most 64 entries.",
+        );
+      }
+      const allowedKeys = new Set<PropertyKey>([
+        "length",
+        ...Array.from({ length }, (_, index) => String(index)),
+      ]);
+      if (Reflect.ownKeys(snapshot).some((key) => !allowedKeys.has(key))) {
+        return failure(
+          "INVALID_SPATIAL_ZONES",
+          "Spatial zone arrays cannot contain custom or symbol properties.",
+        );
+      }
+      for (let index = 0; index < length; index += 1) {
+        const descriptor = Object.getOwnPropertyDescriptor(
+          snapshot,
+          String(index),
+        );
+        if (descriptor === undefined || !("value" in descriptor)) {
+          return failure(
+            "INVALID_SPATIAL_ZONES",
+            "Spatial zone arrays must contain only data entries.",
+          );
+        }
+        const registration = coordinator.registerZone(descriptor.value);
+        if (!registration.ok) {
+          return failure(
+            "INVALID_SPATIAL_ZONES",
+            "Spatial zones were not changed.",
+            { spatialDiagnostics: [registration.error] },
+          );
+        }
+      }
+    } catch (cause) {
+      return failure(
+        "INVALID_SPATIAL_ZONES",
+        "Spatial zones could not be inspected safely.",
+        { cause },
+      );
+    }
+
+    if (
+      coordinator.listZones().length > 0 &&
+      this.host.getSpatialViewport === undefined
+    ) {
+      return failure(
+        "SPATIAL_VIEWPORT_REQUIRED",
+        "A host viewport provider is required when exclusion zones are registered.",
+      );
+    }
+
+    this.spatialCoordinator = coordinator;
+    this.spatialWarningCode = null;
+    if (coordinator.listZones().length === 0) {
+      this.spatialAnchor = "bottom-center";
+      if (this.hostElement !== null) {
+        delete this.hostElement.dataset.spatialAnchor;
+        delete this.hostElement.dataset.spatialConflict;
+      }
+    }
+    this.syncSpatialResizeListener();
+    const spatialWarning =
+      this.isMounted && coordinator.listZones().length > 0
+        ? this.applySpatialPlacement()
+        : null;
+    if (spatialWarning !== null) {
+      return { ok: true, spatialWarning };
+    }
+    return { ok: true };
+  }
+
   collapse(): ToolbarResult {
     if (this.disposed) {
       return failure("DISPOSED", "A disposed toolbar cannot be collapsed.");
@@ -726,6 +858,7 @@ class ToolbarControllerImpl implements ToolbarController {
 
   private clearMountReferences(): void {
     this.clearOverflowMonitoring();
+    this.clearSpatialState();
     this.gestureManager?.dispose();
     this.gestureManager = null;
     this.resetSearchState();
@@ -916,6 +1049,112 @@ class ToolbarControllerImpl implements ToolbarController {
       enabled: true,
       onGesture,
     });
+  }
+
+  private syncSpatialResizeListener(): void {
+    const coordinator = this.spatialCoordinator;
+    const view = this.toolbarElement?.ownerDocument.defaultView ?? null;
+    const shouldListen =
+      this.configuration.features.spatialCoordination &&
+      coordinator !== null &&
+      coordinator.listZones().length > 0 &&
+      this.host.getSpatialViewport !== undefined &&
+      view !== null;
+    if (!shouldListen || view === null) {
+      this.clearSpatialResizeListener();
+      return;
+    }
+    if (this.spatialWindow === view) return;
+    this.clearSpatialResizeListener();
+    this.spatialWindow = view;
+    this.spatialResizeHandler = () => {
+      this.applySpatialPlacement();
+    };
+    view.addEventListener("resize", this.spatialResizeHandler, {
+      passive: true,
+    });
+  }
+
+  private clearSpatialResizeListener(): void {
+    if (this.spatialWindow !== null && this.spatialResizeHandler !== null) {
+      this.spatialWindow.removeEventListener(
+        "resize",
+        this.spatialResizeHandler,
+      );
+    }
+    this.spatialWindow = null;
+    this.spatialResizeHandler = null;
+  }
+
+  private clearSpatialState(): void {
+    this.clearSpatialResizeListener();
+    this.spatialCoordinator = null;
+    this.spatialAnchor = "bottom-center";
+    this.spatialWarningCode = null;
+    if (this.hostElement !== null) {
+      delete this.hostElement.dataset.spatialAnchor;
+      delete this.hostElement.dataset.spatialConflict;
+    }
+  }
+
+  private applySpatialPlacement(): SpatialError | null {
+    const hostElement = this.hostElement;
+    const toolbar = this.toolbarElement;
+    const coordinator = this.spatialCoordinator;
+    if (
+      !this.configuration.features.spatialCoordination ||
+      hostElement === null ||
+      toolbar === null ||
+      coordinator === null ||
+      coordinator.listZones().length === 0
+    ) {
+      return null;
+    }
+    const getViewport = this.host.getSpatialViewport;
+    if (getViewport === undefined) {
+      return {
+        code: "SPATIAL_INVALID_VIEWPORT",
+        message: "A host viewport provider is required for spatial placement.",
+      };
+    }
+
+    let viewport: SpatialViewport;
+    try {
+      viewport = getViewport();
+    } catch (cause) {
+      const error: SpatialError = {
+        code: "SPATIAL_INVALID_VIEWPORT",
+        message: "The host viewport provider failed.",
+        cause,
+      };
+      hostElement.dataset.spatialConflict = "true";
+      if (this.spatialWarningCode !== error.code) {
+        this.spatialWarningCode = error.code;
+        this.host.onSpatialError?.(error);
+      }
+      return error;
+    }
+
+    const bounds = toolbar.getBoundingClientRect();
+    const placement = coordinator.resolve(
+      viewport,
+      { width: bounds.width, height: bounds.height },
+      this.spatialAnchor,
+    );
+    if (!placement.ok) {
+      hostElement.dataset.spatialConflict = "true";
+      if (this.spatialWarningCode !== placement.error.code) {
+        this.spatialWarningCode = placement.error.code;
+        this.host.onSpatialError?.(placement.error);
+      }
+      return placement.error;
+    }
+
+    this.spatialAnchor = placement.value.anchor;
+    hostElement.dataset.spatialAnchor = placement.value.anchor;
+    delete hostElement.dataset.spatialConflict;
+    this.spatialWarningCode = null;
+    return null;
   }
 
   private render(): void {
@@ -1191,6 +1430,8 @@ class ToolbarControllerImpl implements ToolbarController {
     this.renderAIPanel();
     this.actionsElement = actions;
     this.startOverflowMonitoring();
+    this.syncSpatialResizeListener();
+    this.applySpatialPlacement();
     this.updateOverflowControls();
 
     const buttons = Array.from(toolbar.querySelectorAll("button")).filter(
