@@ -115,6 +115,10 @@ html[data-theme="dark"] {
   --dock-hover: rgb(255 255 255 / 12%);
 }
 
+html[data-theme="dark"] body {
+  --ink: #f7f4fc;
+}
+
 * {
   box-sizing: border-box;
 }

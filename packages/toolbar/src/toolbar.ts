@@ -1294,6 +1294,9 @@ class ToolbarControllerImpl implements ToolbarController {
 
     const actions = document.createElement("div");
     actions.className = "mzk-toolbar__actions";
+    actions.setAttribute("role", "group");
+    actions.setAttribute("aria-label", "Toolbar actions");
+    actions.tabIndex = -1;
     for (const [index, action] of this.configuration.actions.entries()) {
       const item = document.createElement("div");
       item.className = "mzk-toolbar__action-item";
@@ -2509,6 +2512,7 @@ class ToolbarControllerImpl implements ToolbarController {
     if (start === null || end === null) return;
 
     const overflowing = actions.scrollWidth > actions.clientWidth + 1;
+    actions.tabIndex = overflowing ? 0 : -1;
     toolbar.dataset.overflowing = String(overflowing);
     start.hidden = !overflowing;
     end.hidden = !overflowing;

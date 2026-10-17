@@ -311,6 +311,11 @@
   outline-offset: 2px;
 }
 
+.mzk-toolbar__actions:focus-visible {
+  outline: 3px solid var(--mzk-toolbar-focus);
+  outline-offset: 2px;
+}
+
 .mzk-toolbar button:disabled {
   color: #566176;
   cursor: not-allowed;
@@ -725,6 +730,7 @@
   }
 
   .mzk-toolbar button:focus-visible,
+  .mzk-toolbar__actions:focus-visible,
   .mzk-toolbar__search-panel input:focus-visible,
   .mzk-toolbar__search-panel button:focus-visible,
   .mzk-toolbar__ai-form textarea:focus-visible,

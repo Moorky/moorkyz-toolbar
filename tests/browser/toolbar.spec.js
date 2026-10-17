@@ -66,6 +66,10 @@ test("keeps the dock within a narrow viewport and scrolls its action row", async
   });
   await expect(towardStart).toBeDisabled();
   await expect(towardEnd).toBeEnabled();
+  const actions = toolbar.getByRole("group", { name: "Toolbar actions" });
+  await expect(actions).toHaveAttribute("tabindex", "0");
+  await actions.focus();
+  await expect(actions).toBeFocused();
   const { violations } = await new AxeBuilder({ page }).analyze();
   expect(violations).toEqual([]);
 
@@ -79,6 +83,9 @@ test("keeps the dock within a narrow viewport and scrolls its action row", async
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth),
   ).toBeLessThanOrEqual(320);
+
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await expect(actions).toHaveAttribute("tabindex", "-1");
 });
 
 test("positions container and fullscreen mounts within their host element", async ({
