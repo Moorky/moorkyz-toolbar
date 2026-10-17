@@ -185,6 +185,16 @@ for (const route of ["/", "/studio", "/contributing"]) {
       for (const width of widths) {
         await page.setViewportSize({ width, height: 900 });
         await waitForViewportPaint(page);
+        if (route === "/studio" && width === 320) {
+          const importBounds = await page
+            .locator("#workbench-import")
+            .boundingBox();
+          expect(importBounds).not.toBeNull();
+          expect(importBounds.x).toBeGreaterThanOrEqual(0);
+          expect(importBounds.x + importBounds.width).toBeLessThanOrEqual(
+            width + 1,
+          );
+        }
         await expect
           .poll(async () => {
             const state = await readPageOverflowState(page);

@@ -63,6 +63,13 @@
   font: inherit;
 }
 
+.developer-workbench input[type="file"] {
+  display: block;
+  inline-size: 100%;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
+
 .workbench-feature {
   display: inline-flex;
   align-items: center;
