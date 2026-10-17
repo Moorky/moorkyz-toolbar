@@ -131,7 +131,7 @@ test("header uses the supplied logo at the current size without clipping respons
       await expect
         .poll(async () => {
           const state = await readPageOverflowState(page);
-          return state.fits ? true : state;
+          return state.fits ? true : JSON.stringify(state);
         })
         .toBe(true);
       await expect(

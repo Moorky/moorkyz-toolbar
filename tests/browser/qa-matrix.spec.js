@@ -153,7 +153,7 @@ test("Playground retains its original responsive gutters while other sections st
     await expect
       .poll(async () => {
         const state = await readPageOverflowState(page);
-        return state.fits ? true : state;
+        return state.fits ? true : JSON.stringify(state);
       })
       .toBe(true);
   }
@@ -188,7 +188,7 @@ for (const route of ["/", "/studio", "/contributing"]) {
         await expect
           .poll(async () => {
             const state = await readPageOverflowState(page);
-            return state.fits ? true : state;
+            return state.fits ? true : JSON.stringify(state);
           })
           .toBe(true);
         await expectNavigationCollapseFits(page, width);
@@ -238,7 +238,7 @@ test("large text reflows without horizontal page overflow and keeps the search d
     await expect
       .poll(async () => {
         const state = await readPageOverflowState(page);
-        return state.fits ? true : state;
+        return state.fits ? true : JSON.stringify(state);
       })
       .toBe(true);
     await expectNavigationCollapseFits(page, 390);
