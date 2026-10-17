@@ -3,11 +3,11 @@
 
 // Moorkyz project development CLI. Built from Node.js core modules only.
 // Run from the intended project root; never manipulates other projects' processes.
-const fs = require("node:fs");
-const path = require("node:path");
-const crypto = require("node:crypto");
-const net = require("node:net");
-const { spawn, spawnSync } = require("node:child_process");
+const fs = process.getBuiltinModule("node:fs");
+const path = process.getBuiltinModule("node:path");
+const crypto = process.getBuiltinModule("node:crypto");
+const net = process.getBuiltinModule("node:net");
+const { spawn, spawnSync } = process.getBuiltinModule("node:child_process");
 
 const ROOT = process.cwd();
 const STATE = path.join(ROOT, ".moorkyz");

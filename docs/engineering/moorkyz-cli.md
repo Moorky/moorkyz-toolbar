@@ -18,7 +18,7 @@ From the repository root in PowerShell:
 
 On macOS/Linux, use `sh ./moorkyz`. The `audit` command creates an unfilled report from `docs/audits/TEMPLATE.md`; fill in observed evidence before considering the task complete.
 
-`moorkyz.config.json` selects `packages/portal` as the default project, using its `dev` script for `start` and its `start` script for `start --prod`. The portal prefers `http://localhost:3000`; if that port is occupied, the CLI selects the next available port and records the runtime URL. The production command requires a prior portal build.
+`moorkyz.config.json` selects `packages/portal` as the default project, using its `dev` script for `start` and its `start` script for `start --prod`. The portal prefers `http://localhost:3001`; if that port is occupied, the CLI selects the next available port and records the runtime URL. The production command requires a prior portal build.
 
 After `start` or `restart` succeeds, the CLI opens the actual runtime URL in the default browser in
 an interactive terminal. Lifecycle, list, and status output show the recorded runtime URL. Browser
