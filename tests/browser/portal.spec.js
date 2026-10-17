@@ -41,13 +41,16 @@ test("portal theme persists locally and updates the mounted dock tokens", async 
   page,
 }) => {
   await page.goto(portalUrl);
-  await expect(page.getByRole("toolbar")).toBeVisible();
+  const toolbar = page.getByRole("toolbar", {
+    name: "Moorkyz Toolbar website navigation",
+  });
+  await expect(toolbar).toBeVisible();
   await page.getByRole("button", { name: "Switch to dark theme" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 
-  const dockBackground = await page
-    .getByRole("toolbar")
-    .evaluate((toolbar) => getComputedStyle(toolbar).backgroundColor);
+  const dockBackground = await toolbar.evaluate(
+    (element) => getComputedStyle(element).backgroundColor,
+  );
   expect(dockBackground).toBe("rgba(27, 34, 29, 0.96)");
   const { violations } = await new AxeBuilder({ page }).analyze();
   expect(violations).toEqual([]);
@@ -57,6 +60,50 @@ test("portal theme persists locally and updates the mounted dock tokens", async 
   await expect(
     page.getByRole("button", { name: "Switch to light theme" }),
   ).toHaveAttribute("aria-pressed", "true");
+});
+
+test("visual configurator validates drafts before applying a real preview", async ({
+  page,
+}) => {
+  await page.goto(portalUrl);
+  const actionLabel = page.getByRole("textbox", { name: "Action label" });
+  const apply = page.getByRole("button", { name: "Apply to live preview" });
+  const preview = page.getByRole("toolbar", { name: "Preview toolbar" });
+  await expect(
+    preview.getByRole("button", { name: "Documentation" }),
+  ).toBeVisible();
+
+  await actionLabel.fill("Run task");
+  await page.getByLabel("Theme", { exact: true }).selectOption("midnight");
+  await apply.click();
+  await expect(preview).toHaveAttribute("data-theme", "midnight");
+  await expect(preview.getByRole("button", { name: "Run task" })).toBeVisible();
+  await expect(page.locator(".configurator-code")).toContainText(
+    '"label": "Run task"',
+  );
+  await preview.getByRole("button", { name: "Run task" }).click();
+  await expect(page.locator(".configurator-status")).toHaveText(
+    'The host received action "docs".',
+  );
+
+  const { violations } = await new AxeBuilder({ page }).analyze();
+  expect(violations).toEqual([]);
+
+  await page.getByRole("button", { name: "Switch to dark theme" }).click();
+  await actionLabel.fill("");
+  await expect(page.locator(".configurator-validation")).toContainText(
+    "actions.0.label: Action labels must be non-empty strings.",
+  );
+  await expect(apply).toBeDisabled();
+  await expect(preview.getByRole("button", { name: "Run task" })).toBeVisible();
+  const invalidDraftScan = await new AxeBuilder({ page }).analyze();
+  expect(invalidDraftScan.violations).toEqual([]);
+
+  await page.reload();
+  await expect(page.getByLabel("Action label")).toHaveValue("Documentation");
+  await expect(
+    page.getByRole("toolbar", { name: "Preview toolbar" }),
+  ).toHaveAttribute("data-theme", "signature");
 });
 
 test("toolbar preferences persist in the portal's explicit local namespace", async ({

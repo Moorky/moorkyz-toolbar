@@ -1,6 +1,7 @@
 import { CopyButton } from "../components/copy-button";
 import { EnvironmentExplorer } from "../components/environment-explorer";
 import { ThemeToggle } from "../components/portal-shell";
+import { VisualConfigurator } from "../components/visual-configurator";
 
 const repository = "https://github.com/Moorky/moorkyz-toolbar";
 const installCommand = "pnpm add @moorkyz/toolbar";
@@ -25,7 +26,7 @@ if (!mounted.ok) {
 window.addEventListener("pagehide", () => toolbar.dispose(), { once: true });`;
 
 const studioCapabilities = [
-  ["Visual configuration", "Planned"],
+  ["Visual configuration", "Available preview"],
   ["Component and scenario labs", "Planned"],
   ["Theme and extension studios", "Planned"],
   ["Code and starter generation", "Planned"],
@@ -46,6 +47,7 @@ export default function HomePage() {
         </a>
         <nav className="header-links" aria-label="Main navigation">
           <a href="#docs">Documentation</a>
+          <a href="#configurator">Configurator</a>
           <a href={repository} target="_blank" rel="noreferrer">
             GitHub
           </a>
@@ -116,6 +118,27 @@ export default function HomePage() {
             Context changes are deliberate. The dock won&apos;t change just
             because you scrolled into another section.
           </p>
+        </section>
+
+        <section
+          className="section-shell configurator-section"
+          id="configurator"
+          tabIndex={-1}
+        >
+          <div className="section-heading">
+            <p className="eyebrow">VISUAL CONFIGURATOR · LOCAL PREVIEW</p>
+            <h2>
+              Tune the draft.
+              <br />
+              Keep every action explicit.
+            </h2>
+            <p>
+              Edit supported configuration fields, validate against the package
+              schema, and apply a real toolbar preview. Drafts stay in memory
+              and are never uploaded or saved.
+            </p>
+          </div>
+          <VisualConfigurator />
         </section>
 
         <section
@@ -278,9 +301,9 @@ export default function HomePage() {
               is on the roadmap.
             </h2>
             <p>
-              The planned Studio brings together live configuration, component
-              exploration, scenarios, themes, and starter generation. Those
-              tools are not available yet; the project status is public.
+              A first schema-validated configurator is available below. The full
+              Studio will add component exploration, scenarios, themes, and
+              starter generation; those tools remain on the roadmap.
             </p>
             <a
               className="button button-primary"
@@ -289,6 +312,9 @@ export default function HomePage() {
               rel="noreferrer"
             >
               View development roadmap <span aria-hidden="true">↗</span>
+            </a>
+            <a className="text-link" href="#configurator">
+              Try the local configurator <span aria-hidden="true">↓</span>
             </a>
           </div>
           <div className="studio-status">
@@ -305,8 +331,8 @@ export default function HomePage() {
               ))}
             </ul>
             <p>
-              This landing page does not substitute a mock Studio for the future
-              application.
+              The configurator previews the real workspace package. Edits are
+              not persisted or sent to a server.
             </p>
           </div>
         </section>

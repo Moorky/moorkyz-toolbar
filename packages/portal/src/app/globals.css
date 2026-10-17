@@ -872,6 +872,194 @@ h1 span {
   font-size: 0.73rem;
 }
 
+.configurator-section {
+  padding-block: clamp(5.5rem, 10vw, 8rem);
+  border-top: 1px solid var(--line);
+}
+
+.configurator-section > .section-heading {
+  max-width: 48rem;
+}
+
+.configurator-workspace {
+  margin-top: 2rem;
+  display: grid;
+  grid-template-columns: minmax(16rem, 0.85fr) minmax(0, 1.15fr);
+  align-items: start;
+  gap: 1.25rem;
+}
+
+.configurator-controls,
+.configurator-preview,
+.configurator-code {
+  min-width: 0;
+  padding: clamp(1rem, 2.5vw, 1.5rem);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--surface);
+}
+
+.configurator-controls {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.configurator-controls-heading {
+  margin-bottom: 0.25rem;
+}
+
+.configurator-controls-heading > span,
+.configurator-preview-heading,
+.configurator-code-heading {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+}
+
+.configurator-controls-heading p,
+.configurator-preview > p,
+.configurator-status,
+.configurator-code-invalid {
+  margin: 0.4rem 0 0;
+  color: var(--faint);
+  font-size: 0.78rem;
+}
+
+.configurator-controls > label:not(.configurator-checkbox) {
+  margin-top: 0.25rem;
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.configurator-controls input:not([type="checkbox"]),
+.configurator-controls select {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 0.45rem;
+  background: var(--page);
+  color: var(--ink);
+  font: inherit;
+}
+
+.configurator-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-block: 0.35rem;
+  font-size: 0.8rem;
+}
+
+.configurator-checkbox input {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--accent);
+}
+
+.configurator-apply {
+  justify-self: start;
+  margin-top: 0.25rem;
+}
+
+.configurator-validation {
+  padding: 0.8rem;
+  border: 1px solid #a54b43;
+  border-radius: 0.45rem;
+  background: #fff8f7;
+  color: #8c342d;
+  font-size: 0.78rem;
+}
+
+html[data-theme="dark"] .configurator-validation {
+  border-color: #ffb4ab;
+  background: #2b1715;
+  color: #ffb4ab;
+}
+
+.configurator-validation ul {
+  margin: 0.45rem 0 0;
+  padding-inline-start: 1.2rem;
+}
+
+.configurator-output {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.configurator-preview-heading,
+.configurator-code-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.configurator-preview-heading > span:last-child {
+  font-size: 0.58rem;
+}
+
+.configurator-preview-surface {
+  margin-top: 1rem;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 0.65rem;
+  background:
+    linear-gradient(
+      135deg,
+      transparent 49.5%,
+      var(--line) 50%,
+      transparent 50.5%
+    ),
+    var(--page);
+}
+
+.configurator-preview-mount {
+  position: relative;
+  display: block;
+  min-height: 10rem;
+}
+
+.configurator-preview-mount > .mzk-toolbar-host {
+  z-index: 2;
+}
+
+.configurator-preview-mount > .mzk-toolbar-host[data-placement="viewport"] {
+  position: absolute;
+}
+
+.configurator-preview > p {
+  margin-top: 0.75rem;
+}
+
+.configurator-code-heading > div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.configurator-code pre {
+  max-height: 22rem;
+  margin: 1rem 0 0;
+  overflow: auto;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.55rem;
+  background: var(--code);
+  color: var(--ink);
+  font:
+    0.75rem/1.6 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Consolas,
+    monospace;
+  tab-size: 2;
+}
+
+.configurator-code-invalid {
+  margin-top: 1rem;
+}
+
 .docs-section {
   padding-block: clamp(5.5rem, 10vw, 8rem);
   border-top: 1px solid var(--line);
@@ -1071,6 +1259,7 @@ html[data-theme="dark"]
   .quickstart-section,
   .theme-section,
   .studio-section,
+  .configurator-workspace,
   .open-source-section {
     grid-template-columns: 1fr;
   }
