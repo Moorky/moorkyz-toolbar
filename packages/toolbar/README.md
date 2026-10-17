@@ -2,7 +2,7 @@
 
 **Pre-release implementation draft.** The configuration and controller names in this package are not yet an approved stable public contract. The library and portal are under active development; this package has not been published.
 
-The core is framework-neutral, imports without browser globals, and has no production runtime dependencies.
+The root entry is framework-neutral, imports without browser globals, and has no production runtime dependencies. Framework adapters are optional subpaths with peer dependencies scoped to those entries.
 
 ## Workspace use
 
@@ -54,6 +54,26 @@ Mounting defaults to Shadow DOM; set `renderMode: "light"` to opt into scoped cl
 `update()` applies a validated partial patch; supplied action lists replace the existing list, while supplied feature flags merge with existing flags. Omitted fields are preserved. A mounted instance cannot switch between Shadow and Light DOM; create a new controller to change modes. Collapse is explicit and does not auto-restore.
 
 Placement defaults to the viewport bottom. `placement: { mode: "container" }` positions relative to the host-provided positioned mount container; `mode: "fullscreen"` positions inside the host's fullscreen root, which the host enters and exits through the Fullscreen API. Narrow action rows retain native horizontal scrolling and expose labeled start/end scroll buttons only when content overflows.
+
+## React adapter
+
+Importing the root package does not load React. React applications can opt into the separate `@moorkyz/toolbar/react` entry point, which requires React 18 or newer as an optional peer:
+
+```tsx
+import { useMemo } from "react";
+import { ToolbarMount } from "@moorkyz/toolbar/react";
+
+function App({ dispatchAction }: { dispatchAction: (id: string) => void }) {
+  const configuration = useMemo(
+    () => ({ actions: [{ id: "home", label: "Home" }] }),
+    [],
+  );
+  const host = useMemo(() => ({ dispatchAction }), [dispatchAction]);
+  return <ToolbarMount configuration={configuration} host={host} />;
+}
+```
+
+The adapter owns mount/dispose through an effect and renders an empty mount target during server rendering. It can expose the controller with `onController`; changing the identity of `configuration`, `host`, or that callback recreates the controller, so memoize stable values.
 
 ## Themes and local preferences
 

@@ -86,7 +86,7 @@ The workspace now contains an **implemented but unapproved draft** of the first 
 - Unknown properties, non-boolean feature values, invalid render modes, malformed/duplicate action IDs, empty labels, prototype-bearing objects, and accessor properties produce stable diagnostic codes and paths.
 - Action descriptors are data-only (`id`, `label`); host behavior and authorization callbacks are not serializable configuration.
 - Validation normalizes defaults and returns immutable result data. Importing the contract module has no browser-global access or runtime side effects.
-- Vanilla and React consumer fixtures compile against the package; the React example exercises the framework-neutral controller through an effect-owned mount/dispose lifecycle. CLI/Studio schema consumption, dedicated framework adapters, and approved public names are not yet implemented.
+- Vanilla and React consumer fixtures compile against the package. The React fixture uses the optional `@moorkyz/toolbar/react` entry point; additional framework adapters, CLI/Studio schema consumption, and approved public names are not yet implemented.
 - The initial DOM controller now mounts to a host-owned element, uses Shadow DOM by default (Light DOM is opt-in), renders only text nodes and native buttons, dispatches actions only through a host callback, and provides manual collapse/restore, scoped keyboard navigation, atomic partial updates, and disposal. Update patches merge feature overrides and replace action lists only when supplied. Its stylesheet is a same-package asset (no inline styles or external URL).
 
 See [`packages/toolbar/test/configuration.test.js`](../../packages/toolbar/test/configuration.test.js) for executable boundary tests. Feature-key names and diagnostics remain proposals until contract review; approved feature semantics and defaults may not be changed.
@@ -175,6 +175,10 @@ The existing `features.offline` flag remains false by default. When explicitly e
 ## M6 skippable discovery hints draft
 
 `features.discovery` remains false by default. With it enabled, the host supplies at most 10 plain-text hints through `ToolbarController.updateDiscoveryHints()`. Each hint has a unique bounded ID, non-empty title (100 characters max), and message (400 characters max). Invalid records, accessors, unknown properties, sparse entries, and duplicates return structured `discoveryDiagnostics`. The controller adds a Tips button and a labeled panel but never opens it on its own; updates do not expand the dock, mutate completion state, persist hints, or infer user behavior. Disabling discovery removes its panel and clears its in-memory snapshot; disposal does the same.
+
+## M7 optional React adapter draft
+
+The `@moorkyz/toolbar/react` subpath exports `ToolbarMount`, a client component that owns a core controller through a React effect and disposes it on unmount. React is an optional peer dependency; the framework-neutral root entry does not import or re-export the adapter. `ToolbarMount` may notify the host of its controller through `onController`, followed by `null` during cleanup. Configuration, host, and callback identity changes dispose and recreate the controller, so callers should memoize stable values. Mount failures throw from the effect for host error-boundary handling. Server rendering and Strict Mode setup/cleanup are covered by adapter tests; broader concurrent and framework matrix validation remains.
 
 ## Schema validation gate
 
