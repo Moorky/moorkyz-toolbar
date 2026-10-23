@@ -125,3 +125,6 @@ authorization or manual WCAG/device certification.
 The remaining [human acceptance checklist](../../docs/engineering/manual-mvp-acceptance.md)
 covers real assistive technology, touch devices, native zoom/fullscreen/keyboard,
 field performance, independent review and release approvals.
+
+The portal footer links to the private [Moorkyz Evidence workspace](https://evidence.moorkyz.com).
+Evidence runs as a separate authenticated service on the shared Coolify host.

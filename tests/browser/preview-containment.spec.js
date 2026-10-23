@@ -54,8 +54,12 @@ test("the preview toolbar stays inside its own application and clear of page cus
             requestAnimationFrame(() => requestAnimationFrame(resolve)),
           ),
       );
-      if ((await footer.getAttribute("data-visible")) !== "true") {
-        await expect(footer).toHaveAttribute("inert", "");
+      const visibilityState = await footer.evaluate((element) => ({
+        visible: element.getAttribute("data-visible"),
+        inert: element.hasAttribute("inert"),
+      }));
+      expect(visibilityState.inert).toBe(visibilityState.visible !== "true");
+      if (visibilityState.visible !== "true") {
         continue;
       }
       const toolbar = canvas.getByRole("toolbar");

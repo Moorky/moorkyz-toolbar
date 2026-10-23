@@ -206,6 +206,11 @@ test("landing structure, real links, local typography and exact footer branding 
       .locator(".footer-upper")
       .getByRole("link", { name: "Studio", exact: true }),
   ).toHaveAttribute("href", "/studio");
+  await expect(
+    page
+      .locator(".footer-upper")
+      .getByRole("link", { name: "Evidence workspace", exact: true }),
+  ).toHaveAttribute("href", "https://evidence.moorkyz.com");
   await page.evaluate(() => document.fonts.ready);
   expect(
     await page.evaluate(() =>
