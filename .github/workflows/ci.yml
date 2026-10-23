@@ -37,9 +37,22 @@ jobs:
       - run: pnpm audit --audit-level=low
       - run: pnpm licenses list --json
 
+  videocrunch-windows:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+      - name: Verify Windows VideoCrunch API contract
+        run: node --test tools/videocrunch/test/server.test.js
+
   container:
     runs-on: ubuntu-latest
-    needs: verify
+    needs: [verify, videocrunch-windows]
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
@@ -71,7 +84,7 @@ jobs:
   deploy:
     name: Deploy to Coolify
     runs-on: ubuntu-latest
-    needs: [verify, container]
+    needs: [verify, videocrunch-windows, container]
     if: github.event_name == 'push' && github.ref == 'refs/heads/master' && vars.COOLIFY_DEPLOY_ENABLED == 'true'
     environment: production
     timeout-minutes: 25
