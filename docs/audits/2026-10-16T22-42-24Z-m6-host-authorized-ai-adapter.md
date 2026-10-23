@@ -27,10 +27,10 @@
 | `docs/audits/2026-10-16T22-42-24Z-m6-host-authorized-ai-adapter.md` | Added this evidence-backed audit | Low |
 | `docs/contracts/sdk-and-schema.md` | Documented the AI gate, authorization, bounds, and exclusions | Low |
 | `docs/engineering/implementation-status.md` | Recorded current M6 progress and remaining features | Low |
-| `packages/toolbar/README.md` | Added explicit host-provider integration guidance | Low |
-| `packages/toolbar/src/ai.ts` | Added provider boundary, validation, cancellation, and structured diagnostics | Medium |
-| `packages/toolbar/src/index.ts` | Exported the draft adapter API | Low |
-| `packages/toolbar/test/ai.test.js` | Added seven focused provider/policy tests | Low |
+| `packages/sdk/README.md` | Added explicit host-provider integration guidance | Low |
+| `packages/sdk/src/ai.ts` | Added provider boundary, validation, cancellation, and structured diagnostics | Medium |
+| `packages/sdk/src/index.ts` | Exported the draft adapter API | Low |
+| `packages/sdk/test/ai.test.js` | Added seven focused provider/policy tests | Low |
 | `tests/browser/server.mjs` | Allowed serving the AI module for package-root browser imports | Low |
 
 ## 3. Verification evidence
@@ -38,11 +38,11 @@
 | Check | Result | Exact command / method | Evidence / notes |
 |---|---|---|---|
 | Formatting / lint | PASS | `pnpm check` | ESLint and Prettier checks passed |
-| Typecheck | PASS | `pnpm check` | Toolbar, portal, vanilla, and React fixtures passed |
+| Typecheck | PASS | `pnpm check` | SDK, portal, vanilla, and React fixtures passed |
 | Unit / integration tests | PASS | `pnpm check` | 86 Node tests passed, 0 failed |
 | Browser / accessibility | PASS | `pnpm check` | 15 Chromium tests passed; AI adapter is headless and introduces no UI |
-| Build / consumer fixture | PASS | `pnpm check` | Toolbar and portal builds and consumer fixture typechecks passed |
-| Frozen install / package contents | PASS | `pnpm install --frozen-lockfile`; `pnpm --filter @moorkyz/toolbar pack --dry-run` | No dependency changes; package includes `ai.js` and declarations |
+| Build / consumer fixture | PASS | `pnpm check` | SDK and portal builds and consumer fixture typechecks passed |
+| Frozen install / package contents | PASS | `pnpm install --frozen-lockfile`; `pnpm --filter @tools.moorkyz.com/sdk pack --dry-run` | No dependency changes; package includes `ai.js` and declarations |
 | Specification hashes | PASS | PowerShell SHA-256 verification of all `MANIFEST.json` entries | 16 of 16 hashes matched |
 | Security / dependency review | NOT RUN | No dependency manifest or lockfile changed | Manual policy/data-boundary review only; no independent audit claimed |
 | Performance | N/A | No benchmark run | No timers, caches, retries, or automatic provider calls |

@@ -25,9 +25,9 @@
 
 | Path | Change | Risk |
 |---|---|---|
-| `packages/toolbar/src/toolbar.ts`, `src/index.ts`, `src/toolbar.css` | Added the framework-neutral controller, native accessible controls, keyboard/lifecycle behavior, and responsive dock styling | Medium |
-| `packages/toolbar/scripts/`, `package.json`, `tsconfig.build.json`, `README.md` | Added clean asset build, bundled local CSS/Apache license, package usage guide, and pack boundary | Medium |
-| `packages/toolbar/test/toolbar.test.js` | Added DOM lifecycle, failure, update, keyboard, and cleanup tests | Low |
+| `packages/sdk/src/toolbar.ts`, `src/index.ts`, `src/toolbar.css` | Added the framework-neutral controller, native accessible controls, keyboard/lifecycle behavior, and responsive dock styling | Medium |
+| `packages/sdk/scripts/`, `package.json`, `tsconfig.build.json`, `README.md` | Added clean asset build, bundled local CSS/Apache license, package usage guide, and pack boundary | Medium |
+| `packages/sdk/test/toolbar.test.js` | Added DOM lifecycle, failure, update, keyboard, and cleanup tests | Low |
 | `packages/portal/` | Preserved/integrated the user-approved Next.js consumer, real library mount/context updates, local theme, nonce CSP Proxy, and documentation | Medium |
 | `packages/portal/public/`, `src/app/layout.tsx` | Added a local social-card asset and metadata; no remote image dependency | Low |
 | `tests/browser/`, `playwright.config.mjs` | Added Chromium CSP, responsive, motion, axe, portal, and consumer package browser tests | Low |
@@ -43,10 +43,10 @@ Use `PASS`, `FAIL`, `NOT RUN` (with reason), or `N/A`. Record exact commands and
 | Check | Result | Exact command / method | Evidence / notes |
 |---|---|---|---|
 | Formatting / lint | PASS | `pnpm check` | ESLint and scoped Prettier checks passed. |
-| Typecheck | PASS | `pnpm check` | Toolbar, vanilla/React fixtures, and portal TypeScript checks passed. |
+| Typecheck | PASS | `pnpm check` | SDK, vanilla/React fixtures, and portal TypeScript checks passed. |
 | Unit / integration tests | PASS | `pnpm check` | 21 Node tests passed, 0 failed. |
 | Browser / accessibility | PASS WITH RISKS | `pnpm check` | 9 Chromium tests passed; axe had zero violations for the toolbar and portal light/dark themes; no external requests in tested routes; manual assistive-technology checks remain. |
-| Build / consumer fixture | PASS | `pnpm check`; `pnpm pack --filter @moorkyz/toolbar --dry-run` | Next.js production build, package build, and both consumer fixtures passed. Dry-run includes JS/types, local CSS, Apache license, package README; no CLI or React runtime bundled in `@moorkyz/toolbar`. |
+| Build / consumer fixture | PASS | `pnpm check`; `pnpm pack --filter @tools.moorkyz.com/sdk --dry-run` | Next.js production build, package build, and both consumer fixtures passed. Dry-run includes JS/types, local CSS, Apache license, package README; no CLI or React runtime bundled in `@tools.moorkyz.com/sdk`. |
 | Security / dependency review | PASS WITH RISKS | Browser CSP tests; `pnpm licenses list`; `pnpm install --frozen-lockfile` | Portal production CSP uses nonce + strict-dynamic, no `unsafe-inline`; dock CSS is same-origin; tested pages make no external requests. License inventory includes MPL-2.0 test tooling and Next's optional Sharp binary (metadata reports Apache-2.0 AND LGPL-3.0-or-later); review necessity/notice before RC. No secrets or telemetry introduced. |
 | Performance (if relevant) | NOT RUN | N/A | No approved numerical budgets/baselines; defer profiling to M10. |
 | `git diff --check` | PASS | `git diff --check` | No whitespace errors in task changes. |

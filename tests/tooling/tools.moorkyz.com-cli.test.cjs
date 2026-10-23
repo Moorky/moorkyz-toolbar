@@ -15,11 +15,11 @@ const path = require("node:path");
 const { after, test } = require("node:test");
 
 const repoRoot = path.resolve(__dirname, "../..");
-const cli = path.join(repoRoot, "moorkyz.cjs");
+const cli = path.join(repoRoot, "tools.moorkyz.com.cjs");
 const fixtures = [];
 
 function fixture() {
-  const folder = mkdtempSync(path.join(os.tmpdir(), "moorkyz-cli-"));
+  const folder = mkdtempSync(path.join(os.tmpdir(), "tools.moorkyz.com-cli-"));
   fixtures.push(folder);
   return folder;
 }
@@ -35,7 +35,7 @@ function run(folder, args) {
 after(() => {
   for (const folder of fixtures.splice(0)) {
     const relative = path.relative(os.tmpdir(), folder);
-    if (!relative.startsWith("moorkyz-cli-")) {
+    if (!relative.startsWith("tools.moorkyz.com-cli-")) {
       throw new Error(`Refusing to remove unexpected fixture path: ${folder}`);
     }
     rmSync(folder, { recursive: true, force: true });
@@ -45,8 +45,11 @@ after(() => {
 test("help works without package scaffolding", () => {
   const result = run(fixture(), ["help"]);
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /Moorkyz — reusable project development CLI/);
-  assert.match(result.stdout, /moorkyz audit/);
+  assert.match(
+    result.stdout,
+    /tools\.moorkyz\.com — reusable project development CLI/,
+  );
+  assert.match(result.stdout, /tools\.moorkyz\.com audit/);
 });
 
 test("default project is the portal workspace", () => {
@@ -82,10 +85,31 @@ test("rejects a project path that escapes the repository", () => {
   const folder = fixture();
   const outside = fixture();
   writeFileSync(
-    path.join(folder, "moorkyz.config.json"),
+    path.join(folder, "tools.moorkyz.com.config.json"),
     JSON.stringify({ projects: { escape: { cwd: outside } } }),
   );
   const result = run(folder, ["list"]);
   assert.equal(result.status, 1);
   assert.match(result.stderr, /Configured project path escapes repository/);
+});
+
+test("doctor reports the renamed configuration and ignored runtime directory", () => {
+  const result = run(repoRoot, ["doctor"]);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /tools\.moorkyz\.com config: present/);
+  assert.match(
+    result.stdout,
+    /Runtime directory: \.tools\.moorkyz\.com \(ignored by Git\)/,
+  );
+});
+
+test("invalid renamed configuration reports its exact filename", () => {
+  const folder = fixture();
+  writeFileSync(path.join(folder, "tools.moorkyz.com.config.json"), "[]");
+  const result = run(folder, ["list"]);
+  assert.equal(result.status, 1);
+  assert.match(
+    result.stderr,
+    /tools\.moorkyz\.com\.config\.json must contain a JSON object/,
+  );
 });

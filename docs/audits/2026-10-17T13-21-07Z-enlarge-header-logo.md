@@ -1,10 +1,10 @@
-# Development Audit: Enlarge the Toolbar header logo
+# Development Audit: Enlarge the tools.moorkyz.com header logo
 
 | Field | Value |
 |---|---|
 | Audit ID | `2026-10-17T13-21-07Z-enlarge-header-logo` |
 | Created (UTC) | `2026-10-17T13:21:07Z` |
-| Task | Make the Moorkyz Toolbar website header logo much bigger |
+| Task | Make the tools.moorkyz.com website header logo much bigger |
 | Auditor | Copilot agent self-audit |
 | Branch / baseline | `master` / `d908498` |
 | Final commit | Reported in task completion; no post-commit audit amendment |
@@ -49,8 +49,8 @@ and it is excluded from the task commit.
 | Whitespace | PASS | `git diff --check`; staged whitespace gate | No task-owned whitespace errors |
 
 ```powershell
-$env:MOORKYZ_TOOLBAR_FIXTURE_PORT='45973'
-$env:MOORKYZ_TOOLBAR_PORTAL_PORT='45974'
+$env:TOOLS_MOORKYZ_COM_FIXTURE_PORT='45973'
+$env:TOOLS_MOORKYZ_COM_PORTAL_PORT='45974'
 $env:CI='1'
 pnpm exec playwright test 'website\.spec\.js' --grep 'header logo|adaptive header' --workers=3
 ```

@@ -1,24 +1,24 @@
-# Moorkyz CLI for Local Repository Work
+# tools.moorkyz.com CLI for Local Repository Work
 
-The repository includes a dependency-free Node.js helper for local project lifecycle, package scripts, and task-audit file creation. It is maintainer tooling, not the future public `moorkyz-toolbar` consumer CLI.
+The repository includes a dependency-free Node.js helper for local project lifecycle, package scripts, and task-audit file creation. It is maintainer tooling, not a public tool or SDK consumer CLI.
 
 ## Commands available now
 
 From the repository root in PowerShell:
 
 ```powershell
-.\moorkyz.cmd help
-.\moorkyz.cmd doctor
-.\moorkyz.cmd start
-.\moorkyz.cmd status
-.\moorkyz.cmd logs
-.\moorkyz.cmd stop
-.\moorkyz.cmd audit "task title"
+.\tools.moorkyz.com.cmd help
+.\tools.moorkyz.com.cmd doctor
+.\tools.moorkyz.com.cmd start
+.\tools.moorkyz.com.cmd status
+.\tools.moorkyz.com.cmd logs
+.\tools.moorkyz.com.cmd stop
+.\tools.moorkyz.com.cmd audit "task title"
 ```
 
-On macOS/Linux, use `sh ./moorkyz`. The `audit` command creates an unfilled report from `docs/audits/TEMPLATE.md`; fill in observed evidence before considering the task complete.
+On macOS/Linux, use `sh ./tools.moorkyz.com`. The `audit` command creates an unfilled report from `docs/audits/TEMPLATE.md`; fill in observed evidence before considering the task complete.
 
-`moorkyz.config.json` selects `packages/portal` as the default project, using its `dev` script for `start` and its `start` script for `start --prod`. The portal prefers `http://localhost:3001`; if that port is occupied, the CLI selects the next available port and records the runtime URL. The production command requires a prior portal build.
+`tools.moorkyz.com.config.json` selects `packages/portal` as the default project, using its `dev` script for `start` and its `start` script for `start --prod`. The portal prefers `http://localhost:3001`; if that port is occupied, the CLI selects the next available port and records the runtime URL. The production command requires a prior portal build.
 
 After `start` or `restart` succeeds, the CLI opens the actual runtime URL in the default browser in
 an interactive terminal. Lifecycle, list, and status output show the recorded runtime URL. Browser
@@ -34,7 +34,7 @@ The workspace configuration is intentionally scoped to the portal. Use the named
 
 - Run commands from the intended repository root. The helper operates on the current working directory.
 - It does not install packages, modify package manifests, deploy, publish, or commit.
-- Managed process state and logs live in `.moorkyz/`, which is ignored by `.gitignore`. The helper will stop only verified processes it started; inspect an unverified stale state instead of deleting it blindly.
+- Managed process state and logs live in `.tools.moorkyz.com/`, which is ignored by `.gitignore`. The helper will stop only verified processes it started; inspect an unverified stale state instead of deleting it blindly.
 - `start --prod` runs an existing local production script; it is not deployment.
 - No global PowerShell profile installer is included. Use the explicit repository-local launcher.
 - `security` is a read-only package advisory check when a compatible package manifest and package manager are available; it does not prove dependencies safe or update them.

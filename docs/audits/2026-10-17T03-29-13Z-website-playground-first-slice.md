@@ -64,8 +64,8 @@
 | `tests/tooling/playground-model.test.js` | Three boundary tests, including UTF-8 size limit and capability restrictions | Low |
 | Portal README, portal specification, release dossier | Accurate slice status, workflow, remaining MVP work and unchanged release holds | Low |
 
-Unrelated pre-existing edits to `moorkyz`, `moorkyz.cjs`, `moorkyz.cmd`,
-`moorkyz.config.json` and untracked `docs/task/` were not staged or changed.
+Unrelated pre-existing edits to `tools.moorkyz.com`, `tools.moorkyz.com.cjs`, `tools.moorkyz.com.cmd`,
+`tools.moorkyz.com.config.json` and untracked `docs/task/` were not staged or changed.
 Generated `next-env.d.ts` route imports temporarily changed during validation
 and returned to the initial tracked paths without an authored edit.
 No SDK source, package exports, manifests, lockfiles or dependencies changed.
@@ -83,7 +83,7 @@ pnpm exec playwright test 'playground\.spec\.js|portal\.spec\.js|studio\.spec\.j
 | Formatting | PASS | `pnpm exec prettier --write` on changed source/test files; `pnpm format:check` | Existing repository format gate passed |
 | Lint | PASS | `pnpm lint` | Existing repository lint gate passed |
 | Typecheck | PASS | `pnpm typecheck` | SDK, Vanilla, React, Vue, Angular and portal passed |
-| Unit / generator | PASS | `node --test tests\tooling\playground-model.test.js packages\toolbar\test\generator.test.js` | 8 passed, 0 failures/skips; 3 new model tests plus 5 existing generator tests |
+| Unit / generator | PASS | `node --test tests\tooling\playground-model.test.js packages\sdk\test\generator.test.js` | 8 passed, 0 failures/skips; 3 new model tests plus 5 existing generator tests |
 | Browser / accessibility / existing portal | PASS | B1 above | Final JSON report: 75 expected, 0 unexpected, 0 flaky, 0 skipped; 25 each in Chromium/Firefox/WebKit; 24 executions of 8 new cases |
 | Build | PASS | `pnpm build` | SDK build, optimized Next.js production build and standalone preparation passed |
 | Executable integration | PASS | Exported-project browser case within B1 | Download personalized files, mount real SDK, dispatch `add-task`, verify host status, dispatch `pagehide`, verify toolbar disposal; all three engines |

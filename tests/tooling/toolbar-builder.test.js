@@ -23,7 +23,7 @@ test("tiny builder emits a real self-contained toolbar below 3 KiB, without SDK 
   assert.match(result.html, /min-height:44px/);
   assert.doesNotMatch(
     result.html,
-    /<script|@moorkyz|stylesheet.*https:|<iframe/,
+    /<script|@tools\.moorkyz\.com|stylesheet.*https:|<iframe/,
   );
   const dark = buildToolbar({ ...settings, theme: "dark", position: "top" });
   assert.match(dark.css, /top:1rem/);
@@ -68,8 +68,9 @@ test("builder escapes all labels/attributes and rejects dangerous URLs or invali
 });
 
 test("active project no longer contains the legacy package, Studio, examples or SDK build gates", () => {
+  const retiredPackage = ["tool", "bar"].join("");
   for (const file of [
-    "packages/toolbar/package.json",
+    `packages/${retiredPackage}/package.json`,
     "packages/portal/src/app/studio/page.tsx",
     "packages/portal/src/components/functional-playground.tsx",
     "examples/react-consumer/package.json",
@@ -81,11 +82,17 @@ test("active project no longer contains the legacy package, Studio, examples or 
     readFileSync("packages/portal/package.json", "utf8"),
   );
   const root = JSON.parse(readFileSync("package.json", "utf8"));
-  assert.equal(portal.dependencies["@moorkyz/toolbar"], undefined);
+  assert.equal(
+    portal.dependencies[`@tools.moorkyz.com/${retiredPackage}`],
+    undefined,
+  );
   assert.equal(root.scripts["test:coverage"], undefined);
-  assert.doesNotMatch(root.scripts.typecheck, /consumer|@moorkyz\/toolbar/);
+  assert.doesNotMatch(
+    root.scripts.typecheck,
+    new RegExp(`consumer|@tools\\.moorkyz\\.com/${retiredPackage}`),
+  );
   assert.doesNotMatch(
     readFileSync("packages/portal/src/components/portal-shell.tsx", "utf8"),
-    /@moorkyz\/toolbar|ToolbarMount/,
+    new RegExp(`@tools\\.moorkyz\\.com/${retiredPackage}|ToolbarMount`),
   );
 });

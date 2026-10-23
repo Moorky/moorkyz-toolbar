@@ -25,8 +25,8 @@
 
 | Path | Change | Risk |
 |---|---|---|
-| `packages/toolbar/src/input.ts`, `src/index.ts` | Added and exported the opt-in shortcut manager | Medium |
-| `packages/toolbar/test/input.test.js` | Added authorization, scope, conflict, reserved-key, editable-target and cleanup tests | Medium |
+| `packages/sdk/src/input.ts`, `src/index.ts` | Added and exported the opt-in shortcut manager | Medium |
+| `packages/sdk/test/input.test.js` | Added authorization, scope, conflict, reserved-key, editable-target and cleanup tests | Medium |
 | `tests/browser/fixtures/fixture.js`, `server.mjs`, `tests/browser/input.spec.js` | Exercised the live keyboard path in Chromium and served the new package subpath | Low |
 | `docs/contracts/sdk-and-schema.md`, `docs/engineering/implementation-status.md` | Documented the draft M4 input behavior and remaining gaps | Low |
 | `docs/audits/2026-10-16T21-45-25Z-m4-scoped-keyboard-input-arbiter.md` | Recorded this M4 input slice | Low |
@@ -41,7 +41,7 @@ Use `PASS`, `FAIL`, `NOT RUN` (with reason), or `N/A`. Record exact commands and
 | Typecheck | PASS | `pnpm check` | Package, vanilla/React consumers, and portal typechecks passed. |
 | Unit / integration tests | PASS | `pnpm check` | 51 Node tests passed, 0 failed. |
 | Browser / accessibility | PASS WITH RISKS | `pnpm check` | 11 Chromium tests passed, including the new scoped shortcut scenario; axe and existing layout/CSP tests remained green. Manual assistive-technology testing remains. |
-| Build / consumer fixture | PASS | `pnpm check` | Toolbar and portal builds plus both consumer fixtures passed. |
+| Build / consumer fixture | PASS | `pnpm check` | SDK and portal builds plus both consumer fixtures passed. |
 | Security / dependency review | PASS WITH RISKS | Code inspection and `pnpm check` | No external calls or dependencies added. Shortcut registrations are host-authorized and denied/revoked events are not intercepted. The reserved-key list remains a finite best-effort list, not proof of all OS/browser combinations. |
 | Performance (if relevant) | N/A | N/A | No measurement budget; manager installs one root keydown listener only while registrations exist. |
 | `git diff --check` | PASS | `git diff --check` | No whitespace errors in task changes. |

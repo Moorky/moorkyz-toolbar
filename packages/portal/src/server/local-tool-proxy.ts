@@ -14,16 +14,16 @@ export async function proxyLocalTool(
     tool === "videocrunch"
       ? {
           label: "VideoCrunch",
-          flag: "MOORKYZ_VIDEOCRUNCH_ENABLED",
-          port: "MOORKYZ_VIDEOCRUNCH_PORT",
+          flag: "TOOLS_MOORKYZ_COM_VIDEOCRUNCH_ENABLED",
+          port: "TOOLS_MOORKYZ_COM_VIDEOCRUNCH_PORT",
           fallback: "8765",
           token: "x-webvideocrunch-token",
           limit: 16384,
         }
       : {
           label: "Directory Cleaner",
-          flag: "MOORKYZ_DIRECTORY_CLEANER_ENABLED",
-          port: "MOORKYZ_DIRECTORY_CLEANER_PORT",
+          flag: "TOOLS_MOORKYZ_COM_DIRECTORY_CLEANER_ENABLED",
+          port: "TOOLS_MOORKYZ_COM_DIRECTORY_CLEANER_PORT",
           fallback: "8766",
           token: "x-directory-cleaner-token",
           limit: 65536,

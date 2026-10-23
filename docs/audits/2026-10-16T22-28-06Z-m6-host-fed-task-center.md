@@ -27,15 +27,15 @@
 | `docs/audits/2026-10-16T22-28-06Z-m6-host-fed-task-center.md` | Added this evidence-backed audit | Low |
 | `docs/contracts/sdk-and-schema.md` | Documented the host-fed Task Center draft and disabled behavior | Low |
 | `docs/engineering/implementation-status.md` | Recorded M6 progress and remaining optional modules | Low |
-| `packages/toolbar/README.md` | Added consumer documentation and a host-fed snapshot example | Low |
-| `packages/toolbar/src/index.ts` | Exported the task snapshot contract and validator | Low |
-| `packages/toolbar/src/tasks.ts` | Added immutable statuses, bounded snapshot validation and diagnostics | Medium |
-| `packages/toolbar/src/themes.ts` | Froze the public theme-name catalog to protect validator behavior | Low |
-| `packages/toolbar/src/toolbar.css` | Added responsive, themed and forced-colors Task Center styles | Medium |
-| `packages/toolbar/src/toolbar.ts` | Added gated panel rendering, snapshot updates, safe status display, and clear-on-disable/dispose | Medium |
-| `packages/toolbar/test/tasks.test.js` | Covered task validation and frozen status data | Low |
-| `packages/toolbar/test/themes.test.js` | Asserted built-in theme-name catalog immutability | Low |
-| `packages/toolbar/test/toolbar.test.js` | Covered host state display, safe text, lifecycle, and disabled no-work behavior | Low |
+| `packages/sdk/README.md` | Added consumer documentation and a host-fed snapshot example | Low |
+| `packages/sdk/src/index.ts` | Exported the task snapshot contract and validator | Low |
+| `packages/sdk/src/tasks.ts` | Added immutable statuses, bounded snapshot validation and diagnostics | Medium |
+| `packages/sdk/src/themes.ts` | Froze the public theme-name catalog to protect validator behavior | Low |
+| `packages/sdk/src/toolbar.css` | Added responsive, themed and forced-colors Task Center styles | Medium |
+| `packages/sdk/src/toolbar.ts` | Added gated panel rendering, snapshot updates, safe status display, and clear-on-disable/dispose | Medium |
+| `packages/sdk/test/tasks.test.js` | Covered task validation and frozen status data | Low |
+| `packages/sdk/test/themes.test.js` | Asserted built-in theme-name catalog immutability | Low |
+| `packages/sdk/test/toolbar.test.js` | Covered host state display, safe text, lifecycle, and disabled no-work behavior | Low |
 | `tests/browser/fixtures/fixture.js` | Added a browser Task Center mount fixture | Low |
 | `tests/browser/fixtures/index.html` | Added a dedicated task mount target | Low |
 | `tests/browser/server.mjs` | Allowed local serving of the task module | Low |
@@ -46,11 +46,11 @@
 | Check | Result | Exact command / method | Evidence / notes |
 |---|---|---|---|
 | Formatting / lint | PASS | `pnpm check` | ESLint and Prettier checks passed |
-| Typecheck | PASS | `pnpm check` | Toolbar, portal, vanilla and React fixtures passed |
+| Typecheck | PASS | `pnpm check` | SDK, portal, vanilla and React fixtures passed |
 | Unit / integration tests | PASS | `pnpm check` | 72 Node tests passed, 0 failed |
 | Browser / accessibility | PASS | `pnpm check` | 15 Chromium tests passed; axe passed for Task Center across ten theme/scheme selections |
-| Build / consumer fixture | PASS | `pnpm check` | Toolbar and portal builds and consumer fixture typechecks passed |
-| Frozen install / package contents | PASS | `pnpm install --frozen-lockfile`; `pnpm --filter @moorkyz/toolbar pack --dry-run` | Frozen install up to date; package includes `tasks.js`/declarations and CSS |
+| Build / consumer fixture | PASS | `pnpm check` | SDK and portal builds and consumer fixture typechecks passed |
+| Frozen install / package contents | PASS | `pnpm install --frozen-lockfile`; `pnpm --filter @tools.moorkyz.com/sdk pack --dry-run` | Frozen install up to date; package includes `tasks.js`/declarations and CSS |
 | Specification hashes | PASS | PowerShell SHA-256 verification of all `MANIFEST.json` entries | 16 of 16 hashes matched |
 | Security / dependency review | NOT RUN | No dependency manifests or lockfile changed | Manual data-boundary review only; no independent security or advisory audit claimed |
 | Performance | N/A | No benchmark run | Snapshot size is bounded at 100; no polling, subscription, timer, or network work added |

@@ -27,10 +27,10 @@
 | `docs/audits/2026-10-16T22-37-04Z-m6-host-authorized-federated-search-coordinator.md` | Added this evidence-backed audit | Low |
 | `docs/contracts/sdk-and-schema.md` | Documented gating, authorization, bounds, output, and cancellation contract | Low |
 | `docs/engineering/implementation-status.md` | Recorded the M6 search and Task Center progress | Low |
-| `packages/toolbar/README.md` | Added host-owned provider usage and no-network documentation | Low |
-| `packages/toolbar/src/index.ts` | Exported the federated search draft API | Low |
-| `packages/toolbar/src/search.ts` | Added provider gating, authorization, result normalization, cancellation, and diagnostics | Medium |
-| `packages/toolbar/test/search.test.js` | Added focused policy, data-validation, partial-failure, and cancellation tests | Low |
+| `packages/sdk/README.md` | Added host-owned provider usage and no-network documentation | Low |
+| `packages/sdk/src/index.ts` | Exported the federated search draft API | Low |
+| `packages/sdk/src/search.ts` | Added provider gating, authorization, result normalization, cancellation, and diagnostics | Medium |
+| `packages/sdk/test/search.test.js` | Added focused policy, data-validation, partial-failure, and cancellation tests | Low |
 | `tests/browser/server.mjs` | Allowed the local search module for browser package-root imports | Low |
 
 ## 3. Verification evidence
@@ -38,11 +38,11 @@
 | Check | Result | Exact command / method | Evidence / notes |
 |---|---|---|---|
 | Formatting / lint | PASS | `pnpm check` | ESLint and Prettier checks passed |
-| Typecheck | PASS | `pnpm check` | Toolbar, portal, vanilla and React fixtures passed |
+| Typecheck | PASS | `pnpm check` | SDK, portal, vanilla and React fixtures passed |
 | Unit / integration tests | PASS | `pnpm check` | 79 Node tests passed, 0 failed |
 | Browser / accessibility | PASS | `pnpm check` | 15 Chromium tests passed; the search coordinator is headless and adds no search UI |
-| Build / consumer fixture | PASS | `pnpm check` | Toolbar and portal builds and consumer fixture typechecks passed |
-| Frozen install / package contents | PASS | `pnpm install --frozen-lockfile`; `pnpm --filter @moorkyz/toolbar pack --dry-run` | No dependency changes; package includes `search.js` and declarations |
+| Build / consumer fixture | PASS | `pnpm check` | SDK and portal builds and consumer fixture typechecks passed |
+| Frozen install / package contents | PASS | `pnpm install --frozen-lockfile`; `pnpm --filter @tools.moorkyz.com/sdk pack --dry-run` | No dependency changes; package includes `search.js` and declarations |
 | Specification hashes | PASS | PowerShell SHA-256 verification of all `MANIFEST.json` entries | 16 of 16 hashes matched |
 | Security / dependency review | NOT RUN | No dependency manifests or lockfile changed | Manual host-boundary review only; no independent security or advisory audit claimed |
 | Performance | N/A | No benchmark run | No provider work until an explicit enabled query; provider count and returned records are bounded |

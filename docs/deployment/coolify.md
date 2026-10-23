@@ -7,29 +7,32 @@ response. A push to `master` triggers Coolify only after those checks succeed.
 
 ## Coolify application settings
 
-Create one application from the `Moorky/moorkyz-toolbar` GitHub repository:
+Create one application from the `Moorky/tools.moorkyz.com` GitHub repository:
 
-| Setting                        | Value                         |
-| ------------------------------ | ----------------------------- |
-| Branch                         | `master`                      |
-| Build pack                     | Dockerfile                    |
-| Base directory / build context | Repository root (`/`)         |
-| Dockerfile location            | `/Dockerfile`                 |
-| Exposed port                   | `3000`                        |
-| Domain                         | `https://toolbar.moorkyz.com` |
-| Auto deploy                    | Manual deployments only       |
+| Setting                        | Value                       |
+| ------------------------------ | --------------------------- |
+| Branch                         | `master`                    |
+| Build pack                     | Dockerfile                  |
+| Base directory / build context | Repository root (`/`)       |
+| Dockerfile location            | `/Dockerfile`               |
+| Exposed port                   | `3000`                      |
+| Domain                         | `https://tools.moorkyz.com` |
+| Auto deploy                    | Manual deployments only     |
 
-The Cloudflare DNS record is an A record: `toolbar` → `2.31.44.54`.
+The target Cloudflare DNS record is an A record: `tools` → `2.31.44.54`.
+Renaming local files does not change DNS, Coolify, or the GitHub repository.
+Rename the GitHub repository to `Moorky/tools.moorkyz.com` and update the local
+Git remote and Coolify source settings separately before deploying this identity.
 
 The container binds to `0.0.0.0:3000` and has a built-in HTTP health check.
 Coolify provisions TLS for the configured domain after the first successful
 deployment. No runtime environment variables or persistent volumes are
 required for the current portal.
 
-The portal is now the modular tools catalog; the former toolbar SDK and Studio
-are removed. The repository and existing domain identifiers above are unchanged.
-Do not set `MOORKYZ_VIDEOCRUNCH_ENABLED` or
-`MOORKYZ_DIRECTORY_CLEANER_ENABLED` on a hosted deployment. Both filesystem/media
+The portal is now the modular tools catalog; the former SDK and Studio
+are removed. The repository and domain identifiers above use tools.moorkyz.com.
+Do not set `TOOLS_MOORKYZ_COM_VIDEOCRUNCH_ENABLED` or
+`TOOLS_MOORKYZ_COM_DIRECTORY_CLEANER_ENABLED` on a hosted deployment. Both filesystem/media
 services are explicitly localhost-only and independently started by the user.
 The container serves metadata, the small builder and allowlisted source downloads,
 not hosted cleanup or video workers. VideoCrunch's distribution-license decision
@@ -57,7 +60,7 @@ secret in repository files or Docker build arguments.
 After creating the Coolify application and adding both GitHub secrets, push a
 commit to `master`. CI builds and runs the production image first; only a
 passing image smoke test calls the deploy webhook. Confirm the new deployment
-is healthy in Coolify and that `https://toolbar.moorkyz.com` returns HTTP 200.
+is healthy in Coolify and that `https://tools.moorkyz.com` returns HTTP 200.
 
 If a deployment fails, use Coolify's deployment history to roll back to the
 last healthy image. Revert a source change and push to `master` to rebuild and

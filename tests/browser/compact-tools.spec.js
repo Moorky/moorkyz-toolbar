@@ -68,8 +68,8 @@ test("compact Toolbar Builder previews, copies and downloads independent small H
   expect(download.suggestedFilename()).toBe("toolbar.html");
   const html = await readFile(await download.path(), "utf8");
   expect(Buffer.byteLength(html)).toBeLessThan(3072);
-  expect(html).not.toMatch(/@moorkyz|<script|<iframe/);
-  const folder = await mkdtemp(path.join(tmpdir(), "moorkyz-toolbar-html-"));
+  expect(html).not.toMatch(/@tools\.moorkyz\.com|<script|<iframe/);
+  const folder = await mkdtemp(path.join(tmpdir(), "tools.moorkyz.com-html-"));
   const popup = await page.context().newPage();
   try {
     const file = path.join(folder, "toolbar.html");

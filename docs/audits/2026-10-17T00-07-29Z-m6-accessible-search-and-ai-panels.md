@@ -27,10 +27,10 @@
 | `docs/audits/2026-10-17T00-07-29Z-m6-accessible-search-and-ai-panels.md` | Added this evidence-backed audit | Low |
 | `docs/contracts/sdk-and-schema.md` | Updated the search contract with the integrated panel and cleanup behavior | Low |
 | `docs/engineering/implementation-status.md` | Updated M6 progress and test evidence | Low |
-| `packages/toolbar/README.md` | Documented integrated panel behavior | Low |
-| `packages/toolbar/src/toolbar.css` | Added responsive, themed, keyboard-focusable search and AI panel styles | Medium |
-| `packages/toolbar/src/toolbar.ts` | Added local search, optional federation, AI prompt flow, host callbacks, cancellation, panel mutual exclusion, and cleanup | Medium |
-| `packages/toolbar/test/toolbar.test.js` | Covered local/provider result selection, cancellation, explicit AI submission, safe output, and abort-on-close | Low |
+| `packages/sdk/README.md` | Documented integrated panel behavior | Low |
+| `packages/sdk/src/toolbar.css` | Added responsive, themed, keyboard-focusable search and AI panel styles | Medium |
+| `packages/sdk/src/toolbar.ts` | Added local search, optional federation, AI prompt flow, host callbacks, cancellation, panel mutual exclusion, and cleanup | Medium |
+| `packages/sdk/test/toolbar.test.js` | Covered local/provider result selection, cancellation, explicit AI submission, safe output, and abort-on-close | Low |
 | `tests/browser/toolbar.spec.js` | Updated the Light DOM action locator and added keyboard/axe search and AI coverage | Low |
 | `tests/browser/fixtures/fixture.js` | Added a host-provided AI fixture | Low |
 | `tests/browser/fixtures/index.html` | Added an AI test mount target | Low |
@@ -42,11 +42,11 @@ An unrelated staged CLI/browser-startup merge and a modified portal `site.webman
 | Check | Result | Exact command / method | Evidence / notes |
 |---|---|---|---|
 | Formatting / lint | PASS | `pnpm check` | ESLint and Prettier checks passed |
-| Typecheck | PASS | `pnpm check` | Toolbar, portal, vanilla, and React fixtures passed |
+| Typecheck | PASS | `pnpm check` | SDK, portal, vanilla, and React fixtures passed |
 | Unit / integration tests | PASS | `pnpm check` | 114 Node tests passed, 0 failed |
 | Browser / accessibility | PASS | `pnpm check` | 20 Chromium tests passed; axe passed with Search and AI panels open |
-| Build / consumer fixture | PASS | `pnpm check` | Toolbar and portal builds and consumer fixture typechecks passed |
-| Frozen install / package contents | PASS | `pnpm install --frozen-lockfile`; `pnpm --filter @moorkyz/toolbar pack --dry-run` | No dependency changes; package contains search/AI panel code |
+| Build / consumer fixture | PASS | `pnpm check` | SDK and portal builds and consumer fixture typechecks passed |
+| Frozen install / package contents | PASS | `pnpm install --frozen-lockfile`; `pnpm --filter @tools.moorkyz.com/sdk pack --dry-run` | No dependency changes; package contains search/AI panel code |
 | Specification hashes | PASS | PowerShell SHA-256 verification of all `MANIFEST.json` entries | 16 of 16 hashes matched |
 | Security / dependency review | NOT RUN | No dependency changes | Manual result-safety and host-authority review only; no independent audit claimed |
 | Performance | N/A | No benchmark run | Search runs on explicit submit; results capped at 50; prompts/results are not persisted |

@@ -27,17 +27,17 @@
 | `docs/contracts/sdk-and-schema.md` | Recorded M5 draft API, persistence and limitations | Low |
 | `docs/engineering/implementation-status.md` | Recorded M5 evidence and remaining later-milestone work | Low |
 | `docs/audits/2026-10-16T22-15-22Z-m5-themes-customization-and-preferences.md` | Added this evidence-backed audit | Low |
-| `packages/toolbar/README.md` | Documented explicit host storage setup and customization behavior | Low |
-| `packages/toolbar/src/configuration.ts` | Added validated theme and color-scheme configuration | Medium |
-| `packages/toolbar/src/index.ts` | Exported theme and preference APIs | Low |
-| `packages/toolbar/src/preferences.ts` | Added namespaced v1 preference store, v0 migration, browser adapter, validation and diagnostics | Medium |
-| `packages/toolbar/src/themes.ts` | Added built-in token catalog, contrast calculation and token validation | Low |
-| `packages/toolbar/src/toolbar.css` | Added palettes, forced-colors styling and edit controls | Medium |
-| `packages/toolbar/src/toolbar.ts` | Integrated preference load/save, customization UI, action reordering, disabled-path behavior and error reporting | Medium |
-| `packages/toolbar/test/configuration.test.js` | Covered theme configuration validation | Low |
-| `packages/toolbar/test/preferences.test.js` | Covered persistence, migration, error and deferred-storage paths | Low |
-| `packages/toolbar/test/themes.test.js` | Covered built-in tokens and contrast validation | Low |
-| `packages/toolbar/test/toolbar.test.js` | Covered controller persistence, edit mode and disabled customization | Low |
+| `packages/sdk/README.md` | Documented explicit host storage setup and customization behavior | Low |
+| `packages/sdk/src/configuration.ts` | Added validated theme and color-scheme configuration | Medium |
+| `packages/sdk/src/index.ts` | Exported theme and preference APIs | Low |
+| `packages/sdk/src/preferences.ts` | Added namespaced v1 preference store, v0 migration, browser adapter, validation and diagnostics | Medium |
+| `packages/sdk/src/themes.ts` | Added built-in token catalog, contrast calculation and token validation | Low |
+| `packages/sdk/src/toolbar.css` | Added palettes, forced-colors styling and edit controls | Medium |
+| `packages/sdk/src/toolbar.ts` | Integrated preference load/save, customization UI, action reordering, disabled-path behavior and error reporting | Medium |
+| `packages/sdk/test/configuration.test.js` | Covered theme configuration validation | Low |
+| `packages/sdk/test/preferences.test.js` | Covered persistence, migration, error and deferred-storage paths | Low |
+| `packages/sdk/test/themes.test.js` | Covered built-in tokens and contrast validation | Low |
+| `packages/sdk/test/toolbar.test.js` | Covered controller persistence, edit mode and disabled customization | Low |
 | `packages/portal/src/components/portal-shell.tsx` | Wired the portal dock to explicit local preference storage and local diagnostics | Low |
 | `tests/browser/server.mjs` | Allowed local loading of new preference/theme package modules | Low |
 | `tests/browser/portal.spec.js` | Verified portal toolbar theme preferences survive reload | Low |
@@ -48,11 +48,11 @@
 | Check | Result | Exact command / method | Evidence / notes |
 |---|---|---|---|
 | Formatting / lint | PASS | `pnpm check` | ESLint and Prettier check both passed |
-| Typecheck | PASS | `pnpm check` | Toolbar, vanilla fixture, React fixture, and portal typechecks passed |
+| Typecheck | PASS | `pnpm check` | SDK, vanilla fixture, React fixture, and portal typechecks passed |
 | Unit / integration tests | PASS | `pnpm check` | 67 Node tests passed, 0 failed |
 | Browser / accessibility | PASS | `pnpm check` | 14 Chromium tests passed; axe reported no violations for built-in themes, customization mode, Light DOM, and portal; the portal preference integration survives reload |
-| Build / consumer fixture | PASS | `pnpm check` | Toolbar and portal production builds and both consumer fixture typechecks passed |
-| Frozen install / package contents | PASS | `pnpm install --frozen-lockfile`; `pnpm --filter @moorkyz/toolbar pack --dry-run` | Lockfile install up to date; package contents include preference/theme modules and local CSS |
+| Build / consumer fixture | PASS | `pnpm check` | SDK and portal production builds and both consumer fixture typechecks passed |
+| Frozen install / package contents | PASS | `pnpm install --frozen-lockfile`; `pnpm --filter @tools.moorkyz.com/sdk pack --dry-run` | Lockfile install up to date; package contents include preference/theme modules and local CSS |
 | Security / dependency review | NOT RUN | Not applicable to a dependency-change gate; no dependency manifests or lockfile changed | No formal dependency advisory scan or independent security review is claimed; these remain M10 gates |
 | Performance | N/A | No benchmark command run | This slice adds no background work; edit controls render only when activated |
 | Specification hashes | PASS | PowerShell SHA-256 verification of all `MANIFEST.json` entries | 16 of 16 hashes matched |

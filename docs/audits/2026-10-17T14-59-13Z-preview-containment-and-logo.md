@@ -46,7 +46,7 @@ migration was made.
 ### Supplied logo and visible size
 
 Copied the supplied read-only PNG unchanged to
-`packages/portal/public/moorkyz-toolbar-logo.png`. Its SHA-256 is
+`packages/portal/public/tools.moorkyz.com-logo.png`. Its SHA-256 is
 `a1124b2c62a4ecde77df8006b37c3a5730500966c6d664141c7b925f67396356`;
 intrinsic size is 512x512px. The attachment itself was not modified.
 
@@ -72,7 +72,7 @@ No favicon/footer brand or other-project logo was changed.
 
 Preserved unrelated launcher/config edits, the pre-existing generated
 `next-env.d.ts` development imports, and the separate user-owned untracked
-`public/moorkyz-toolbar.png` (same image bytes). Those paths are excluded.
+`public/tools.moorkyz.com.png` (same image bytes). Those paths are excluded.
 The user edited the header dimensions during the task; the final dimensions
 implement the later explicit request to enlarge the visible supplied mark.
 
@@ -86,8 +86,8 @@ Push-Location packages\portal
 node scripts\run-next.mjs build
 node scripts\prepare-standalone.mjs
 Pop-Location
-$env:MOORKYZ_TOOLBAR_FIXTURE_PORT='47973'
-$env:MOORKYZ_TOOLBAR_PORTAL_PORT='47974'
+$env:TOOLS_MOORKYZ_COM_FIXTURE_PORT='47973'
+$env:TOOLS_MOORKYZ_COM_PORTAL_PORT='47974'
 $env:CI='1'
 pnpm exec playwright test --workers=3
 ```
@@ -100,7 +100,7 @@ pnpm exec playwright test --workers=3
 | Node regression suite | PASS | `node --test` | 203 passed, zero failures/skips |
 | Lint | PASS | `pnpm lint`; `pnpm exec eslint packages\portal\next.config.ts` | Existing repository gate plus changed config |
 | Format | PASS | `pnpm format:check`; targeted Prettier writes | No rules weakened |
-| Portal typing | PASS | `pnpm --filter @moorkyz/portal typecheck` | Also passed after restoring original generated development imports |
+| Portal typing | PASS | `pnpm --filter @tools.moorkyz.com/portal typecheck` | Also passed after restoring original generated development imports |
 | Actual development page | PASS | Headless local Chromium at `http://localhost:3001` with hydration awaited | No visible Dev Tools button; page customization/Done work; preview contained in short window |
 | Supplied artwork | PASS | PNG signature dimensions, SHA-256 and rendered bounds | Exact 512px attachment bytes; final 112x56px rendered frame at desktop and phone widths |
 | Visual inspection | PASS, bounded | Reviewed desktop/320px logo, short development preview and clean footer screenshots | No new artwork or page-dock clipping observed in those renders |

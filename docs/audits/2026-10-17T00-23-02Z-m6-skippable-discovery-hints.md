@@ -27,13 +27,13 @@
 | `docs/audits/2026-10-17T00-23-02Z-m6-skippable-discovery-hints.md` | Added this evidence-backed audit | Low |
 | `docs/contracts/sdk-and-schema.md` | Documented bounded host hints and no-auto-open/no-learning behavior | Low |
 | `docs/engineering/implementation-status.md` | Recorded M6 discovery progress and remaining work | Low |
-| `packages/toolbar/README.md` | Added host snapshot usage and opt-in behavior | Low |
-| `packages/toolbar/src/discovery.ts` | Added bounded plain-data hint validation | Medium |
-| `packages/toolbar/src/index.ts` | Exported the draft hint validator and types | Low |
-| `packages/toolbar/src/toolbar.css` | Added themed Tips panel styles | Low |
-| `packages/toolbar/src/toolbar.ts` | Added gated Tips button/panel and clear-on-disable/dispose behavior | Medium |
-| `packages/toolbar/test/discovery.test.js` | Covered bounds, duplicates, accessors, and immutable snapshots | Low |
-| `packages/toolbar/test/toolbar.test.js` | Covered manual opening, sticky collapse, safe rendering, and disabled no-work | Low |
+| `packages/sdk/README.md` | Added host snapshot usage and opt-in behavior | Low |
+| `packages/sdk/src/discovery.ts` | Added bounded plain-data hint validation | Medium |
+| `packages/sdk/src/index.ts` | Exported the draft hint validator and types | Low |
+| `packages/sdk/src/toolbar.css` | Added themed Tips panel styles | Low |
+| `packages/sdk/src/toolbar.ts` | Added gated Tips button/panel and clear-on-disable/dispose behavior | Medium |
+| `packages/sdk/test/discovery.test.js` | Covered bounds, duplicates, accessors, and immutable snapshots | Low |
+| `packages/sdk/test/toolbar.test.js` | Covered manual opening, sticky collapse, safe rendering, and disabled no-work | Low |
 | `tests/browser/fixtures/fixture.js` | Added a discovery-panel test fixture | Low |
 | `tests/browser/fixtures/index.html` | Added a discovery target | Low |
 | `tests/browser/server.mjs` | Allowed local serving of the discovery module | Low |
@@ -46,11 +46,11 @@ An unrelated `packages/portal/public/site.webmanifest` change was excluded and l
 | Check | Result | Exact command / method | Evidence / notes |
 |---|---|---|---|
 | Formatting / lint | PASS | `pnpm check` | ESLint and Prettier checks passed |
-| Typecheck | PASS | `pnpm check` | Toolbar, portal, vanilla, and React fixtures passed |
+| Typecheck | PASS | `pnpm check` | SDK, portal, vanilla, and React fixtures passed |
 | Unit / integration tests | PASS | `pnpm check` | 120 Node tests passed, 0 failed |
 | Browser / accessibility | PASS | `pnpm check` | 22 Chromium tests passed; axe passed with Tips panel open |
-| Build / consumer fixture | PASS | `pnpm check` | Toolbar and portal builds and consumer fixture typechecks passed |
-| Frozen install / package contents | PASS | `pnpm install --frozen-lockfile`; `pnpm --filter @moorkyz/toolbar pack --dry-run` | No dependencies changed; discovery module is included |
+| Build / consumer fixture | PASS | `pnpm check` | SDK and portal builds and consumer fixture typechecks passed |
+| Frozen install / package contents | PASS | `pnpm install --frozen-lockfile`; `pnpm --filter @tools.moorkyz.com/sdk pack --dry-run` | No dependencies changed; discovery module is included |
 | Specification hashes | PASS | PowerShell SHA-256 verification of all `MANIFEST.json` entries | 16 of 16 hashes matched |
 | Security / dependency review | NOT RUN | No dependency manifest or lockfile changed | Manual text/data-boundary review only; no independent audit claimed |
 | Performance | N/A | No benchmark run | At most 10 hints; no timers, polling, or background computation |

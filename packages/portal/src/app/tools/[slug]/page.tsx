@@ -133,11 +133,16 @@ export default async function ToolPage({ params }: Props) {
             <h2 id="workspace-heading">Workspace</h2>
             {tool.workspace === "directory-cleaner" ? (
               <DirectoryCleaner
-                enabled={process.env.MOORKYZ_DIRECTORY_CLEANER_ENABLED === "1"}
+                enabled={
+                  process.env.TOOLS_MOORKYZ_COM_DIRECTORY_CLEANER_ENABLED ===
+                  "1"
+                }
               />
             ) : (
               <LocalToolWorkspace
-                enabled={process.env.MOORKYZ_VIDEOCRUNCH_ENABLED === "1"}
+                enabled={
+                  process.env.TOOLS_MOORKYZ_COM_VIDEOCRUNCH_ENABLED === "1"
+                }
               />
             )}
           </section>

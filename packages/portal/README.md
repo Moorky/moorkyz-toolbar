@@ -1,7 +1,7 @@
-# Moorkyz Tools portal
+# tools.moorkyz.com portal
 
 The private Next.js portal is the shared catalog and tool host. It has no
-toolbar SDK dependency. Native header/navigation, theme and local search remain
+SDK dependency. Native header/navigation, theme and local search remain
 independent of the individual tools.
 
 - `/`: cards generated from `src/data/tools.ts`.

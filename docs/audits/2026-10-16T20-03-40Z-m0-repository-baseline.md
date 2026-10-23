@@ -38,7 +38,7 @@ Use `PASS`, `FAIL`, `NOT RUN` (with reason), or `N/A`. Record exact commands and
 |---|---|---|---|
 | Formatting / lint | N/A | N/A | Documentation-only milestone; no formatter/linter configured. |
 | Typecheck | N/A | N/A | No application/package source existed at baseline. |
-| Unit / integration tests | PASS | `node --test tests/tooling/moorkyz-cli.test.cjs` | 3 tests passed, 0 failed. |
+| Unit / integration tests | PASS | `node --test tests/tooling/tools.moorkyz.com-cli.test.cjs` | 3 tests passed, 0 failed. |
 | Browser / accessibility | N/A | N/A | No UI/runtime existed at baseline. |
 | Build / consumer fixture | N/A | N/A | No package/build existed at baseline. |
 | Security / dependency review | PASS | Inspected dependency/package inventory and `docs/architecture/security-and-trust.md` | No application dependencies or runtime present; release security review remains future M10 work. |

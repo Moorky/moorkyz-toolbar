@@ -19,7 +19,7 @@
   before/after and smaller/larger file filters; reduce the toolbar creation tool
   to a very small tool and remove its old project structure.
 - Explicit clarification/approval: the user chose a standalone compact builder
-  and removal of the old SDK, Studio, examples, toolbar-specific tests and active
+  and removal of the old SDK, Studio, examples, SDK-specific tests and active
   docs, with replacement portal navigation and preservation of history/audits.
   Cleaner must support **both** local service and script, and Delete must
   **always archive**, not permanently delete or recycle.

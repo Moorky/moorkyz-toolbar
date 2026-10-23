@@ -27,10 +27,10 @@
 | `docs/audits/2026-10-16T23-39-18Z-m6-accessible-integrated-search-panel.md` | Added this evidence-backed audit | Low |
 | `docs/contracts/sdk-and-schema.md` | Updated the search contract with the integrated panel and cleanup behavior | Low |
 | `docs/engineering/implementation-status.md` | Recorded M6 search UI progress and remaining work | Low |
-| `packages/toolbar/README.md` | Documented local action search and optional provider/result callbacks | Low |
-| `packages/toolbar/src/toolbar.css` | Added responsive, themed, keyboard-focusable search panel styles | Medium |
-| `packages/toolbar/src/toolbar.ts` | Added the search control/panel, local matching, optional federation, selection, stale-result cancellation, and clear-on-disable behavior | Medium |
-| `packages/toolbar/test/toolbar.test.js` | Covered local/provider results, host-only selection, cancellation, and feature disable | Low |
+| `packages/sdk/README.md` | Documented local action search and optional provider/result callbacks | Low |
+| `packages/sdk/src/toolbar.css` | Added responsive, themed, keyboard-focusable search panel styles | Medium |
+| `packages/sdk/src/toolbar.ts` | Added the search control/panel, local matching, optional federation, selection, stale-result cancellation, and clear-on-disable behavior | Medium |
+| `packages/sdk/test/toolbar.test.js` | Covered local/provider results, host-only selection, cancellation, and feature disable | Low |
 | `tests/browser/toolbar.spec.js` | Updated the Light DOM action locator and added keyboard/axe search coverage | Low |
 
 The worktree also contained unrelated staged maintainer-CLI files and a modified `packages/portal/public/site.webmanifest`; these were excluded from this task commit and left untouched.
@@ -40,11 +40,11 @@ The worktree also contained unrelated staged maintainer-CLI files and a modified
 | Check | Result | Exact command / method | Evidence / notes |
 |---|---|---|---|
 | Formatting / lint | PASS | `pnpm check` | ESLint and Prettier checks passed |
-| Typecheck | PASS | `pnpm check` | Toolbar, portal, vanilla, and React fixtures passed |
+| Typecheck | PASS | `pnpm check` | SDK, portal, vanilla, and React fixtures passed |
 | Unit / integration tests | PASS | `pnpm check` | 112 Node tests passed, 0 failed |
 | Browser / accessibility | PASS | `pnpm check` | 19 Chromium tests passed; axe passed with search panel open |
-| Build / consumer fixture | PASS | `pnpm check` | Toolbar and portal builds and consumer fixture typechecks passed |
-| Frozen install / package contents | PASS | `pnpm install --frozen-lockfile`; `pnpm --filter @moorkyz/toolbar pack --dry-run` | No dependency changes; package contains root search coordinator and panel assets |
+| Build / consumer fixture | PASS | `pnpm check` | SDK and portal builds and consumer fixture typechecks passed |
+| Frozen install / package contents | PASS | `pnpm install --frozen-lockfile`; `pnpm --filter @tools.moorkyz.com/sdk pack --dry-run` | No dependency changes; package contains root search coordinator and panel assets |
 | Specification hashes | PASS | PowerShell SHA-256 verification of all `MANIFEST.json` entries | 16 of 16 hashes matched |
 | Security / dependency review | NOT RUN | No dependency manifest or lockfile changed | Manual result-safety and host-authority review only; no independent audit claimed |
 | Performance | N/A | No benchmark run | Search only runs on explicit submit; local results capped at 50; provider cancellation uses `AbortSignal` |

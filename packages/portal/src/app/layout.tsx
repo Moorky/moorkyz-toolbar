@@ -5,10 +5,10 @@ import "./globals.css";
 import "./tools.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://toolbar.moorkyz.com"),
+  metadataBase: new URL("https://tools.moorkyz.com"),
   title: {
-    default: "Moorkyz Tools",
-    template: "%s — Moorkyz Tools",
+    default: "tools.moorkyz.com",
+    template: "%s — tools.moorkyz.com",
   },
   description:
     "Independent tools for building interfaces and working with video. Local-first workspaces, clear guides and useful source files.",
@@ -31,25 +31,25 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    url: "https://toolbar.moorkyz.com/",
-    siteName: "Moorkyz Tools",
-    title: "Moorkyz Tools — A little more useful.",
+    url: "https://tools.moorkyz.com/",
+    siteName: "tools.moorkyz.com",
+    title: "tools.moorkyz.com — A little more useful.",
     description:
       "Explore independent tools for interfaces and video, with local workspaces and clear setup guides.",
     images: [
       {
-        url: "/moorkyz-mark.png",
+        url: "/tools.moorkyz.com-mark.png",
         width: 512,
         height: 512,
-        alt: "Moorkyz",
+        alt: "tools.moorkyz.com",
       },
     ],
   },
   twitter: {
     card: "summary",
-    title: "Moorkyz Tools — A little more useful.",
+    title: "tools.moorkyz.com — A little more useful.",
     description: "Local-first tools for interfaces and video.",
-    images: ["/moorkyz-mark.png"],
+    images: ["/tools.moorkyz.com-mark.png"],
   },
   robots: {
     index: true,

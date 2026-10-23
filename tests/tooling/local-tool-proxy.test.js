@@ -4,9 +4,9 @@ import { proxyLocalTool } from "../../packages/portal/src/server/local-tool-prox
 
 test("Directory Cleaner gateway is independently off, fixed-loopback, bounded and token-specific", async (t) => {
   const keys = [
-    "MOORKYZ_DIRECTORY_CLEANER_ENABLED",
-    "MOORKYZ_DIRECTORY_CLEANER_PORT",
-    "MOORKYZ_VIDEOCRUNCH_ENABLED",
+    "TOOLS_MOORKYZ_COM_DIRECTORY_CLEANER_ENABLED",
+    "TOOLS_MOORKYZ_COM_DIRECTORY_CLEANER_PORT",
+    "TOOLS_MOORKYZ_COM_VIDEOCRUNCH_ENABLED",
   ];
   const saved = keys.map((key) => process.env[key]);
   t.after(() =>
@@ -16,9 +16,9 @@ test("Directory Cleaner gateway is independently off, fixed-loopback, bounded an
         : (process.env[key] = saved[index]),
     ),
   );
-  delete process.env.MOORKYZ_DIRECTORY_CLEANER_ENABLED;
-  delete process.env.MOORKYZ_DIRECTORY_CLEANER_PORT;
-  process.env.MOORKYZ_VIDEOCRUNCH_ENABLED = "1";
+  delete process.env.TOOLS_MOORKYZ_COM_DIRECTORY_CLEANER_ENABLED;
+  delete process.env.TOOLS_MOORKYZ_COM_DIRECTORY_CLEANER_PORT;
+  process.env.TOOLS_MOORKYZ_COM_VIDEOCRUNCH_ENABLED = "1";
   const calls = [];
   t.mock.method(globalThis, "fetch", async (url, options) => {
     calls.push({ url: url.href, options });
@@ -49,7 +49,7 @@ test("Directory Cleaner gateway is independently off, fixed-loopback, bounded an
     503,
   );
   assert.equal(calls.length, 0);
-  process.env.MOORKYZ_DIRECTORY_CLEANER_ENABLED = "1";
+  process.env.TOOLS_MOORKYZ_COM_DIRECTORY_CLEANER_ENABLED = "1";
   assert.equal(
     (
       await proxyLocalTool(

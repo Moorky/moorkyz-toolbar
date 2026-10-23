@@ -54,17 +54,17 @@ certification and release execution.
 
 | Path / area | Change | Risk |
 |---|---|---|
-| Toolbar recovery, Inspector, gesture-profile subpaths | Off-by-default explicit optional capabilities | Medium: host idempotency/consent remains essential |
-| Toolbar extensions/experimental/Vue/Angular subpaths | Scoped trust/lifecycle boundaries and optional peers | Medium: trusted JS is not sandboxed |
-| Toolbar generator and `cli/` | Shared schema, versioned files, strict filesystem safety and reviewable upgrade plans | Medium: trusted nonconcurrent destination and backups remain required |
-| Toolbar configuration/theme/controller | Symbol rejection, portable theme validation, host nonce styles, mounted lifecycle, bounded composition/focus | Medium: public drafts, CSP and native browser differences |
+| SDK recovery, Inspector, gesture-profile subpaths | Off-by-default explicit optional capabilities | Medium: host idempotency/consent remains essential |
+| SDK extensions/experimental/Vue/Angular subpaths | Scoped trust/lifecycle boundaries and optional peers | Medium: trusted JS is not sandboxed |
+| SDK generator and `cli/` | Shared schema, versioned files, strict filesystem safety and reviewable upgrade plans | Medium: trusted nonconcurrent destination and backups remain required |
+| SDK configuration/theme/controller | Symbol rejection, portable theme validation, host nonce styles, mounted lifecycle, bounded composition/focus | Medium: public drafts, CSP and native browser differences |
 | Portal components/styles | Real-package tools, no arbitrary code, local-only exports, hydration safety, native control contrast | Medium: manual usability/AT remains outstanding |
 | Root scripts/Playwright/CI/Docker manifest copies | Coverage/source/bundle gates, three engines, JSON results, all fixture manifests in build context | Low–medium: remote Linux/container gates not locally executed |
 | Documentation/specification manifest | Current dossier, API/CLI contracts, package docs and accurate limitations; 16 original hashes verified | Low |
 
 Concurrent unrelated changes appeared during the task in the maintainer
-launchers/configuration (`moorkyz`, `moorkyz.cjs`, `moorkyz.cmd`,
-`moorkyz.config.json`). They were inspected only to establish exclusion, never
+launchers/configuration (`tools.moorkyz.com`, `tools.moorkyz.com.cjs`, `tools.moorkyz.com.cmd`,
+`tools.moorkyz.com.config.json`). They were inspected only to establish exclusion, never
 reverted, edited or included in this task's staging. No unrelated user data is
 part of the task commit or package evidence.
 
@@ -84,8 +84,8 @@ part of the task commit or package evidence.
 | Dependency advisories | PASS at execution | `pnpm audit --json` | Zero reported advisories, 220 resolved dependencies; no bypass |
 | License inventory | PASS inventory, release review OPEN | `pnpm licenses list --json` | New Vue/Angular/esbuild MIT; RxJS Apache-2.0. Existing native Sharp Apache/LGPL, MPL and CC-BY distribution obligations still require exact artifact/image review |
 | Bounded local source scan | PASS, limited | `node scripts/verify-source.mjs` | No selected credential-pattern or library eval/HTML-assignment findings; not comprehensive secret scanning or independent security review |
-| Package boundaries | PASS | `node --test packages\toolbar\test\package-surface.test.js` | Types/ESM/assets/license/bin present; optional peers; AST-based actual imports reject Node entry leakage, not harmless generated source strings |
-| Package dry run | PASS | `pnpm --filter @moorkyz/toolbar exec npm pack --dry-run --json` | 0.1.0 package, 78,520 packed bytes / 392,229 unpacked bytes at inspection; CLI, README and `dist/LICENSE` present |
+| Package boundaries | PASS | `node --test packages\sdk\test\package-surface.test.js` | Types/ESM/assets/license/bin present; optional peers; AST-based actual imports reject Node entry leakage, not harmless generated source strings |
+| Package dry run | PASS | `pnpm --filter @tools.moorkyz.com/sdk exec npm pack --dry-run --json` | 0.1.0 package, 78,520 packed bytes / 392,229 unpacked bytes at inspection; CLI, README and `dist/LICENSE` present |
 | Bundle isolation / baseline | PASS baseline, budget OPEN | `node scripts/measure-bundles.mjs` | Browser builds have no contributing framework/portal/CLI imports; validator 2,560 B gzip, dock 17,955 B, search 1,634 B, AI 798 B, Inspector 385 B, generator 6,130 B |
 | Mounted timing baseline | PASS observation, budget OPEN | 100-cycle Playwright mount/update/dispose fixture | Chromium median/p95 0.6/1.2 ms; Firefox 2/4 ms; WebKit 2/4 ms, shared-machine observations only |
 | Restrictive policy | PASS | Existing strict CSP plus `/trusted-types` fixture, portal custom-token workflow | No eval/unsafe HTML sinks or policy weakening; Firefox's browser-owned favicon denial is explicitly classified, not confused with script/style failures |

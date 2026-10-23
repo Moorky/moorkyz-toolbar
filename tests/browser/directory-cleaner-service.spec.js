@@ -7,7 +7,7 @@ test("real Directory Cleaner preview, Keep priority, move and archive preserve f
   page,
 }) => {
   const root = await fs.mkdtemp(
-    path.join(os.tmpdir(), "moorkyz-cleaner-browser-"),
+    path.join(os.tmpdir(), "tools.moorkyz.com-cleaner-browser-"),
   );
   try {
     const source = path.join(root, "source"),
@@ -85,7 +85,9 @@ test("real Directory Cleaner preview, Keep priority, move and archive preserve f
       workspace.getByRole("button", { name: "Connect local service" }),
     ).toBeVisible();
   } finally {
-    expect(path.basename(root)).toMatch(/^moorkyz-cleaner-browser-/);
+    expect(path.basename(root)).toMatch(
+      /^tools\.moorkyz\.com-cleaner-browser-/,
+    );
     await fs.rm(root, { recursive: true, force: true });
   }
 });
@@ -94,7 +96,7 @@ test("stale real preview fails closed and changing settings invalidates confirma
   page,
 }) => {
   const root = await fs.mkdtemp(
-    path.join(os.tmpdir(), "moorkyz-cleaner-browser-"),
+    path.join(os.tmpdir(), "tools.moorkyz.com-cleaner-browser-"),
   );
   try {
     await fs.writeFile(path.join(root, "a.tmp"), "original");

@@ -21,7 +21,7 @@ function configuredPort(name, fallback) {
 }
 
 const portalPort = configuredPort(
-  "MOORKYZ_TOOLS_PORTAL_PORT",
+  "TOOLS_MOORKYZ_COM_PORTAL_PORT",
   process.env.PORTAL_TEST_PORT ?? "4174",
 );
 

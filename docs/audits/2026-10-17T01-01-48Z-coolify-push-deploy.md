@@ -4,7 +4,7 @@
 | ------------------------ | ------------------------------------------------------------------------------------------------------- |
 | Audit ID                 | `2026-10-17T01-01-48Z-coolify-push-deploy`                                                              |
 | Created (UTC)            | 2026-10-17 01:01 UTC                                                                                    |
-| Task / issue             | Prepare `toolbar.moorkyz.com` for validated push-to-deploy on Coolify                                   |
+| Task / issue             | Prepare `tools.moorkyz.com` for validated push-to-deploy on Coolify                                   |
 | Auditor                  | Codex self-audit; local PowerShell, pnpm, Next.js, and Playwright                                       |
 | Branch / baseline commit | `master` / `760bffe51183b444a721b7e866607489999435c6`                                                   |
 | Final commit             | `PENDING`                                                                                               |
@@ -13,7 +13,7 @@
 
 ## 1. Request and outcome
 
-- Requested behavior: Prepare the Toolbar repository and server workflow so a valid push deploys to `toolbar.moorkyz.com`.
+- Requested behavior: Prepare the tools.moorkyz.com repository and server workflow so a valid push deploys to `tools.moorkyz.com`.
 - Implemented behavior: The portal builds into a monorepo-aware standalone Next.js output, is packaged in a non-root Node 22 container on port 3000, and receives a CI container build/smoke check. Successful current-head `master` pushes invoke Coolify's authenticated deploy webhook only after repository checks and the image smoke check pass; stale workflow runs are skipped.
 - Acceptance criteria and evidence: `pnpm check` passed (lint, formatting, production build, 86 Node tests, 15 Playwright tests, and workspace typechecks). The standalone server returned HTTP 200 in a local smoke request. Formatting and `git diff --check` passed.
 - Intentional exclusions: The deployment setup task does not publish the npm package or provision/modify a Coolify application. The same merge also includes a separate M8 Theme Studio preview, covered by its own audit. At audit creation time, no remote push had occurred.
@@ -36,7 +36,7 @@
 | Check                        | Result          | Exact command / method                                     | Evidence / notes                                                                                                                                                          |
 | ---------------------------- | --------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Formatting / lint            | PASS            | `$env:CI='true'; $env:PORTAL_TEST_PORT='4175'; pnpm check` | ESLint and `prettier --check` passed. Explicit Prettier checks for the README, Coolify guide, and workflow passed.                                                        |
-| Typecheck                    | PASS            | `pnpm check`; also `pnpm typecheck`                        | Toolbar, consumer fixtures, and portal TypeScript checks passed.                                                                                                          |
+| Typecheck                    | PASS            | `pnpm check`; also `pnpm typecheck`                        | SDK, consumer fixtures, and portal TypeScript checks passed.                                                                                                          |
 | Unit / integration tests     | PASS            | `pnpm check`                                               | 86 Node tests passed.                                                                                                                                                     |
 | Browser / accessibility      | PASS            | `pnpm check`                                               | 15 Playwright tests passed, including portal CSP and axe checks. The configurable port avoided reusing an unrelated Moorkyz AI server on port 4174.                       |
 | Build / consumer fixture     | PASS WITH RISKS | `pnpm check`; standalone server smoke request              | Next production build passed; standalone server returned HTTP 200. A Docker image build could not run locally because Docker Desktop's Linux engine pipe was unavailable. |

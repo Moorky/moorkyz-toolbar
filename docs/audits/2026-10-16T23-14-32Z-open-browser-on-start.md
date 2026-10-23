@@ -4,18 +4,18 @@
 |---|---|
 | Audit ID | `2026-10-16T23-14-32Z-open-browser-on-start` |
 | Created (UTC) | `2026-10-16T23:14:32Z` |
-| Task / issue | Open the configured app URL after `moorkyz start` or `moorkyz restart` |
+| Task / issue | Open the configured app URL after `tools.moorkyz.com start` or `tools.moorkyz.com restart` |
 | Auditor | Self-audit by Copilot SDK agent; no independent reviewer |
 | Branch / baseline commit | `master` / `e1e64b3` |
 | Final commit | Included in the local merge commit; hash reported in task completion |
-| Scope reviewed | `moorkyz.cjs`, `docs/engineering/moorkyz-cli.md` |
+| Scope reviewed | `tools.moorkyz.com.cjs`, `docs/engineering/tools.moorkyz.com-cli.md` |
 | Outcome | PASS WITH RISKS |
 
 ## 1. Request and outcome
 
 - Requested behavior: open the selected local app automatically on `start` and `restart`.
 - Implemented behavior: use the OS default browser launcher after the managed process is confirmed, including when already running; `start all` opens each URL.
-- Acceptance evidence: `node --check moorkyz.cjs`, `node --test tests/tooling/moorkyz-cli.test.cjs` (4/4), `pnpm check` (112 Node tests and 19 Chromium tests), and `git diff --check` passed.
+- Acceptance evidence: `node --check tools.moorkyz.com.cjs`, `node --test tests/tooling/tools.moorkyz.com-cli.test.cjs` (4/4), `pnpm check` (112 Node tests and 19 Chromium tests), and `git diff --check` passed.
 - Intentional exclusions: CI and non-interactive invocations do not launch a browser. No consumer CLI or application code changed.
 - Relevant decisions/contracts: this is maintainer CLI behavior only; no public package API changed.
 
@@ -23,8 +23,8 @@
 
 | Path | Change | Risk |
 |---|---|---|
-| `moorkyz.cjs` | Add OS browser launching and update help | low |
-| `docs/engineering/moorkyz-cli.md` | Document the behavior | low |
+| `tools.moorkyz.com.cjs` | Add OS browser launching and update help | low |
+| `docs/engineering/tools.moorkyz.com-cli.md` | Document the behavior | low |
 
 ## 3. Verification evidence
 
@@ -32,13 +32,13 @@
 |---|---|---|---|
 | Formatting / lint | PASS | `pnpm check` | ESLint and Prettier checks passed |
 | Typecheck | N/A | - | Plain JavaScript helper |
-| Unit / integration tests | PASS | `node --test tests/tooling/moorkyz-cli.test.cjs`; `pnpm check` | 4 focused CLI tests and 112 workspace Node tests passed |
+| Unit / integration tests | PASS | `node --test tests/tooling/tools.moorkyz.com-cli.test.cjs`; `pnpm check` | 4 focused CLI tests and 112 workspace Node tests passed |
 | Browser / accessibility | N/A | No UI change | Browser opening is an external OS action; no real browser was launched in this validation |
 | Build / consumer fixture | PASS | `pnpm check` | Workspace package and consumer fixture checks passed |
 | Security / dependency review | NOT RUN | No dependency changed | Manual diff review only; no independent security or advisory audit claimed |
 | Performance (if relevant) | N/A | - | One detached OS opener per selected project |
 | `git diff --check` | PASS | `git diff --check` | No whitespace errors; line-ending normalization warnings only |
-| JavaScript syntax | PASS | `node --check moorkyz.cjs` | Exited with code 0 |
+| JavaScript syntax | PASS | `node --check tools.moorkyz.com.cjs` | Exited with code 0 |
 
 ## 4. Risk and quality review
 

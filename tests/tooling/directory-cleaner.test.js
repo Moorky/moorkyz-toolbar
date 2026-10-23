@@ -72,9 +72,11 @@ async function fixture(
   t,
   files = { "important.pdf": "keep", "a.tmp": "archive", "photo.jpg": "move" },
 ) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "moorkyz-cleaner-"));
+  const root = await fs.mkdtemp(
+    path.join(os.tmpdir(), "tools.moorkyz.com-cleaner-"),
+  );
   t.after(async () => {
-    assert.ok(path.basename(root).startsWith("moorkyz-cleaner-"));
+    assert.ok(path.basename(root).startsWith("tools.moorkyz.com-cleaner-"));
     await fs.rm(root, { recursive: true, force: true });
   });
   const sourceDir = path.join(root, "source"),

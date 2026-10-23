@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 "use strict";
 
-// Moorkyz project development CLI. Built from Node.js core modules only.
+// tools.moorkyz.com project development CLI. Built from Node.js core modules only.
 // Run from the intended project root; never manipulates other projects' processes.
 const fs = process.getBuiltinModule("node:fs");
 const path = process.getBuiltinModule("node:path");
@@ -10,7 +10,7 @@ const net = process.getBuiltinModule("node:net");
 const { spawn, spawnSync } = process.getBuiltinModule("node:child_process");
 
 const ROOT = process.cwd();
-const STATE = path.join(ROOT, ".moorkyz");
+const STATE = path.join(ROOT, ".tools.moorkyz.com");
 const DEFAULT = "default";
 const DEFAULT_URL = "http://localhost:3000";
 const NAME_RE = /^[a-zA-Z][a-zA-Z0-9_-]{0,50}$/;
@@ -151,11 +151,11 @@ function folderFor(input) {
   return target;
 }
 function cfg() {
-  if (exists(STATE)) folderFor(".moorkyz");
-  const filename = path.join(ROOT, "moorkyz.config.json");
+  if (exists(STATE)) folderFor(".tools.moorkyz.com");
+  const filename = path.join(ROOT, "tools.moorkyz.com.config.json");
   const data = exists(filename) ? readJson(filename) : {};
   if (!data || typeof data !== "object" || Array.isArray(data))
-    die("moorkyz.config.json must contain a JSON object.");
+    die("tools.moorkyz.com.config.json must contain a JSON object.");
   if (
     data.projects != null &&
     (typeof data.projects !== "object" || Array.isArray(data.projects))
@@ -197,14 +197,14 @@ function targetNames(config, raw, allowAll) {
   const name = raw || config.defaultProject;
   if (!name)
     die(
-      'Choose a project name or "all" (or set defaultProject in moorkyz.config.json).',
+      'Choose a project name or "all" (or set defaultProject in tools.moorkyz.com.config.json).',
     );
   if (name === "all") {
     if (!allowAll) die("This command requires a single project name.");
     return Object.keys(config.projects);
   }
   if (!Object.hasOwn(config.projects, name))
-    die(`Unknown project '${name}'. Run 'moorkyz list'.`);
+    die(`Unknown project '${name}'. Run 'tools.moorkyz.com list'.`);
   return [name];
 }
 function statePath(name) {
@@ -231,7 +231,7 @@ function writeJsonAtomic(file, value) {
 }
 async function withProjectLock(name, operation) {
   fs.mkdirSync(STATE, { recursive: true });
-  folderFor(".moorkyz");
+  folderFor(".tools.moorkyz.com");
   const file = path.join(STATE, `${name}.lock.json`);
   const token = crypto.randomBytes(16).toString("hex");
   const deadline = Date.now() + 5000;
@@ -247,7 +247,7 @@ async function withProjectLock(name, operation) {
       // a new owner's lock between reading the old PID and deleting the file.
       if (Date.now() >= deadline)
         die(
-          `Another Moorkyz operation holds the lock for '${name}'. Retry when it completes or review ${path.relative(ROOT, file)}.`,
+          `Another tools.moorkyz.com operation holds the lock for '${name}'. Retry when it completes or review ${path.relative(ROOT, file)}.`,
         );
       sleep(100);
     }
@@ -501,7 +501,7 @@ async function startOne(project, mode) {
     sleep(150);
     if (running(name)) {
       info(
-        `Started '${name}' (${mode}; supervisor PID ${proc.pid}). URL: ${url}. Logs: .moorkyz/${name}.log`,
+        `Started '${name}' (${mode}; supervisor PID ${proc.pid}). URL: ${url}. Logs: .tools.moorkyz.com/${name}.log`,
       );
       openBrowser(url);
       return true;
@@ -509,7 +509,7 @@ async function startOne(project, mode) {
     if (!alive(proc.pid)) break;
   }
   console.error(
-    `Could not confirm startup for '${name}' at ${url}. Inspect logs with: moorkyz logs ${name}`,
+    `Could not confirm startup for '${name}' at ${url}. Inspect logs with: tools.moorkyz.com logs ${name}`,
   );
   return false;
 }
@@ -527,7 +527,7 @@ function stopOne(project) {
         `Supervisor for '${name}' is alive but cannot be verified. Inspect its heartbeat; tracking state has been preserved.`,
       );
     info(
-      `No verified live Moorkyz process for '${name}' at ${url}; leaving unrelated processes untouched.`,
+      `No verified live tools.moorkyz.com process for '${name}' at ${url}; leaving unrelated processes untouched.`,
     );
     clearState(name, entry.token);
     return true;
@@ -657,7 +657,7 @@ function doctor(config) {
   const p = spawnSync(command, argv, { encoding: "utf8", timeout: 5000 });
   info(`pnpm: ${p.status === 0 ? p.stdout.trim() : "MISSING"}`);
   info(
-    `Moorkyz config: ${exists(path.join(ROOT, "moorkyz.config.json")) ? "present" : "defaults (single root project)"}`,
+    `tools.moorkyz.com config: ${exists(path.join(ROOT, "tools.moorkyz.com.config.json")) ? "present" : "defaults (single root project)"}`,
   );
   for (const project of Object.values(config.projects)) {
     const manifest = path.join(project.cwd, "package.json");
@@ -676,49 +676,49 @@ function doctor(config) {
 function help(command) {
   const commands = {
     start:
-      "moorkyz start [project|all] [--prod]  Launch the service and open its URL in the default browser.",
-    stop: "moorkyz stop [project|all]          Stop only services started and verified by Moorkyz.",
+      "tools.moorkyz.com start [project|all] [--prod]  Launch the service and open its URL in the default browser.",
+    stop: "tools.moorkyz.com stop [project|all]          Stop only services started and verified by tools.moorkyz.com.",
     restart:
-      "moorkyz restart [project|all] [--prod]  Restart the service and open its URL in the default browser.",
+      "tools.moorkyz.com restart [project|all] [--prod]  Restart the service and open its URL in the default browser.",
     status:
-      "moorkyz status [project|all]        Show the status of managed processes.",
-    logs: "moorkyz logs [project] [--lines 80] [--follow]  Show or follow a service log.",
-    list: "moorkyz list                         List configured projects.",
+      "tools.moorkyz.com status [project|all]        Show the status of managed processes.",
+    logs: "tools.moorkyz.com logs [project] [--lines 80] [--follow]  Show or follow a service log.",
+    list: "tools.moorkyz.com list                         List configured projects.",
     doctor:
-      "moorkyz doctor                       Check Node, pnpm, scripts, and repository prerequisites.",
+      "tools.moorkyz.com doctor                       Check Node, pnpm, scripts, and repository prerequisites.",
     verify:
-      "moorkyz verify [project]             Run package.json verify script, or available quality gates.",
+      "tools.moorkyz.com verify [project]             Run package.json verify script, or available quality gates.",
     build:
-      "moorkyz build [project]              Run package.json build script.",
-    test: "moorkyz test [project]               Run package.json test script.",
-    lint: "moorkyz lint [project]               Run package.json lint script.",
+      "tools.moorkyz.com build [project]              Run package.json build script.",
+    test: "tools.moorkyz.com test [project]               Run package.json test script.",
+    lint: "tools.moorkyz.com lint [project]               Run package.json lint script.",
     typecheck:
-      "moorkyz typecheck [project]          Run package.json typecheck script.",
+      "tools.moorkyz.com typecheck [project]          Run package.json typecheck script.",
     security:
-      "moorkyz security [project]           Run read-only pnpm audit at high severity.",
-    run: "moorkyz run <script> [project]       Run an existing package.json script.",
+      "tools.moorkyz.com security [project]           Run read-only pnpm audit at high severity.",
+    run: "tools.moorkyz.com run <script> [project]       Run an existing package.json script.",
     audit:
-      'moorkyz audit "task description"       Create a documented audit from docs/audits/TEMPLATE.md.',
-    help: "moorkyz help [command]               Show general or command-specific help.",
+      'tools.moorkyz.com audit "task description"       Create a documented audit from docs/audits/TEMPLATE.md.',
+    help: "tools.moorkyz.com help [command]               Show general or command-specific help.",
   };
   if (command) {
     if (!Object.hasOwn(commands, command))
       die(`Unknown help topic '${command}'.`);
     info(commands[command]);
   } else {
-    info("Moorkyz — reusable project development CLI");
-    info("Usage: moorkyz <command> [project|all] [options]\n");
+    info("tools.moorkyz.com — reusable project development CLI");
+    info("Usage: tools.moorkyz.com <command> [project|all] [options]\n");
     Object.values(commands).forEach(info);
     info(
       "\nRun from the target project root. With no config, a single root package.json is assumed.",
     );
     info(
-      "For multiple projects, create moorkyz.config.json with the approved project paths and script names.",
+      "For multiple projects, create tools.moorkyz.com.config.json with the approved project paths and script names.",
     );
     info(
-      "Windows: .\\moorkyz.cmd help; Unix: sh ./moorkyz help; see docs/engineering/moorkyz-cli.md.",
+      "Windows: .\\tools.moorkyz.com.cmd help; Unix: sh ./tools.moorkyz.com help; see docs/engineering/tools.moorkyz.com-cli.md.",
     );
-    info("Local state/logs are stored under .moorkyz/ (gitignored).");
+    info("Local state/logs are stored under .tools.moorkyz.com/ (gitignored).");
   }
 }
 async function main() {
@@ -743,7 +743,7 @@ async function main() {
   if (command === "audit") {
     const title = args.join(" ").trim();
     if (!title || title.startsWith("-"))
-      die('Usage: moorkyz audit "description of completed task"');
+      die('Usage: tools.moorkyz.com audit "description of completed task"');
     createAudit(title);
     return;
   }
@@ -753,7 +753,7 @@ async function main() {
       args.filter((x) => x !== "--prod").length > 1 ||
       args.some((x) => x.startsWith("--") && x !== "--prod")
     )
-      die(`Invalid arguments for ${command}; run 'moorkyz help ${command}'.`);
+      die(`Invalid arguments for ${command}; run 'tools.moorkyz.com help ${command}'.`);
     if (prod && !["start", "restart"].includes(command))
       die("--prod is only valid for start or restart.");
     const name = args.find((x) => x !== "--prod");
@@ -808,9 +808,9 @@ async function main() {
   ) {
     const script = command === "run" ? args.shift() : command;
     if (!script || !SCRIPT_RE.test(script))
-      die("Usage: moorkyz run <existing-script> [project]");
+      die("Usage: tools.moorkyz.com run <existing-script> [project]");
     if (args.length > 1 || args.some((x) => x.startsWith("-")))
-      die("Unexpected arguments. Run moorkyz help.");
+      die("Unexpected arguments. Run tools.moorkyz.com help.");
     const name = targetNames(config, args[0], false)[0];
     const project = config.projects[name];
     if (command === "security") {
@@ -850,7 +850,7 @@ async function main() {
     } else process.exitCode = runScript(script, project);
     return;
   }
-  die(`Unknown command '${command}'. Run 'moorkyz help'.`);
+  die(`Unknown command '${command}'. Run 'tools.moorkyz.com help'.`);
 }
 main().catch((error) => {
   console.error(`Error: ${error.message}`);

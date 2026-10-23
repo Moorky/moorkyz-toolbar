@@ -27,10 +27,10 @@
 | `docs/audits/2026-10-16T23-27-23Z-m6-opt-in-pointer-gesture-manager.md` | Added this evidence-backed audit | Low |
 | `docs/contracts/sdk-and-schema.md` | Documented opt-in behavior, thresholds, exclusions, and host responsibility | Low |
 | `docs/engineering/implementation-status.md` | Recorded M6 gesture progress and remaining validation | Low |
-| `packages/toolbar/README.md` | Added opt-in host integration guidance | Low |
-| `packages/toolbar/src/gestures.ts` | Added instance-scoped pointer intent manager and cleanup | Medium |
-| `packages/toolbar/src/index.ts` | Exported the gesture manager draft API | Low |
-| `packages/toolbar/test/gestures.test.js` | Proved disabled mode allocates no listeners and cleanup is exact | Low |
+| `packages/sdk/README.md` | Added opt-in host integration guidance | Low |
+| `packages/sdk/src/gestures.ts` | Added instance-scoped pointer intent manager and cleanup | Medium |
+| `packages/sdk/src/index.ts` | Exported the gesture manager draft API | Low |
+| `packages/sdk/test/gestures.test.js` | Proved disabled mode allocates no listeners and cleanup is exact | Low |
 | `tests/browser/fixtures/fixture.js` | Added an explicit gesture test mount | Low |
 | `tests/browser/fixtures/index.html` | Added a gesture target | Low |
 | `tests/browser/server.mjs` | Allowed local serving of the gesture module | Low |
@@ -43,11 +43,11 @@ The worktree also contained an unrelated modification to `packages/portal/public
 | Check | Result | Exact command / method | Evidence / notes |
 |---|---|---|---|
 | Formatting / lint | PASS | `pnpm check` | ESLint and Prettier checks passed |
-| Typecheck | PASS | `pnpm check` | Toolbar, portal, vanilla, and React fixtures passed |
+| Typecheck | PASS | `pnpm check` | SDK, portal, vanilla, and React fixtures passed |
 | Unit / integration tests | PASS | `pnpm check` | 110 Node tests passed, 0 failed |
 | Browser / accessibility | PASS | `pnpm check` | 18 Chromium tests passed; swipe intent behavior verified in Chromium |
-| Build / consumer fixture | PASS | `pnpm check` | Toolbar and portal builds and consumer fixture typechecks passed |
-| Frozen install / package contents | PASS | `pnpm install --frozen-lockfile`; `pnpm --filter @moorkyz/toolbar pack --dry-run` | No dependencies changed; gesture module is included |
+| Build / consumer fixture | PASS | `pnpm check` | SDK and portal builds and consumer fixture typechecks passed |
+| Frozen install / package contents | PASS | `pnpm install --frozen-lockfile`; `pnpm --filter @tools.moorkyz.com/sdk pack --dry-run` | No dependencies changed; gesture module is included |
 | Specification hashes | PASS | PowerShell SHA-256 verification of all `MANIFEST.json` entries | 16 of 16 hashes matched |
 | Security / dependency review | NOT RUN | No dependency manifest or lockfile changed | Manual event-scope review only; no independent audit claimed |
 | Performance | N/A | No benchmark run | At most four listeners per explicitly enabled instance; no timers/RAF |

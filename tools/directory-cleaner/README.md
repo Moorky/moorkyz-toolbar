@@ -43,8 +43,8 @@ preview intentionally makes that preview stale.
 Run `node .\server.mjs` or double-click `Start-DirectoryCleaner.cmd`. From the
 parent repository, `pnpm tool:directory-cleaner` does the same thing. The service
 binds only to `127.0.0.1:8766`; `--port 8767` selects another local port.
-In the portal terminal, set `MOORKYZ_DIRECTORY_CLEANER_ENABLED=1` and, if needed,
-`MOORKYZ_DIRECTORY_CLEANER_PORT` to the same port. Bind the portal to loopback.
+In the portal terminal, set `TOOLS_MOORKYZ_COM_DIRECTORY_CLEANER_ENABLED=1` and, if needed,
+`TOOLS_MOORKYZ_COM_DIRECTORY_CLEANER_PORT` to the same port. Bind the portal to loopback.
 
 The browser connects only when explicitly requested. Preview reads metadata but
 does not create folders, receipts or file copies. Apply uses a process-held

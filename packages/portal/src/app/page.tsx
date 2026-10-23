@@ -4,7 +4,7 @@ import { SiteFooter } from "../components/site-footer";
 import { TOOLS } from "../data/tools";
 
 export const metadata: Metadata = {
-  title: "Moorkyz Tools - A little more useful.",
+  title: "tools.moorkyz.com - A little more useful.",
   alternates: { canonical: "/" },
   description:
     "Independent tools for building interfaces and working with video. Explore what each tool does, how to use it and how to get started.",
@@ -20,7 +20,7 @@ export default function HomePage() {
       <main id="main-content" tabIndex={-1} className="tools-home">
         <section id="home" className="section-shell catalog-hero" tabIndex={-1}>
           <p className="eyebrow">
-            <span className="status-dot" aria-hidden="true" /> THE MOORKYZ
+            <span className="status-dot" aria-hidden="true" /> tools.moorkyz.com
             WORKBENCH
           </p>
           <h1>A little more useful.</h1>

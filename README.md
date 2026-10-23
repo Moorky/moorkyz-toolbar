@@ -1,7 +1,7 @@
-# Moorkyz Tools
+# tools.moorkyz.com
 
 A growing catalog of independent tools, with clear setup, readable source and
-local-first workspaces. The former toolbar SDK and Studio have been removed;
+local-first workspaces. The former SDK and Studio have been removed;
 the **Toolbar Builder** is now a small standalone HTML generator, not a framework.
 
 ## Tools
@@ -22,7 +22,7 @@ and [Directory Cleaner guide](tools/directory-cleaner/README.md).
 
 ```powershell
 pnpm install --frozen-lockfile
-pnpm --filter @moorkyz/portal dev --hostname 127.0.0.1
+pnpm --filter @tools.moorkyz.com/portal dev --hostname 127.0.0.1
 pnpm build
 pnpm check
 pnpm check:source
@@ -31,6 +31,16 @@ pnpm check:source
 Use Node.js 22+ and the pinned pnpm version. Browser tests use installed
 Chromium/Firefox/WebKit; `pnpm exec playwright install` prepares them for development.
 
+Repository management uses `.\tools.moorkyz.com.cmd help` on Windows or
+`sh ./tools.moorkyz.com help` on macOS/Linux. See the
+[CLI guide](docs/engineering/tools.moorkyz.com-cli.md). The workspace package is
+`tools.moorkyz.com`; the portal package is `@tools.moorkyz.com/portal`.
+
+Project links target [Moorky/tools.moorkyz.com](https://github.com/Moorky/tools.moorkyz.com).
+The GitHub repository, local checkout/remote, DNS and hosting configuration need
+separate updates; this local rename does not modify them. See the
+[deployment guide](docs/deployment/coolify.md).
+
 ## Explicit local services
 
 ```powershell
@@ -38,9 +48,9 @@ Chromium/Firefox/WebKit; `pnpm exec playwright install` prepares them for develo
 pnpm tool:videocrunch
 pnpm tool:directory-cleaner
 # Portal terminal:
-$env:MOORKYZ_VIDEOCRUNCH_ENABLED = "1"
-$env:MOORKYZ_DIRECTORY_CLEANER_ENABLED = "1"
-pnpm --filter @moorkyz/portal dev --hostname 127.0.0.1
+$env:TOOLS_MOORKYZ_COM_VIDEOCRUNCH_ENABLED = "1"
+$env:TOOLS_MOORKYZ_COM_DIRECTORY_CLEANER_ENABLED = "1"
+pnpm --filter @tools.moorkyz.com/portal dev --hostname 127.0.0.1
 ```
 
 Both connections are **off by default**. Nothing is installed or started by

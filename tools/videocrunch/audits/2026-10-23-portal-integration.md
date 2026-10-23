@@ -2,7 +2,7 @@
 
 ## Scope
 
-Self-audit of the complete tracked VideoCrunch source imported into the Moorkyz
+Self-audit of the complete tracked VideoCrunch source imported into tools.moorkyz.com
 tools repository, baseline `15043ff`. The external VideoExports repository was
 read-only and remains unchanged. No downloaded media, private history, Git
 metadata, dependencies or caches were imported.
@@ -16,7 +16,7 @@ from this application's runtime.
 
 ## Executed checks
 
-Commands below were executed from the parent Moorkyz repository.
+Commands below were executed from the parent tools.moorkyz.com repository.
 
 | Check | Command or method | Result |
 |---|---|---|
@@ -44,7 +44,7 @@ Commands below were executed from the parent Moorkyz repository.
 
 No public hosting, authentication, tenant isolation, quotas, hosted storage,
 deployment or release is implemented or authorized. The original tool's
-no-selected-distribution-license notice remains in force; the parent Toolbar
+no-selected-distribution-license notice remains in force; the parent tools.moorkyz.com
 license must not be assumed to relicense this application.
 
 First-use winget bootstrapping on a clean disposable Windows VM and human

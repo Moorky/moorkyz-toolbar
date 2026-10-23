@@ -4,7 +4,7 @@
 |---|---|
 | Audit ID | `2026-10-16T19-49-31Z-agent-environment-tooling` |
 | Created (UTC) | `2026-10-16T19:49:31.004Z` |
-| Task / issue | Adapt reusable agent environment guidance and Moorkyz tooling for the Toolbar draft |
+| Task / issue | Adapt reusable agent environment guidance and tools.moorkyz.com tooling for the tools.moorkyz.com draft |
 | Auditor | Copilot coding assistant; scoped self-audit |
 | Branch / baseline commit | `master`; repository had no `HEAD` and all initial specification files were untracked |
 | Final commit | See task completion report; this is an initial repository commit |
@@ -13,15 +13,15 @@
 
 ## 1. Request and outcome
 
-- Requested behavior: Reuse project-neutral documentation and agent practices from `moorkyz-site`, add `.github` customizations and Moorkyz scripts, and require per-agent-task audits and commits.
-- Implemented behavior: Added concise Copilot instructions and a task-audit skill; added Toolbar-specific workflow, coding, testing, security/dependency and CLI docs; added audit template and task report; copied the local CLI and launchers without the PowerShell profile installer; added `.moorkyz/` ignore rule and dependency-free regression tests.
+- Requested behavior: Reuse project-neutral documentation and agent practices from `moorkyz-site`, add `.github` customizations and tools.moorkyz.com scripts, and require per-agent-task audits and commits.
+- Implemented behavior: Added concise Copilot instructions and a task-audit skill; added tools.moorkyz.com workflow, coding, testing, security/dependency and CLI docs; added audit template and task report; copied the local CLI and launchers without the PowerShell profile installer; added `.tools.moorkyz.com/` ignore rule and dependency-free regression tests.
 - Acceptance criteria and evidence:
   - `AGENTS.md` remains authoritative and links the added guidance.
   - CLI audit generation and project-path containment have regression coverage.
   - Windows launcher and doctor were executed; doctor accurately reports missing app scaffolding.
   - No site-specific Next.js defaults, deployment automation, auto-merge, or project sample paths were imported.
 - Intentional exclusions: Site-specific content, runtime/deployment stack, Dependabot/CI automation, multi-project example config, and the PowerShell installer that edits a user's profile.
-- Relevant decisions/contracts: Existing decisions and architecture/security specifications remain authoritative; no public Toolbar contract or feature default changed.
+- Relevant decisions/contracts: Existing decisions and architecture/security specifications remain authoritative; no public SDK contract or feature default changed.
 
 ## 2. Change inventory
 
@@ -36,12 +36,12 @@
 | `docs/engineering/coding-standards.md` | Added TypeScript, package-boundary, runtime and UI guidance | low |
 | `docs/engineering/testing.md` | Added risk-based checks and current command status | low |
 | `docs/engineering/security-and-dependencies.md` | Added reusable security, dependency and agent-permission rules | low |
-| `docs/engineering/moorkyz-cli.md` | Documented local tooling and scaffolding limitations | low |
+| `docs/engineering/tools.moorkyz.com-cli.md` | Documented local tooling and scaffolding limitations | low |
 | `docs/audits/TEMPLATE.md` | Added reusable evidence-based task audit template | low |
 | `docs/audits/2026-10-16T19-49-31Z-agent-environment-tooling.md` | Recorded task evidence and residual limitations | low |
-| `moorkyz.cjs`, `moorkyz.cmd`, `moorkyz` | Added portable project CLI and Windows/POSIX launchers; removed site-specific guidance | medium |
-| `.gitignore` | Ignored CLI-owned `.moorkyz/` runtime state | low |
-| `tests/tooling/moorkyz-cli.test.cjs` | Added built-in Node regression tests | low |
+| `tools.moorkyz.com.cjs`, `tools.moorkyz.com.cmd`, `tools.moorkyz.com` | Added portable project CLI and Windows/POSIX launchers; removed site-specific guidance | medium |
+| `.gitignore` | Ignored CLI-owned `.tools.moorkyz.com/` runtime state | low |
+| `tests/tooling/tools.moorkyz.com-cli.test.cjs` | Added built-in Node regression tests | low |
 
 The initial documentation specification files were already untracked before this task. Per the user's explicit instruction to commit all changes, they are included in the initial repository commit but are not changes made by this task.
 
@@ -51,14 +51,14 @@ The initial documentation specification files were already untracked before this
 |---|---|---|---|
 | Formatting / lint | NOT RUN | No formatter/linter configured | No package manifest or formatter is present. |
 | Typecheck | N/A | No TypeScript implementation or typecheck script | Application scaffolding is not present. |
-| Unit / integration tests | PASS | `node --test tests/tooling/moorkyz-cli.test.cjs` | 3 tests passed: help without package scaffolding, safe audit title substitution, and rejection of escaping project paths. |
+| Unit / integration tests | PASS | `node --test tests/tooling/tools.moorkyz.com-cli.test.cjs` | 3 tests passed: help without package scaffolding, safe audit title substitution, and rejection of escaping project paths. |
 | Browser / accessibility | N/A | No application UI changed | UI and product accessibility behavior unchanged. |
 | Build / consumer fixture | NOT RUN | No build tooling or package manifest | Public package remains specification-only. |
 | Security / dependency review | NOT RUN | No package manifest or lockfile | No dependency was added; script paths/process scope were reviewed narrowly, not independently security-tested. |
 | Performance | N/A | Documentation and local maintainer tooling only | No runtime product code changed. |
-| CLI syntax | PASS | `node --check moorkyz.cjs` | Completed successfully. |
-| Windows CLI launcher | PASS | `.\moorkyz.cmd help` | Printed the command list and Toolbar-specific help guidance. |
-| CLI doctor | PASS WITH RISKS | `.\moorkyz.cmd doctor` | Reported Node `v22.18.0`, pnpm `11.8.0`, audit template present, and root `package.json` missing as expected. |
+| CLI syntax | PASS | `node --check tools.moorkyz.com.cjs` | Completed successfully. |
+| Windows CLI launcher | PASS | `.\tools.moorkyz.com.cmd help` | Printed the command list and tools.moorkyz.com help guidance. |
+| CLI doctor | PASS WITH RISKS | `.\tools.moorkyz.com.cmd doctor` | Reported Node `v22.18.0`, pnpm `11.8.0`, audit template present, and root `package.json` missing as expected. |
 | `git diff --cached --check` | PASS | `git diff --cached --check` | Passed on the complete staged set before final manifest/line-ending metadata updates; repeated after those updates before commit. |
 
 ## 4. Risk and quality review

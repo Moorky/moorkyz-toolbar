@@ -27,10 +27,10 @@
 | `docs/audits/2026-10-16T22-55-23Z-m6-opt-in-local-diagnostics-recorder.md` | Added this evidence-backed audit | Low |
 | `docs/contracts/sdk-and-schema.md` | Documented local-only operation, redaction, limits, and host responsibilities | Low |
 | `docs/engineering/implementation-status.md` | Recorded M6 progress and remaining work | Low |
-| `packages/toolbar/README.md` | Added host-controlled enablement and redactor usage | Low |
-| `packages/toolbar/src/diagnostics.ts` | Added the disabled recorder, input validation, redaction, bounded storage, and cleanup | Medium |
-| `packages/toolbar/src/index.ts` | Exported the draft recorder API | Low |
-| `packages/toolbar/test/diagnostics.test.js` | Covered disabled, redaction, capacity, validation, and cleanup behavior | Low |
+| `packages/sdk/README.md` | Added host-controlled enablement and redactor usage | Low |
+| `packages/sdk/src/diagnostics.ts` | Added the disabled recorder, input validation, redaction, bounded storage, and cleanup | Medium |
+| `packages/sdk/src/index.ts` | Exported the draft recorder API | Low |
+| `packages/sdk/test/diagnostics.test.js` | Covered disabled, redaction, capacity, validation, and cleanup behavior | Low |
 | `tests/browser/server.mjs` | Allowed local serving of the diagnostics module for package-root imports | Low |
 
 ## 3. Verification evidence
@@ -38,11 +38,11 @@
 | Check | Result | Exact command / method | Evidence / notes |
 |---|---|---|---|
 | Formatting / lint | PASS | `pnpm check` | ESLint and Prettier checks passed |
-| Typecheck | PASS | `pnpm check` | Toolbar, portal, vanilla, and React fixtures passed |
+| Typecheck | PASS | `pnpm check` | SDK, portal, vanilla, and React fixtures passed |
 | Unit / integration tests | PASS | `pnpm check` | 97 Node tests passed, 0 failed |
 | Browser / accessibility | PASS | `pnpm check` | 16 Chromium tests passed; diagnostics recorder has no UI |
-| Build / consumer fixture | PASS | `pnpm check` | Toolbar and portal builds and consumer fixture typechecks passed |
-| Frozen install / package contents | PASS | `pnpm install --frozen-lockfile`; `pnpm --filter @moorkyz/toolbar pack --dry-run` | No dependencies changed; diagnostics module is packaged |
+| Build / consumer fixture | PASS | `pnpm check` | SDK and portal builds and consumer fixture typechecks passed |
+| Frozen install / package contents | PASS | `pnpm install --frozen-lockfile`; `pnpm --filter @tools.moorkyz.com/sdk pack --dry-run` | No dependencies changed; diagnostics module is packaged |
 | Specification hashes | PASS | PowerShell SHA-256 verification of all `MANIFEST.json` entries | 16 of 16 hashes matched |
 | Security / dependency review | NOT RUN | No dependency manifest or lockfile changed | Manual data-boundary review only; no independent audit claimed |
 | Performance | N/A | No benchmark run | No listeners/timers/network; capacity is capped at 100 |

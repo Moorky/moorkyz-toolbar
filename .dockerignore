@@ -1,6 +1,6 @@
 .git
 .github
-.moorkyz
+.tools.moorkyz.com
 **/node_modules
 **/.next
 **/dist

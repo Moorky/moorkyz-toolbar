@@ -1,5 +1,30 @@
 # Current product decisions
 
+## 2026-10-23: tools.moorkyz.com project identity
+
+The user approved a complete local rename to **tools.moorkyz.com**, including
+branding, metadata, packages, CLI/configuration filenames, runtime state,
+environment variables, deployment references and historical documentation.
+
+- The workspace is `tools.moorkyz.com`; the portal is `@tools.moorkyz.com/portal`.
+- The local launcher is `.\tools.moorkyz.com.cmd` (POSIX:
+  `sh ./tools.moorkyz.com`), configured by `tools.moorkyz.com.config.json`.
+  Runtime logs/state live in `.tools.moorkyz.com/`.
+- Project environment variables use `TOOLS_MOORKYZ_COM_`. Local-service
+  connections remain opt-in and loopback-only; the rename does not enable them.
+- Theme preferences use `tools.moorkyz.com-theme`. Existing browser preferences
+  are not migrated; the renamed portal starts with its default light theme.
+- Repository links target `Moorky/tools.moorkyz.com`; the public domain is
+  `https://tools.moorkyz.com`. GitHub, the Git remote, the checkout directory,
+  DNS and deployment infrastructure are not changed by local edits.
+- Historical audit names/references are normalized to the new project identity
+  at the user's request. Their original evidence remains in Git history; this
+  normalization does not mean historical commands were rerun under the new name.
+  Retired SDK package/path project-name segments are normalized to `sdk`;
+  the standalone Toolbar Builder keeps its feature-specific name and routes.
+- Author/copyright attribution, third-party provenance and the separate
+  moorkyz.com footer credit remain unchanged.
+
 ## 2026-10-23: modular tools portal
 
 User-approved:
@@ -16,17 +41,17 @@ User-approved:
 - Next.js 16.4.1 and its lockfile patch were approved to fix the existing
   16.4.0 security gate. No dependency gate may be bypassed.
 
-## 2026-10-23: replace the legacy toolbar product
+## 2026-10-23: replace the legacy SDK product
 
 The user explicitly selected:
 
 > Keep a tiny standalone Toolbar Builder; remove the old SDK, Studio, examples,
-> toolbar-specific tests and active docs. Replace the portal's SDK navigation.
+> SDK-specific tests and active docs. Replace the portal's SDK navigation.
 > Preserve Git history and audit records.
 
 The old Q1-Q80 SDK specifications no longer define active scope. Their exact
 versions remain in Git history; historical audit links can refer to those
-revisions. Current code must not depend on an unpublished toolbar package,
+revisions. Current code must not depend on an unpublished SDK package,
 framework adapters, SDK generation or the former Studio.
 
 The remaining builder is a small browser-only link/appearance editor producing

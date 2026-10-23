@@ -27,12 +27,12 @@
 | `docs/audits/2026-10-16T23-21-38Z-m6-host-fed-offline-status.md` | Added this evidence-backed audit | Low |
 | `docs/contracts/sdk-and-schema.md` | Documented host-fed status and queue exclusion | Low |
 | `docs/engineering/implementation-status.md` | Recorded M6 offline status progress and remaining work | Low |
-| `packages/toolbar/README.md` | Added host status usage and no-polling/no-queue description | Low |
-| `packages/toolbar/src/index.ts` | Exported connectivity status names and type | Low |
-| `packages/toolbar/src/offline.ts` | Added immutable connectivity status catalog and type guard | Low |
-| `packages/toolbar/src/toolbar.ts` | Added feature-gated status API and static status label | Medium |
-| `packages/toolbar/src/toolbar.css` | Added compact theme-aware status styling | Low |
-| `packages/toolbar/test/toolbar.test.js` | Covered disabled handling, status changes, and sticky collapse | Low |
+| `packages/sdk/README.md` | Added host status usage and no-polling/no-queue description | Low |
+| `packages/sdk/src/index.ts` | Exported connectivity status names and type | Low |
+| `packages/sdk/src/offline.ts` | Added immutable connectivity status catalog and type guard | Low |
+| `packages/sdk/src/toolbar.ts` | Added feature-gated status API and static status label | Medium |
+| `packages/sdk/src/toolbar.css` | Added compact theme-aware status styling | Low |
+| `packages/sdk/test/toolbar.test.js` | Covered disabled handling, status changes, and sticky collapse | Low |
 | `tests/browser/fixtures/fixture.js` | Added an offline-status toolbar fixture | Low |
 | `tests/browser/fixtures/index.html` | Added a dedicated offline-status mount target | Low |
 | `tests/browser/server.mjs` | Allowed local serving of the offline module | Low |
@@ -45,11 +45,11 @@ The worktree also contained an unrelated modification to `packages/portal/public
 | Check | Result | Exact command / method | Evidence / notes |
 |---|---|---|---|
 | Formatting / lint | PASS | `pnpm check` | ESLint and Prettier checks passed |
-| Typecheck | PASS | `pnpm check` | Toolbar, portal, vanilla, and React fixtures passed |
+| Typecheck | PASS | `pnpm check` | SDK, portal, vanilla, and React fixtures passed |
 | Unit / integration tests | PASS | `pnpm check` | 109 Node tests passed, 0 failed |
 | Browser / accessibility | PASS | `pnpm check` | 17 Chromium tests passed; axe passed with status displayed |
-| Build / consumer fixture | PASS | `pnpm check` | Toolbar and portal builds and consumer fixture typechecks passed |
-| Frozen install / package contents | PASS | `pnpm install --frozen-lockfile`; `pnpm --filter @moorkyz/toolbar pack --dry-run` | No dependencies changed; offline status module is packaged |
+| Build / consumer fixture | PASS | `pnpm check` | SDK and portal builds and consumer fixture typechecks passed |
+| Frozen install / package contents | PASS | `pnpm install --frozen-lockfile`; `pnpm --filter @tools.moorkyz.com/sdk pack --dry-run` | No dependencies changed; offline status module is packaged |
 | Specification hashes | PASS | PowerShell SHA-256 verification of all `MANIFEST.json` entries | 16 of 16 hashes matched |
 | Security / dependency review | NOT RUN | No dependency manifest or lockfile changed | Manual no-network/data review only; no independent audit claimed |
 | Performance | N/A | No benchmark run | Host supplies values; no listeners, polling, or background work |

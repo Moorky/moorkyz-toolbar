@@ -16,7 +16,7 @@
 ## 1. Request and outcome
 
 - Requested behavior: begin full implementation in roadmap order and establish the contract-first workspace/tooling.
-- Implemented behavior: created the pnpm workspace and a single `@moorkyz/toolbar` package; added strict TypeScript config validation with versioned defaults and stable diagnostics, vanilla/React compile fixtures, CI workflow, and local quality scripts.
+- Implemented behavior: created the pnpm workspace and a single `@tools.moorkyz.com/sdk` package; added strict TypeScript config validation with versioned defaults and stable diagnostics, vanilla/React compile fixtures, CI workflow, and local quality scripts.
 - Acceptance criteria and evidence: normalized valid configuration round-trips; invalid keys, versions, values, duplicate actions, prototypes, and accessors are tested; optional defaults remain disabled; both consumer fixtures typecheck; frozen installation and `pnpm check` pass.
 - Intentional exclusions: no UI/controller, runtime feature loader, framework adapter, package publication, or claim of public API approval.
 - Relevant decisions/contracts: Q28, Q33–Q35, Q54–Q57, Q80; `docs/contracts/sdk-and-schema.md`; `docs/engineering/roadmap.md`.
@@ -28,7 +28,7 @@
 | `package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml` | Added private workspace scripts, package manager lock, and development dependencies | Medium |
 | `README.md`, `MANIFEST.json` | Updated implementation status and synchronized tracked specification hashes | Low |
 | `tsconfig.base.json`, `eslint.config.mjs`, `.prettierignore`, `.gitignore` | Added strict TS/lint/format configuration and generated-file ignores | Low |
-| `packages/toolbar/` | Added `@moorkyz/toolbar` package, config validator, build/typecheck settings, and boundary tests | Medium |
+| `packages/sdk/` | Added `@tools.moorkyz.com/sdk` package, config validator, build/typecheck settings, and boundary tests | Medium |
 | `examples/vanilla-consumer/`, `examples/react-consumer/` | Added compile-only consumer fixtures; React dependencies are example-only | Low |
 | `.github/workflows/ci.yml` | Added read-only CI workflow for frozen install and `pnpm check` | Low |
 | `docs/contracts/sdk-and-schema.md` | Recorded implemented-but-unapproved M1 contract | Low |

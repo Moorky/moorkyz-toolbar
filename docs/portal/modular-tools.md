@@ -16,7 +16,7 @@ tools additionally show **Tool immediately after Description**: a file hierarchy
 selectable console-style source, copy/download per file and a complete ZIP.
 None claims a public release date; the integration date is not a release.
 The user subsequently approved removal of the legacy SDK, Studio, examples,
-toolbar-specific tests and active specifications. Their history and audits are
+SDK-specific tests and active specifications. Their history and audits are
 preserved. `/tools/toolbar` now contains only a compact, independent builder.
 The old large Playground and Studio routes intentionally return 404.
 
@@ -70,12 +70,12 @@ Delete always archives; permanent deletion is not a supported action.
 # Separate service terminal:
 pnpm tool:directory-cleaner
 # Portal terminal:
-$env:MOORKYZ_DIRECTORY_CLEANER_ENABLED = "1"
-pnpm --filter @moorkyz/portal dev --hostname 127.0.0.1
+$env:TOOLS_MOORKYZ_COM_DIRECTORY_CLEANER_ENABLED = "1"
+pnpm --filter @tools.moorkyz.com/portal dev --hostname 127.0.0.1
 ```
 
 The default service port is 8766. An explicit native `--port` must match
-`MOORKYZ_DIRECTORY_CLEANER_PORT`. The process-local token guards previews,
+`TOOLS_MOORKYZ_COM_DIRECTORY_CLEANER_PORT`. The process-local token guards previews,
 confirmed application and run status. Preview is non-mutating; apply accepts
 only a retained server-side plan ID plus its exact confirmation. Plans expire
 after ten minutes, and all files/settings must revalidate before writes.
@@ -101,8 +101,8 @@ On Windows with Node.js 22+, Windows PowerShell 5.1, yt-dlp and FFmpeg installed
 # Terminal 1, repository root:
 pnpm tool:videocrunch
 # Terminal 2, repository root:
-$env:MOORKYZ_VIDEOCRUNCH_ENABLED = "1"
-pnpm --filter @moorkyz/portal dev --hostname 127.0.0.1
+$env:TOOLS_MOORKYZ_COM_VIDEOCRUNCH_ENABLED = "1"
+pnpm --filter @tools.moorkyz.com/portal dev --hostname 127.0.0.1
 ```
 
 For explicit prerequisite bootstrapping, run
@@ -111,13 +111,13 @@ It can install missing native tools through winget; the portal never installs
 anything. Missing tools and failed exports are visible in the native workspace.
 
 The portal gateway `/api/local-tools/videocrunch/...` is off unless
-`MOORKYZ_VIDEOCRUNCH_ENABLED=1`. The user must also open the workspace before it
+`TOOLS_MOORKYZ_COM_VIDEOCRUNCH_ENABLED=1`. The user must also open the workspace before it
 connects or polls. Closing/unmounting the iframe stops its frontend work; an
 accepted export continues in the independent service. Reconnection errors are
 reported with an explicit retry control.
 
 The upstream target is always `127.0.0.1`, default port 8765. If the native service
-uses `--port`, set `MOORKYZ_VIDEOCRUNCH_PORT` to the same valid port in the portal
+uses `--port`, set `TOOLS_MOORKYZ_COM_VIDEOCRUNCH_PORT` to the same valid port in the portal
 terminal. The gateway rejects non-loopback Host, mismatched Origin, cross-site
 requests, unlisted resources/methods, and oversized job bodies. It forwards only
 content type, the process-local job token and byte ranges, never credentials or

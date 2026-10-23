@@ -25,12 +25,12 @@
 
 | Path | Change | Risk |
 |---|---|---|
-| `packages/toolbar/src/capabilities.ts` | Added transactional, owner-scoped capability registry | Medium |
-| `packages/toolbar/src/context.ts` | Added hierarchical scoped context resolution and revision tracking | Medium |
-| `packages/toolbar/src/commands.ts` | Added typed host-authorized command handles, validation, concurrency, timeout, cancellation and revocation | High |
-| `packages/toolbar/src/surfaces.ts` | Added a bounded nested surface stack with dismissal policy and focus-return targets | Medium |
-| `packages/toolbar/src/index.ts` | Exported M3 draft services from the package root | Medium |
-| `packages/toolbar/test/capabilities.test.js`, `context.test.js`, `commands.test.js`, `surfaces.test.js` | Added transaction, security, race/policy, hierarchy, and dismissal tests | Medium |
+| `packages/sdk/src/capabilities.ts` | Added transactional, owner-scoped capability registry | Medium |
+| `packages/sdk/src/context.ts` | Added hierarchical scoped context resolution and revision tracking | Medium |
+| `packages/sdk/src/commands.ts` | Added typed host-authorized command handles, validation, concurrency, timeout, cancellation and revocation | High |
+| `packages/sdk/src/surfaces.ts` | Added a bounded nested surface stack with dismissal policy and focus-return targets | Medium |
+| `packages/sdk/src/index.ts` | Exported M3 draft services from the package root | Medium |
+| `packages/sdk/test/capabilities.test.js`, `context.test.js`, `commands.test.js`, `surfaces.test.js` | Added transaction, security, race/policy, hierarchy, and dismissal tests | Medium |
 | `examples/vanilla-consumer/src/index.ts` | Added a compile-time example of M3 APIs | Low |
 | `docs/contracts/sdk-and-schema.md`, `docs/engineering/implementation-status.md`, `MANIFEST.json` | Documented draft semantics, remaining M3 work, and refreshed the tracked contract hash | Low |
 | `docs/audits/2026-10-16T21-19-48Z-m3-core-registries-and-commands.md` | Recorded this M3 validation slice | Low |
@@ -45,7 +45,7 @@ Use `PASS`, `FAIL`, `NOT RUN` (with reason), or `N/A`. Record exact commands and
 | Typecheck | PASS | `pnpm check` | Package, portal, vanilla fixture (including M3 types), and React fixture compiled. |
 | Unit / integration tests | PASS | `pnpm check` | 44 Node tests passed, 0 failed. |
 | Browser / accessibility | PASS | `pnpm check` | 9 Chromium/axe checks passed; M3 services are non-visual and have focused Node tests. |
-| Build / consumer fixture | PASS | `pnpm check` | Toolbar package and Next.js portal production builds passed; consumer fixtures typechecked. |
+| Build / consumer fixture | PASS | `pnpm check` | SDK package and Next.js portal production builds passed; consumer fixtures typechecked. |
 | Security / dependency review | PASS WITH RISKS | `pnpm check`; `pnpm install --frozen-lockfile` | No new dependencies, network activity, or permissions added. Permission checks are host-provided and fail closed; adversarial input and revocation cases are covered. This is not a formal security review. |
 | Performance (if relevant) | N/A | N/A | No runtime budgets approved; command timers are created only for commands with a timeout and active execution. |
 | `git diff --check` | PASS | `git diff --check` | No whitespace errors in task changes. |

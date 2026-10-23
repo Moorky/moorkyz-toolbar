@@ -12,8 +12,8 @@ export default defineConfig({
       reuseExistingServer: false,
       env: {
         ...base.webServer[0].env,
-        MOORKYZ_DIRECTORY_CLEANER_ENABLED: "1",
-        MOORKYZ_DIRECTORY_CLEANER_PORT: "8878",
+        TOOLS_MOORKYZ_COM_DIRECTORY_CLEANER_ENABLED: "1",
+        TOOLS_MOORKYZ_COM_DIRECTORY_CLEANER_PORT: "8878",
       },
     },
     {

@@ -25,14 +25,14 @@
 
 | Path | Change | Risk |
 |---|---|---|
-| `packages/toolbar/src/configuration.ts` | Added draft viewport/container/fullscreen placement schema and validation | Medium |
-| `packages/toolbar/package.json` | Updated the draft package description | Low |
-| `packages/toolbar/src/toolbar.ts` | Applied placement mode; added conditional scroll controls, edge tracking, resize observation/fallback, and cleanup | Medium |
-| `packages/toolbar/src/toolbar.css` | Added container/fullscreen positioning, overflow fades, scroll-button styling, and reduced-motion handling | Medium |
-| `packages/toolbar/README.md` | Documented placement target ownership and overflow behavior | Low |
-| `packages/toolbar/test/configuration.test.js`, `toolbar.test.js` | Added placement defaults, invalid settings, and runtime update checks | Low |
+| `packages/sdk/src/configuration.ts` | Added draft viewport/container/fullscreen placement schema and validation | Medium |
+| `packages/sdk/package.json` | Updated the draft package description | Low |
+| `packages/sdk/src/toolbar.ts` | Applied placement mode; added conditional scroll controls, edge tracking, resize observation/fallback, and cleanup | Medium |
+| `packages/sdk/src/toolbar.css` | Added container/fullscreen positioning, overflow fades, scroll-button styling, and reduced-motion handling | Medium |
+| `packages/sdk/README.md` | Documented placement target ownership and overflow behavior | Low |
+| `packages/sdk/test/configuration.test.js`, `toolbar.test.js` | Added placement defaults, invalid settings, and runtime update checks | Low |
 | `tests/browser/fixtures/`, `tests/browser/server.mjs`, `tests/browser/toolbar.spec.js` | Added local positioned-container fixture and Chromium placement/overflow/axe tests | Low |
-| `packages/toolbar/README.md`, `docs/contracts/sdk-and-schema.md`, `docs/engineering/implementation-status.md`, `MANIFEST.json` | Documented draft placement contract and refreshed tracked contract hash | Low |
+| `packages/sdk/README.md`, `docs/contracts/sdk-and-schema.md`, `docs/engineering/implementation-status.md`, `MANIFEST.json` | Documented draft placement contract and refreshed tracked contract hash | Low |
 | `docs/audits/2026-10-16T21-32-21Z-m4-adaptive-composition-and-placement.md` | Recorded this M4 slice and residual gates | Low |
 
 ## 3. Verification evidence
@@ -45,7 +45,7 @@ Use `PASS`, `FAIL`, `NOT RUN` (with reason), or `N/A`. Record exact commands and
 | Typecheck | PASS | `pnpm check` | Package, vanilla/React consumers, and portal typechecks passed. |
 | Unit / integration tests | PASS | `pnpm check` | 45 Node tests passed, 0 failed. |
 | Browser / accessibility | PASS WITH RISKS | `pnpm check` | 10 Chromium tests passed; axe scans include narrow overflow controls. Real RTL, zoom, and assistive technology matrix remains. |
-| Build / consumer fixture | PASS | `pnpm check` | Toolbar package and Next.js portal production builds passed. |
+| Build / consumer fixture | PASS | `pnpm check` | SDK package and Next.js portal production builds passed. |
 | Security / dependency review | PASS | `pnpm check`; no dependency manifests changed | No new network, permission, or data-handling paths were introduced. CSP and no-external-request browser tests remained green. |
 | Performance (if relevant) | NOT RUN | N/A | No approved budgets/baselines; defer profiling to M10. |
 | `git diff --check` | PASS | `git diff --check` | No whitespace errors in task changes. |

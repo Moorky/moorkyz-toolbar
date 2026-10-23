@@ -33,23 +33,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build production image
-        run: docker build --tag moorkyz-toolbar-portal:${{ github.sha }} .
+        run: docker build --tag tools.moorkyz.com-portal:${{ github.sha }} .
       - name: Smoke-test production container
         shell: bash
         run: |
           cleanup() {
-            docker rm --force moorkyz-toolbar-portal >/dev/null 2>&1 || true
+            docker rm --force tools.moorkyz.com-portal >/dev/null 2>&1 || true
           }
           trap cleanup EXIT
 
-          docker run --detach --name moorkyz-toolbar-portal \
+          docker run --detach --name tools.moorkyz.com-portal \
             --publish 127.0.0.1::3000 \
-            moorkyz-toolbar-portal:${{ github.sha }}
+            tools.moorkyz.com-portal:${{ github.sha }}
 
-          published_port="$(docker port moorkyz-toolbar-portal 3000/tcp | sed 's/.*://')"
+          published_port="$(docker port tools.moorkyz.com-portal 3000/tcp | sed 's/.*://')"
           if [[ -z "$published_port" ]]; then
             echo "::error title=Container port was not published::Could not find the container's mapped HTTP port."
-            docker logs moorkyz-toolbar-portal
+            docker logs tools.moorkyz.com-portal
             exit 1
           fi
 
@@ -61,7 +61,7 @@ jobs:
             sleep 2
           done
 
-          docker logs moorkyz-toolbar-portal
+          docker logs tools.moorkyz.com-portal
           exit 1
 
   deploy:
@@ -70,7 +70,7 @@ jobs:
     needs: [verify, container]
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     concurrency:
-      group: moorkyz-toolbar-production
+      group: tools.moorkyz.com-production
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4

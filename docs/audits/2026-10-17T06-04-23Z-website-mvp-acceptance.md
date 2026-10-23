@@ -93,8 +93,8 @@ Q52–55, Q63–64, Q74, Q79–80. Public APIs/defaults and release authority di
 | README, contributor guide, status/spec/plan/release dossier and this audit | Accurate current behavior, verification and release holds | Low |
 
 No SDK source, exports, package manifest, lockfile, Docker/deployment workflow or
-external repository changed. Pre-existing edits to `moorkyz`, `moorkyz.cjs`,
-`moorkyz.cmd`, `moorkyz.config.json`, and untracked `docs/task/` remain excluded.
+external repository changed. Pre-existing edits to `tools.moorkyz.com`, `tools.moorkyz.com.cjs`,
+`tools.moorkyz.com.cmd`, `tools.moorkyz.com.config.json`, and untracked `docs/task/` remain excluded.
 Generated Next declaration changes returned to the tracked production paths
 during the normal build; they were not authored or staged.
 
@@ -106,8 +106,8 @@ The environment is shared, so the final run used isolated ports and required
 Playwright to own its servers rather than reuse an unrelated local service:
 
 ```powershell
-$env:MOORKYZ_TOOLBAR_FIXTURE_PORT='42973'
-$env:MOORKYZ_TOOLBAR_PORTAL_PORT='42974'
+$env:TOOLS_MOORKYZ_COM_FIXTURE_PORT='42973'
+$env:TOOLS_MOORKYZ_COM_PORTAL_PORT='42974'
 $env:CI='1'
 pnpm check
 ```

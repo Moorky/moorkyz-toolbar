@@ -13,8 +13,8 @@ export default defineConfig({
       reuseExistingServer: false,
       env: {
         ...base.webServer[0].env,
-        MOORKYZ_VIDEOCRUNCH_ENABLED: "1",
-        MOORKYZ_VIDEOCRUNCH_PORT: "8876",
+        TOOLS_MOORKYZ_COM_VIDEOCRUNCH_ENABLED: "1",
+        TOOLS_MOORKYZ_COM_VIDEOCRUNCH_PORT: "8876",
       },
     },
     {

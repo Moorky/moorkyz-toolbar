@@ -9,13 +9,13 @@ export function SiteHeader() {
       <a className="brand" href="/#home">
         <img
           className="header-logo"
-          src="/moorkyz-mark.png"
+          src="/tools.moorkyz.com-mark.png"
           width={112}
           height={56}
           alt=""
         />
         <span>
-          <strong>moorkyz</strong> <span className="brand-product">tools</span>
+          <strong>tools.moorkyz.com</strong>
         </span>
       </a>
       <nav className="header-links" aria-label="Main navigation">
@@ -24,7 +24,7 @@ export function SiteHeader() {
           Contributing
         </a>
         <a
-          href="https://github.com/Moorky/moorkyz-toolbar"
+          href="https://github.com/Moorky/tools.moorkyz.com"
           className="header-aux-link"
           target="_blank"
           rel="noreferrer"

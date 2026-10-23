@@ -9,7 +9,7 @@
 - Added regression/integration tests, prerequisite diagnostics, verification and audit scripts, repository guidelines, and idea/audit templates.
 # Portal integration - 2026-10-23
 
-- Imported the complete source into the Moorkyz tools repository without local
+- Imported the complete source into the tools.moorkyz.com repository without local
   state, media, Git metadata or dependencies.
 - Frontend asset/API URLs are now relative, preserving standalone startup while
   supporting the optional same-origin localhost portal gateway.

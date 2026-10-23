@@ -37,11 +37,11 @@ Use `PASS`, `FAIL`, `NOT RUN` (with reason), or `N/A`. Record exact commands and
 
 | Check | Result | Exact command / method | Evidence / notes |
 |---|---|---|---|
-| Formatting / lint | PASS | `pnpm --filter @moorkyz/portal lint` | ESLint completed successfully. |
-| Typecheck | PASS | `pnpm --filter @moorkyz/portal typecheck` | Passed after the portal build generated the workspace toolbar package. An earlier run before that prerequisite failed to resolve `@moorkyz/toolbar`; rerun passed with no errors. |
+| Formatting / lint | PASS | `pnpm --filter @tools.moorkyz.com/portal lint` | ESLint completed successfully. |
+| Typecheck | PASS | `pnpm --filter @tools.moorkyz.com/portal typecheck` | Passed after the portal build generated the workspace SDK package. An earlier run before that prerequisite failed to resolve `@tools.moorkyz.com/sdk`; rerun passed with no errors. |
 | Unit / integration tests | N/A | Not run | Metadata-only change; no relevant unit/integration test was identified. |
-| Browser / accessibility | PASS (HTTP smoke only) | Started production server with `pnpm --filter @moorkyz/portal exec next start --hostname 127.0.0.1 --port 3100`; fetched `/` and each referenced icon. | HTML contained icon links for all four assets; each asset returned HTTP 200. No visual browser rendering or accessibility certification performed. |
-| Build / consumer fixture | PASS | `pnpm --filter @moorkyz/portal build` | Toolbar dependency and Next.js production build completed successfully. |
+| Browser / accessibility | PASS (HTTP smoke only) | Started production server with `pnpm --filter @tools.moorkyz.com/portal exec next start --hostname 127.0.0.1 --port 3100`; fetched `/` and each referenced icon. | HTML contained icon links for all four assets; each asset returned HTTP 200. No visual browser rendering or accessibility certification performed. |
+| Build / consumer fixture | PASS | `pnpm --filter @tools.moorkyz.com/portal build` | SDK dependency and Next.js production build completed successfully. |
 | Security / dependency review | N/A | No dependency or executable logic changed. | No network, permissions, or data handling changes. |
 | Performance (if relevant) | N/A | No runtime logic changed. | Local static assets only. |
 | `git diff --check` | PASS | `git diff --check` | Exit code 0; Git emitted only its existing LF-to-CRLF conversion warning for the edited TSX file. |

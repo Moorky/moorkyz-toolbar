@@ -27,9 +27,9 @@
 | `docs/audits/2026-10-17T00-15-22Z-m6-controller-gesture-intent-integration.md` | Added this evidence-backed audit | Low |
 | `docs/contracts/sdk-and-schema.md` | Clarified controller-owned listener lifecycle and host callback requirements | Low |
 | `docs/engineering/implementation-status.md` | Recorded M6 gesture integration progress and remaining profile work | Low |
-| `packages/toolbar/README.md` | Documented built-in controller integration and accessible alternatives | Low |
-| `packages/toolbar/src/toolbar.ts` | Required host policy and synchronized the gesture manager with config/mount/dispose | Medium |
-| `packages/toolbar/test/toolbar.test.js` | Added missing-handler and feature-toggle coverage | Low |
+| `packages/sdk/README.md` | Documented built-in controller integration and accessible alternatives | Low |
+| `packages/sdk/src/toolbar.ts` | Required host policy and synchronized the gesture manager with config/mount/dispose | Medium |
+| `packages/sdk/test/toolbar.test.js` | Added missing-handler and feature-toggle coverage | Low |
 | `tests/browser/fixtures/fixture.js` | Added a controller-backed gesture fixture | Low |
 | `tests/browser/toolbar.spec.js` | Added integration coverage for host callback delivery and runtime disable | Low |
 
@@ -40,11 +40,11 @@ The worktree contained an unrelated `packages/portal/public/site.webmanifest` mo
 | Check | Result | Exact command / method | Evidence / notes |
 |---|---|---|---|
 | Formatting / lint | PASS | `pnpm check` | ESLint and Prettier checks passed |
-| Typecheck | PASS | `pnpm check` | Toolbar, portal, vanilla, and React fixtures passed |
+| Typecheck | PASS | `pnpm check` | SDK, portal, vanilla, and React fixtures passed |
 | Unit / integration tests | PASS | `pnpm check` | 115 Node tests passed, 0 failed |
 | Browser / accessibility | PASS | `pnpm check` | 21 Chromium tests passed; pointer intent integration covered |
-| Build / consumer fixture | PASS | `pnpm check` | Toolbar and portal builds and consumer fixture typechecks passed |
-| Frozen install / package contents | PASS | `pnpm install --frozen-lockfile`; `pnpm --filter @moorkyz/toolbar pack --dry-run` | No dependencies changed |
+| Build / consumer fixture | PASS | `pnpm check` | SDK and portal builds and consumer fixture typechecks passed |
+| Frozen install / package contents | PASS | `pnpm install --frozen-lockfile`; `pnpm --filter @tools.moorkyz.com/sdk pack --dry-run` | No dependencies changed |
 | Specification hashes | PASS | PowerShell SHA-256 verification of all `MANIFEST.json` entries | 16 of 16 hashes matched |
 | Security / dependency review | NOT RUN | No dependency manifest or lockfile changed | Manual host-authorization and listener review only |
 | Performance | N/A | No benchmark run | Listener set is limited to the toolbar element and exists only while enabled |

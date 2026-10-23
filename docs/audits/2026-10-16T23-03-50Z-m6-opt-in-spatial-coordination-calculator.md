@@ -27,10 +27,10 @@
 | `docs/audits/2026-10-16T23-03-50Z-m6-opt-in-spatial-coordination-calculator.md` | Added this evidence-backed audit | Low |
 | `docs/contracts/sdk-and-schema.md` | Documented anchors, bounds, disabled behavior, and host responsibilities | Low |
 | `docs/engineering/implementation-status.md` | Recorded M6 spatial calculator progress and remaining integration | Low |
-| `packages/toolbar/README.md` | Added opt-in host-zone usage guidance | Low |
-| `packages/toolbar/src/index.ts` | Exported the spatial coordinator draft API | Low |
-| `packages/toolbar/src/spatial.ts` | Added validated zone registry and deterministic safe-anchor calculation | Medium |
-| `packages/toolbar/test/spatial.test.js` | Covered enable/disable, geometry, conflicts, and bounds | Low |
+| `packages/sdk/README.md` | Added opt-in host-zone usage guidance | Low |
+| `packages/sdk/src/index.ts` | Exported the spatial coordinator draft API | Low |
+| `packages/sdk/src/spatial.ts` | Added validated zone registry and deterministic safe-anchor calculation | Medium |
+| `packages/sdk/test/spatial.test.js` | Covered enable/disable, geometry, conflicts, and bounds | Low |
 | `tests/browser/server.mjs` | Allowed local serving of the spatial module for package-root imports | Low |
 
 The worktree also contained untracked portal public icons/web manifest outside this task. They were excluded from staging and left untouched.
@@ -40,11 +40,11 @@ The worktree also contained untracked portal public icons/web manifest outside t
 | Check | Result | Exact command / method | Evidence / notes |
 |---|---|---|---|
 | Formatting / lint | PASS | `pnpm check` | ESLint and Prettier checks passed |
-| Typecheck | PASS | `pnpm check` | Toolbar, portal, vanilla, and React fixtures passed |
+| Typecheck | PASS | `pnpm check` | SDK, portal, vanilla, and React fixtures passed |
 | Unit / integration tests | PASS | `pnpm check` | 107 Node tests passed, 0 failed |
 | Browser / accessibility | PASS | `pnpm check` | 16 Chromium tests passed; spatial helper is headless and adds no UI |
-| Build / consumer fixture | PASS | `pnpm check` | Toolbar and portal builds and consumer fixture typechecks passed |
-| Frozen install / package contents | PASS | `pnpm install --frozen-lockfile`; `pnpm --filter @moorkyz/toolbar pack --dry-run` | No dependencies changed; spatial module is packaged |
+| Build / consumer fixture | PASS | `pnpm check` | SDK and portal builds and consumer fixture typechecks passed |
+| Frozen install / package contents | PASS | `pnpm install --frozen-lockfile`; `pnpm --filter @tools.moorkyz.com/sdk pack --dry-run` | No dependencies changed; spatial module is packaged |
 | Specification hashes | PASS | PowerShell SHA-256 verification of all `MANIFEST.json` entries | 16 of 16 hashes matched |
 | Security / dependency review | NOT RUN | No dependency manifest or lockfile changed | Manual geometry/data review only; no independent audit claimed |
 | Performance | N/A | No benchmark run | At most 64 zones; no observers, polling, or background work |

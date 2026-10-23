@@ -23,9 +23,9 @@ export default function ContributingPage() {
           <p className="eyebrow">OPEN SOURCE · APACHE-2.0</p>
           <h1 className="contribution-title">Build something thoughtful.</h1>
           <p>
-            Moorkyz Tools welcomes focused, tested improvements to independent
-            tools and the shared portal. Publishing and deployment require
-            separate authorization.
+            tools.moorkyz.com welcomes focused, tested improvements to
+            independent tools and the shared portal. Publishing and deployment
+            require separate authorization.
           </p>
         </div>
         <h2>Work locally</h2>
@@ -37,7 +37,7 @@ export default function ContributingPage() {
         >
           <code>
             {
-              "pnpm install --frozen-lockfile\npnpm --filter @moorkyz/portal dev\npnpm check\npnpm check:source"
+              "pnpm install --frozen-lockfile\npnpm --filter @tools.moorkyz.com/portal dev\npnpm check\npnpm check:source"
             }
           </code>
         </pre>
@@ -70,7 +70,7 @@ export default function ContributingPage() {
           security review or manual accessibility/device acceptance.
         </p>
         <p>
-          <a href="https://github.com/Moorky/moorkyz-toolbar">
+          <a href="https://github.com/Moorky/tools.moorkyz.com">
             Open the repository ↗
           </a>{" "}
           · <a href="/#tools">Explore the tools</a>

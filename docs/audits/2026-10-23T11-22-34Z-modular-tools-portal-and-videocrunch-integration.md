@@ -67,7 +67,7 @@
 | Formatting | PASS | `pnpm format:check` | All configured paths formatted |
 | Lint | PASS | `pnpm lint` | Includes new gateway, build script and browser configuration |
 | Typecheck | PASS | `pnpm typecheck` | SDK, all four consumer fixtures and portal |
-| Standard Node regressions | PASS | `node --test packages\toolbar\test\*.test.js tests\tooling\*.test.js tests\tooling\*.test.cjs tools\videocrunch\test\server.test.js` | 221 passed, zero failed; includes source ZIP/registry, proxy denial/forwarding and download cleanup |
+| Standard Node regressions | PASS | `node --test packages\sdk\test\*.test.js tests\tooling\*.test.js tests\tooling\*.test.cjs tools\videocrunch\test\server.test.js` | 221 passed, zero failed; includes source ZIP/registry, proxy denial/forwarding and download cleanup |
 | Native source verification | PASS | `pnpm test:videocrunch` | JS/PowerShell parsing, 13 API tests and 25 Pester tests |
 | Real-media preservation | PASS | `node --test tools\videocrunch\test\media.test.js` | 5 tests: all compression modes and original-only, synthetic media, hashes and derivative metadata |
 | Full browser/accessibility regression | PASS | `pnpm exec playwright test --workers=2` | Final run: all 264 passed in Chromium, Firefox and WebKit; keyboard, axe, reduced motion, responsive layouts, existing SDK/Studio behavior and new source/copy/download/error paths |
@@ -132,7 +132,7 @@
   coverage or production-readiness claim follows from headless tests.
 - Required approvals: current implementation and dependency patch were
   approved. Existing M10/M11 release holds remain. No release/deploy authority.
-- Rollback: clear `MOORKYZ_VIDEOCRUNCH_ENABLED` and restart the local portal to
+- Rollback: clear `TOOLS_MOORKYZ_COM_VIDEOCRUNCH_ENABLED` and restart the local portal to
   disable the connection. Stop the separately launched service only when its
   user-owned jobs permit; never delete exports/history. The focused task commit
   can be reverted in a later authorized change. The external source is intact.

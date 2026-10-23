@@ -2,7 +2,56 @@ import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { readFile } from "node:fs/promises";
 
-const origin = `http://127.0.0.1:${process.env.MOORKYZ_TOOLS_PORTAL_PORT ?? process.env.PORTAL_TEST_PORT ?? "4174"}`;
+const origin = `http://127.0.0.1:${process.env.TOOLS_MOORKYZ_COM_PORTAL_PORT ?? process.env.PORTAL_TEST_PORT ?? "4174"}`;
+
+test("project identity is consistent across branding, metadata, assets and preferences", async ({
+  page,
+  request,
+}) => {
+  await page.goto(origin);
+  await expect(page.locator(".brand")).toHaveText("tools.moorkyz.com");
+  await expect(page).toHaveTitle(/tools\.moorkyz\.com/);
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+    "href",
+    "https://tools.moorkyz.com",
+  );
+  await expect(page.locator('meta[property="og:url"]')).toHaveAttribute(
+    "content",
+    "https://tools.moorkyz.com",
+  );
+  await expect(page.locator('meta[property="og:site_name"]')).toHaveAttribute(
+    "content",
+    "tools.moorkyz.com",
+  );
+  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
+    "content",
+    "https://tools.moorkyz.com/tools.moorkyz.com-mark.png",
+  );
+  await expect(page.locator('meta[name="twitter:title"]')).toHaveAttribute(
+    "content",
+    "tools.moorkyz.com — A little more useful.",
+  );
+  await expect(
+    page.getByRole("link", { name: "GitHub", exact: true }),
+  ).toHaveAttribute("href", "https://github.com/Moorky/tools.moorkyz.com");
+  const manifest = await request.get(`${origin}/site.webmanifest`);
+  expect(manifest.ok()).toBe(true);
+  expect(await manifest.json()).toMatchObject({
+    name: "tools.moorkyz.com",
+    short_name: "tools.moorkyz.com",
+  });
+  const mark = await request.get(`${origin}/tools.moorkyz.com-mark.png`);
+  expect(mark.ok()).toBe(true);
+  expect(mark.headers()["content-type"]).toBe("image/png");
+  await page.getByRole("button", { name: /Switch to dark theme/ }).click();
+  expect(
+    await page.evaluate(() => localStorage.getItem("tools.moorkyz.com-theme")),
+  ).toBe("dark");
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.goto(`${origin}/tools/directory-cleaner`);
+  await expect(page).toHaveTitle("Directory Cleaner — tools.moorkyz.com");
+});
 
 test("catalog cards open complete tool pages, source tree and dormant local service", async ({
   page,

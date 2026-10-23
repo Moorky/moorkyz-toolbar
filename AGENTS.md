@@ -1,4 +1,4 @@
-# AGENTS.md - Moorkyz Tools
+# AGENTS.md - tools.moorkyz.com
 
 ## Product and authority
 
@@ -41,7 +41,7 @@ describe older revisions and are not current product requirements.
   `pnpm test`, `pnpm test:browser`, `pnpm check:source`, `pnpm check`.
 - `pnpm tool:videocrunch`, `pnpm tool:directory-cleaner` start explicit local
   services. Read their setup pages before enabling portal connections.
-- `.\moorkyz.cmd help`, `.\moorkyz.cmd doctor`, `.\moorkyz.cmd audit "task title"`
+- `.\tools.moorkyz.com.cmd help`, `.\tools.moorkyz.com.cmd doctor`, `.\tools.moorkyz.com.cmd audit "task title"`
   remain generic repository management commands.
 
 See [testing](docs/engineering/testing.md), [coding standards](docs/engineering/coding-standards.md),

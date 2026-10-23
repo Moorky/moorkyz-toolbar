@@ -27,13 +27,13 @@
 | `docs/audits/2026-10-16T22-51-43Z-m6-quiet-host-fed-notifications.md` | Added this evidence-backed audit | Low |
 | `docs/contracts/sdk-and-schema.md` | Documented quiet notification behavior, fields, and limits | Low |
 | `docs/engineering/implementation-status.md` | Recorded M6 progress and remaining work | Low |
-| `packages/toolbar/README.md` | Added host-snapshot integration guidance | Low |
-| `packages/toolbar/src/index.ts` | Exported notification types and validator | Low |
-| `packages/toolbar/src/notifications.ts` | Added bounded data-only validation and diagnostics | Medium |
-| `packages/toolbar/src/toolbar.css` | Added responsive, themed, forced-colors panel styles | Medium |
-| `packages/toolbar/src/toolbar.ts` | Added feature-gated count/panel, manual activation, and clear-on-disable/dispose behavior | Medium |
-| `packages/toolbar/test/notifications.test.js` | Covered validation, bounds, accessors, and immutable snapshots | Low |
-| `packages/toolbar/test/toolbar.test.js` | Covered manual presentation, safe text, feature toggle, and disabled no-work path | Low |
+| `packages/sdk/README.md` | Added host-snapshot integration guidance | Low |
+| `packages/sdk/src/index.ts` | Exported notification types and validator | Low |
+| `packages/sdk/src/notifications.ts` | Added bounded data-only validation and diagnostics | Medium |
+| `packages/sdk/src/toolbar.css` | Added responsive, themed, forced-colors panel styles | Medium |
+| `packages/sdk/src/toolbar.ts` | Added feature-gated count/panel, manual activation, and clear-on-disable/dispose behavior | Medium |
+| `packages/sdk/test/notifications.test.js` | Covered validation, bounds, accessors, and immutable snapshots | Low |
+| `packages/sdk/test/toolbar.test.js` | Covered manual presentation, safe text, feature toggle, and disabled no-work path | Low |
 | `tests/browser/fixtures/fixture.js` | Added a dedicated notification-toolbar fixture | Low |
 | `tests/browser/fixtures/index.html` | Added a notification mount target | Low |
 | `tests/browser/server.mjs` | Allowed local serving of the notification module | Low |
@@ -44,11 +44,11 @@
 | Check | Result | Exact command / method | Evidence / notes |
 |---|---|---|---|
 | Formatting / lint | PASS | `pnpm check` | ESLint and Prettier checks passed |
-| Typecheck | PASS | `pnpm check` | Toolbar, portal, vanilla, and React fixtures passed |
+| Typecheck | PASS | `pnpm check` | SDK, portal, vanilla, and React fixtures passed |
 | Unit / integration tests | PASS | `pnpm check` | 91 Node tests passed, 0 failed |
 | Browser / accessibility | PASS | `pnpm check` | 16 Chromium tests passed; axe passed with notification panel open |
-| Build / consumer fixture | PASS | `pnpm check` | Toolbar and portal builds and consumer fixture typechecks passed |
-| Frozen install / package contents | PASS | `pnpm install --frozen-lockfile`; `pnpm --filter @moorkyz/toolbar pack --dry-run` | No dependencies added; notification module is included in the package |
+| Build / consumer fixture | PASS | `pnpm check` | SDK and portal builds and consumer fixture typechecks passed |
+| Frozen install / package contents | PASS | `pnpm install --frozen-lockfile`; `pnpm --filter @tools.moorkyz.com/sdk pack --dry-run` | No dependencies added; notification module is included in the package |
 | Specification hashes | PASS | PowerShell SHA-256 verification of all `MANIFEST.json` entries | 16 of 16 hashes matched |
 | Security / dependency review | NOT RUN | No dependency manifest or lockfile changed | Manual data-boundary review only; no independent audit claimed |
 | Performance | N/A | No benchmark run | Snapshot capped at 50; no polling/listeners/timers/network work added |

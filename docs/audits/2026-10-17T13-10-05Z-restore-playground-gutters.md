@@ -32,8 +32,8 @@ audits and Git history were not rewritten.
 | Portal README and `docs/engineering/website-mvp.md` | Remove current widening claim and record instruction withdrawal | Low |
 | This report | Exact scoped evidence and limitations | Low |
 
-Pre-existing edits to `moorkyz`, `moorkyz.cjs`, `moorkyz.cmd` and
-`moorkyz.config.json` were preserved and excluded.
+Pre-existing edits to `tools.moorkyz.com`, `tools.moorkyz.com.cjs`, `tools.moorkyz.com.cmd` and
+`tools.moorkyz.com.config.json` were preserved and excluded.
 No file in the other site's repository was edited.
 
 ## 3. Verification evidence
@@ -48,8 +48,8 @@ No file in the other site's repository was edited.
 | Whitespace | PASS | `git diff --check`; staged whitespace gate before commit | Normalization warnings only |
 
 ```powershell
-$env:MOORKYZ_TOOLBAR_FIXTURE_PORT='44973'
-$env:MOORKYZ_TOOLBAR_PORTAL_PORT='44974'
+$env:TOOLS_MOORKYZ_COM_FIXTURE_PORT='44973'
+$env:TOOLS_MOORKYZ_COM_PORTAL_PORT='44974'
 $env:CI='1'
 pnpm exec playwright test 'qa-matrix\.spec\.js|visual-regression\.spec\.js' --workers=3
 ```

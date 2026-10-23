@@ -10,26 +10,27 @@ function request(path = "api/config", options = {}) {
 }
 
 test("local service is zero-network while off and denies public/cross-site access", async (t) => {
-  const originalEnabled = process.env.MOORKYZ_VIDEOCRUNCH_ENABLED;
-  const originalPort = process.env.MOORKYZ_VIDEOCRUNCH_PORT;
+  const originalEnabled = process.env.TOOLS_MOORKYZ_COM_VIDEOCRUNCH_ENABLED;
+  const originalPort = process.env.TOOLS_MOORKYZ_COM_VIDEOCRUNCH_PORT;
   t.after(() => {
     if (originalEnabled === undefined)
-      delete process.env.MOORKYZ_VIDEOCRUNCH_ENABLED;
-    else process.env.MOORKYZ_VIDEOCRUNCH_ENABLED = originalEnabled;
-    if (originalPort === undefined) delete process.env.MOORKYZ_VIDEOCRUNCH_PORT;
-    else process.env.MOORKYZ_VIDEOCRUNCH_PORT = originalPort;
+      delete process.env.TOOLS_MOORKYZ_COM_VIDEOCRUNCH_ENABLED;
+    else process.env.TOOLS_MOORKYZ_COM_VIDEOCRUNCH_ENABLED = originalEnabled;
+    if (originalPort === undefined)
+      delete process.env.TOOLS_MOORKYZ_COM_VIDEOCRUNCH_PORT;
+    else process.env.TOOLS_MOORKYZ_COM_VIDEOCRUNCH_PORT = originalPort;
   });
   const fetch = t.mock.method(globalThis, "fetch", async () => {
     throw new Error("must not fetch");
   });
-  delete process.env.MOORKYZ_VIDEOCRUNCH_ENABLED;
+  delete process.env.TOOLS_MOORKYZ_COM_VIDEOCRUNCH_ENABLED;
   assert.equal(
     (await proxyVideoCrunch(request(), ["api", "config"])).status,
     503,
   );
-  process.env.MOORKYZ_VIDEOCRUNCH_ENABLED = "1";
+  process.env.TOOLS_MOORKYZ_COM_VIDEOCRUNCH_ENABLED = "1";
   for (const headers of [
-    { host: "toolbar.moorkyz.com" },
+    { host: "tools.moorkyz.com" },
     { origin: "https://evil.example" },
     { "sec-fetch-site": "cross-site" },
     { host: "127.0.0.1.evil.example" },
@@ -61,7 +62,7 @@ test("local service is zero-network while off and denies public/cross-site acces
     ).status,
     405,
   );
-  process.env.MOORKYZ_VIDEOCRUNCH_PORT = "https://evil.example";
+  process.env.TOOLS_MOORKYZ_COM_VIDEOCRUNCH_PORT = "https://evil.example";
   assert.equal(
     (await proxyVideoCrunch(request(), ["api", "config"])).status,
     503,
@@ -70,15 +71,17 @@ test("local service is zero-network while off and denies public/cross-site acces
 });
 
 test("local proxy forwards only bounded intended data and preserves streams/ranges/errors", async (t) => {
-  const original = process.env.MOORKYZ_VIDEOCRUNCH_ENABLED;
-  const originalPort = process.env.MOORKYZ_VIDEOCRUNCH_PORT;
-  process.env.MOORKYZ_VIDEOCRUNCH_ENABLED = "1";
-  delete process.env.MOORKYZ_VIDEOCRUNCH_PORT;
+  const original = process.env.TOOLS_MOORKYZ_COM_VIDEOCRUNCH_ENABLED;
+  const originalPort = process.env.TOOLS_MOORKYZ_COM_VIDEOCRUNCH_PORT;
+  process.env.TOOLS_MOORKYZ_COM_VIDEOCRUNCH_ENABLED = "1";
+  delete process.env.TOOLS_MOORKYZ_COM_VIDEOCRUNCH_PORT;
   t.after(() => {
-    if (original === undefined) delete process.env.MOORKYZ_VIDEOCRUNCH_ENABLED;
-    else process.env.MOORKYZ_VIDEOCRUNCH_ENABLED = original;
-    if (originalPort === undefined) delete process.env.MOORKYZ_VIDEOCRUNCH_PORT;
-    else process.env.MOORKYZ_VIDEOCRUNCH_PORT = originalPort;
+    if (original === undefined)
+      delete process.env.TOOLS_MOORKYZ_COM_VIDEOCRUNCH_ENABLED;
+    else process.env.TOOLS_MOORKYZ_COM_VIDEOCRUNCH_ENABLED = original;
+    if (originalPort === undefined)
+      delete process.env.TOOLS_MOORKYZ_COM_VIDEOCRUNCH_PORT;
+    else process.env.TOOLS_MOORKYZ_COM_VIDEOCRUNCH_PORT = originalPort;
   });
   const calls = [];
   const fetch = t.mock.method(globalThis, "fetch", async (url, options) => {

@@ -27,10 +27,10 @@
 | `docs/audits/2026-10-16T22-58-55Z-m6-host-coordinated-lifecycle-adapter.md` | Added this evidence-backed audit | Low |
 | `docs/contracts/sdk-and-schema.md` | Documented lifecycle states, events, and host responsibilities | Low |
 | `docs/engineering/implementation-status.md` | Recorded lifecycle adapter progress and remaining integration | Low |
-| `packages/toolbar/README.md` | Added explicit lifecycle coordinator usage guidance | Low |
-| `packages/toolbar/src/index.ts` | Exported the draft lifecycle API | Low |
-| `packages/toolbar/src/lifecycle.ts` | Added per-instance visibility/BFCache transitions and disposal | Medium |
-| `packages/toolbar/test/lifecycle.test.js` | Added state-transition and cleanup tests | Low |
+| `packages/sdk/README.md` | Added explicit lifecycle coordinator usage guidance | Low |
+| `packages/sdk/src/index.ts` | Exported the draft lifecycle API | Low |
+| `packages/sdk/src/lifecycle.ts` | Added per-instance visibility/BFCache transitions and disposal | Medium |
+| `packages/sdk/test/lifecycle.test.js` | Added state-transition and cleanup tests | Low |
 | `tests/browser/server.mjs` | Allowed local serving of the lifecycle module for package-root imports | Low |
 
 ## 3. Verification evidence
@@ -38,11 +38,11 @@
 | Check | Result | Exact command / method | Evidence / notes |
 |---|---|---|---|
 | Formatting / lint | PASS | `pnpm check` | ESLint and Prettier checks passed |
-| Typecheck | PASS | `pnpm check` | Toolbar, portal, vanilla, and React fixtures passed |
+| Typecheck | PASS | `pnpm check` | SDK, portal, vanilla, and React fixtures passed |
 | Unit / integration tests | PASS | `pnpm check` | 100 Node tests passed, 0 failed |
 | Browser / accessibility | PASS | `pnpm check` | 16 Chromium tests passed; lifecycle coordinator adds no UI |
-| Build / consumer fixture | PASS | `pnpm check` | Toolbar and portal builds and consumer fixture typechecks passed |
-| Frozen install / package contents | PASS | `pnpm install --frozen-lockfile`; `pnpm --filter @moorkyz/toolbar pack --dry-run` | No dependencies changed; lifecycle module is packaged |
+| Build / consumer fixture | PASS | `pnpm check` | SDK and portal builds and consumer fixture typechecks passed |
+| Frozen install / package contents | PASS | `pnpm install --frozen-lockfile`; `pnpm --filter @tools.moorkyz.com/sdk pack --dry-run` | No dependencies changed; lifecycle module is packaged |
 | Specification hashes | PASS | PowerShell SHA-256 verification of all `MANIFEST.json` entries | 16 of 16 hashes matched |
 | Security / dependency review | NOT RUN | No dependency manifest or lockfile changed | Manual event/resource review only; no independent audit claimed |
 | Performance | N/A | No benchmark run | No polling or timers; only three owned event listeners per explicit instance |

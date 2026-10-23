@@ -18,8 +18,8 @@
 - Requested behavior: Create a public folder at the appropriate place.
 - Implemented behavior: Added a tracked placeholder at `packages/portal/public/.gitkeep`, preserving the portal's conventional Next.js static-assets directory in Git.
 - Acceptance criteria and evidence: `Test-Path packages\portal\public` returned `True`; `git diff --cached --check` passed.
-- Intentional exclusions: Did not modify or stage the existing untracked `packages/portal/public/moorkyz-toolbar-github.png` asset or other portal scaffolding.
-- Relevant decisions/contracts: Decision Q54 specifies a Next.js portal in the modular pnpm monorepo; the portal package is `@moorkyz/portal`.
+- Intentional exclusions: Did not modify or stage the existing untracked `packages/portal/public/tools.moorkyz.com-github.png` asset or other portal scaffolding.
+- Relevant decisions/contracts: Decision Q54 specifies a Next.js portal in the modular pnpm monorepo; the portal package is `@tools.moorkyz.com/portal`.
 
 ## 2. Change inventory
 

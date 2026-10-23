@@ -60,7 +60,7 @@ Next declaration changes were excluded from the task commit.
 |---|---|---|---|
 | Formatting | PASS | `pnpm format:check`; targeted `pnpm exec prettier --write` | Existing gate; no configuration weakened |
 | Lint | PASS | `pnpm lint` | Existing full source lint gate |
-| Types / build | PASS | `pnpm --filter @moorkyz/portal typecheck`; `pnpm build` | Production SDK/Next build and Next TypeScript validation pass |
+| Types / build | PASS | `pnpm --filter @tools.moorkyz.com/portal typecheck`; `pnpm build` | Production SDK/Next build and Next TypeScript validation pass |
 | Unit / boundary / integrity | PASS | `node --test tests\tooling\playground-design.test.js tests\tooling\playground-model.test.js` | 7 pass; four application/ten style contracts, malicious data, migration and exact generated SHA-256 checks |
 | Three-engine browser | PASS | `pnpm exec playwright test 'playground\.spec\.js' --workers=3` | 30 pass; 10 each Chromium/Firefox/WebKit; zero skipped, failed or flaky |
 | Accessibility / keyboard | PASS, bounded | Axe in light/dark and mobile; native text selection, command eligibility, keyboard geometry/sheet controls | Part of browser suite; not manual AT certification |
