@@ -20,3 +20,7 @@ and acquire no connection or polling until the user enables/opens them.
 See [the tool guide](../../docs/portal/modular-tools.md) and
 [verification](../../docs/engineering/testing.md). Historical audits remain
 unchanged; the old SDK, large Playground and Studio are no longer active scope.
+
+The footer links to the separate [Moorkyz Evidence workspace](https://evidence.moorkyz.com).
+This is navigation only: the tools portal does not process, request or host
+evidence data, and the destination's availability is managed independently.

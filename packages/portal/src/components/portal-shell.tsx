@@ -30,11 +30,13 @@ export function PortalShell({ children }: Readonly<{ children: ReactNode }>) {
   const [themeReady, setThemeReady] = useState(false);
   const [themeStorageWarning, setThemeStorageWarning] = useState(false);
   useEffect(() => {
+    document.body.dataset.theme = "light";
     try {
       const stored = window.localStorage.getItem("tools.moorkyz.com-theme");
       if (stored === "dark" || stored === "light") {
         setTheme(stored);
         document.documentElement.dataset.theme = stored;
+        document.body.dataset.theme = stored;
       }
     } catch {
       setThemeStorageWarning(true);
@@ -45,6 +47,7 @@ export function PortalShell({ children }: Readonly<{ children: ReactNode }>) {
     const next = theme === "light" ? "dark" : "light";
     setTheme(next);
     document.documentElement.dataset.theme = next;
+    document.body.dataset.theme = next;
     try {
       window.localStorage.setItem("tools.moorkyz.com-theme", next);
       setThemeStorageWarning(false);

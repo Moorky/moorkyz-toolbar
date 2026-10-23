@@ -40,6 +40,11 @@ html[data-theme="dark"] {
   --accent-soft: #2d1c42;
   --code: #100b18;
 }
+html[data-theme="dark"] body,
+body[data-theme="dark"] {
+  --ink: #f7f4fc;
+  color: #f7f4fc;
+}
 * {
   box-sizing: border-box;
 }

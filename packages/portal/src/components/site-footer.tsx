@@ -1,6 +1,16 @@
 export function SiteFooter() {
   return (
     <footer className="website-footer">
+      <nav aria-label="Related projects">
+        <a
+          className="text-link"
+          href="https://evidence.moorkyz.com"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Evidence workspace
+        </a>
+      </nav>
       <p className="footer-note">
         <span>made /w</span>
         <svg
