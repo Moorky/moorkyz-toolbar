@@ -15,9 +15,9 @@ These standards govern implementation details only; they do not create product s
 - Keep strict type checking enabled. Avoid `any`, unchecked casts, `@ts-ignore`, and non-null assertions as shortcuts.
 - Use explicit types for public API, configuration, events, and data crossing trust boundaries; infer straightforward local types.
 - Model mutually exclusive states with unions and handle them exhaustively.
-- Keep the core independent of frameworks and server-only packages. Put optional adapters and the Node CLI behind explicit subpath boundaries.
+- Keep standalone tool engines independent of the portal framework and avoid browser imports of filesystem/server code.
 - Keep browser imports SSR-safe: module evaluation must not require browser globals or start work.
-- Do not bundle portal, generator, or CLI dependencies into browser-facing exports.
+- Do not bundle local-service or filesystem dependencies into browser workspaces.
 
 ## Runtime behavior
 
@@ -32,7 +32,7 @@ These standards govern implementation details only; they do not create product s
 - Use semantic controls, accessible names and states, visible focus, predictable keyboard behavior, and stable interaction targets.
 - Respect responsive layouts, right-to-left and zoom requirements where specified, and `prefers-reduced-motion`.
 - Do not communicate state by color alone. Verify meaningful error, empty, loading, and disabled states for interactive work.
-- Follow the detailed product constraints in `docs/design/interaction-and-visual-system.md` and `docs/architecture/security-and-trust.md`.
+- Follow the current root contract and the relevant tool guide; historical SDK specifications are not active requirements.
 
 ## Documentation
 

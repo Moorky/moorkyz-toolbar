@@ -1,6 +1,2 @@
 packages:
   - packages/*
-  - examples/*
-
-allowBuilds:
-  esbuild: true

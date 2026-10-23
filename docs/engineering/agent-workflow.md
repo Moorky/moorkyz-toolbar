@@ -1,6 +1,8 @@
 # Agent Development Workflow
 
-This workflow is project-neutral in its implementation steps; the Toolbar's decisions, contracts, security model, and authority limits in `AGENTS.md` remain controlling. A workflow never grants permission to expand scope or perform external actions.
+This workflow is project-neutral; current product decisions, tool safety rules
+and authority limits in `AGENTS.md` remain controlling. Historical SDK audits
+do not restore retired requirements.
 
 ## Operating principles
 
@@ -13,7 +15,10 @@ This workflow is project-neutral in its implementation steps; the Toolbar's deci
 
 ## Authority and source of truth
 
-Use the authority order in `AGENTS.md`: platform and safety requirements; the user's current request; approved decisions and contracts; architecture, design, security, and engineering specifications; then code/tests for implementation detail. Do not let a general standard silently override a specific approved Toolbar decision. If a material conflict remains, record it in `docs/engineering/open-validations.md` and seek approval where required.
+Use the authority order in `AGENTS.md`: platform and safety requirements; the
+user's current request; current approved decisions/tool guides; then code/tests
+for implementation detail. Record material ambiguity in
+`docs/engineering/open-validations.md` and seek targeted approval where required.
 
 ## Scale the process to risk
 

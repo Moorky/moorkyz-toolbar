@@ -8,12 +8,11 @@ export default defineConfig({
   workers: 1,
   globalTeardown: "./tools/videocrunch/test/browser-teardown.js",
   webServer: [
-    base.webServer[0],
     {
-      ...base.webServer[1],
+      ...base.webServer[0],
       reuseExistingServer: false,
       env: {
-        ...base.webServer[1].env,
+        ...base.webServer[0].env,
         MOORKYZ_VIDEOCRUNCH_ENABLED: "1",
         MOORKYZ_VIDEOCRUNCH_PORT: "8876",
       },

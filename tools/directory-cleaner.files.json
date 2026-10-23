@@ -1,0 +1,10 @@
+[
+  ".gitignore",
+  "README.md",
+  "LICENSE",
+  "core.mjs",
+  "server.mjs",
+  "clean.mjs",
+  "Start-DirectoryCleaner.cmd",
+  "settings.example.json"
+]

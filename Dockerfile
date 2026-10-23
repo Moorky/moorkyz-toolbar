@@ -11,11 +11,6 @@ WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/portal/package.json packages/portal/package.json
-COPY packages/toolbar/package.json packages/toolbar/package.json
-COPY examples/react-consumer/package.json examples/react-consumer/package.json
-COPY examples/vanilla-consumer/package.json examples/vanilla-consumer/package.json
-COPY examples/vue-consumer/package.json examples/vue-consumer/package.json
-COPY examples/angular-consumer/package.json examples/angular-consumer/package.json
 
 RUN pnpm install --frozen-lockfile
 

@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "sourceDir": "C:\\Users\\YourName\\Downloads",
+  "recursive": false,
+  "rules": [
+    { "action": "keep", "pattern": "*.pdf" },
+    {
+      "action": "move",
+      "pattern": "*.jpg",
+      "destination": "C:\\Users\\YourName\\Pictures\\Sorted"
+    },
+    { "action": "archive", "pattern": "*.tmp", "smallerThanBytes": 1048576 },
+    {
+      "action": "archive",
+      "pattern": "*",
+      "createdBefore": "2025-01-01",
+      "largerThanBytes": 104857600
+    }
+  ]
+}

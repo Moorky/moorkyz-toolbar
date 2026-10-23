@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
-const bundles = ["videocrunch"];
+const bundles = ["videocrunch", "directory-cleaner"];
 
 function crc32(bytes) {
   let crc = 0xffffffff;

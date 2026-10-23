@@ -8,7 +8,6 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   output: "standalone",
   outputFileTracingRoot: path.resolve(portalDirectory, "../.."),
-  transpilePackages: ["@moorkyz/toolbar"],
 };
 
 export default nextConfig;

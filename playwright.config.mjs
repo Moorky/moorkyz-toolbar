@@ -20,18 +20,20 @@ function configuredPort(name, fallback) {
   return port;
 }
 
-const fixturePort = configuredPort("MOORKYZ_TOOLBAR_FIXTURE_PORT", "4173");
 const portalPort = configuredPort(
-  "MOORKYZ_TOOLBAR_PORTAL_PORT",
+  "MOORKYZ_TOOLS_PORTAL_PORT",
   process.env.PORTAL_TEST_PORT ?? "4174",
 );
 
 export default defineConfig({
   testDir: "./tests/browser",
   testMatch: "**/*.spec.js",
-  testIgnore: "**/local-service.spec.js",
+  testIgnore: [
+    "**/local-service.spec.js",
+    "**/directory-cleaner-service.spec.js",
+  ],
   fullyParallel: true,
-  workers: process.env.CI ? 3 : undefined,
+  workers: process.env.CI ? 3 : 1,
   reporter: [
     ["list"],
     ["json", { outputFile: "test-results/browser-results.json" }],
@@ -42,18 +44,11 @@ export default defineConfig({
     { name: "webkit", use: { browserName: "webkit" } },
   ],
   use: {
-    baseURL: `http://127.0.0.1:${fixturePort}`,
+    baseURL: `http://127.0.0.1:${portalPort}`,
     browserName: "chromium",
     headless: true,
   },
   webServer: [
-    {
-      command: "node tests/browser/server.mjs",
-      url: `http://127.0.0.1:${fixturePort}/health`,
-      reuseExistingServer: !process.env.CI,
-      timeout: 30_000,
-      env: { MOORKYZ_TOOLBAR_FIXTURE_PORT: fixturePort },
-    },
     {
       command: "node packages/portal/server.js",
       url: `http://127.0.0.1:${portalPort}`,

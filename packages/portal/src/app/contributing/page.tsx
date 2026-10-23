@@ -23,9 +23,9 @@ export default function ContributingPage() {
           <p className="eyebrow">OPEN SOURCE · APACHE-2.0</p>
           <h1 className="contribution-title">Build something thoughtful.</h1>
           <p>
-            Moorkyz Toolbar welcomes focused, tested improvements. The SDK and
-            its public contracts remain development previews; publishing and
-            deployment require separate authorization.
+            Moorkyz Tools welcomes focused, tested improvements to independent
+            tools and the shared portal. Publishing and deployment require
+            separate authorization.
           </p>
         </div>
         <h2>Work locally</h2>
@@ -37,7 +37,7 @@ export default function ContributingPage() {
         >
           <code>
             {
-              "pnpm install --frozen-lockfile\npnpm --filter @moorkyz/portal dev\npnpm check\npnpm test:coverage\npnpm check:source\npnpm measure:bundles"
+              "pnpm install --frozen-lockfile\npnpm --filter @moorkyz/portal dev\npnpm check\npnpm check:source"
             }
           </code>
         </pre>
@@ -45,11 +45,11 @@ export default function ContributingPage() {
         <ol>
           <li>
             Read the repository&apos;s agent contract, decision register and
-            relevant SDK contracts before changing behavior.
+            relevant tool guides before changing behavior.
           </li>
           <li>
-            Preserve host authorization, mandatory accessibility, local-first
-            data handling and disabled-feature inactivity.
+            Preserve mandatory accessibility, local-first data handling,
+            archive-only cleanup and disabled-service inactivity.
           </li>
           <li>
             Add observable tests; run the relevant gates and report real
@@ -73,7 +73,7 @@ export default function ContributingPage() {
           <a href="https://github.com/Moorky/moorkyz-toolbar">
             Open the repository ↗
           </a>{" "}
-          · <a href="/tools/toolbar/playground#docs">Read the documentation</a>
+          · <a href="/#tools">Explore the tools</a>
         </p>
       </main>
       <SiteFooter />

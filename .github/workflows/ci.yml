@@ -22,9 +22,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium firefox webkit
       - run: pnpm check
-      - run: pnpm test:coverage
+      - run: pnpm test:directory-cleaner:browser
       - run: pnpm check:source
-      - run: pnpm measure:bundles
       - run: pnpm audit --audit-level=low
       - run: pnpm licenses list --json
 

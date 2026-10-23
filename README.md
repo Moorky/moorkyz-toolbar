@@ -1,106 +1,60 @@
-# Moorkyz Toolbar — Architecture and Implementation Specification
+# Moorkyz Tools
 
-> **Status:** Consolidation draft v0.1 · 2026-10-16 · draft specification for review; committed locally, not approved for release.
-> **Product:** Moorkyz Toolbar · **Repository:** `moorkyz-toolbar` · **Public package:** `@moorkyz/toolbar` · **Developer portal:** `toolbar.moorkyz.com`.
+A growing catalog of independent tools, with clear setup, readable source and
+local-first workspaces. The former toolbar SDK and Studio have been removed;
+the **Toolbar Builder** is now a small standalone HTML generator, not a framework.
 
-**Product rule:** **Easy to start. Easy to use. Powerful to master.** Basic installation must work with minimal configuration, while advanced capabilities remain discoverable, documented, independently configurable, and testable.
+## Tools
 
-**License:** Apache License 2.0. See [`LICENSE`](LICENSE).
+- **Toolbar Builder** - compact link editor, live preview, Copy and one-file HTML
+  download. No SDK, adapters, service or installation required for the output.
+- **VideoCrunch** - optional Windows localhost video downloader/compressor;
+  original source bytes remain preserved. Its complete source is included.
+- **Directory Cleaner** - filename/relative-path patterns, creation-date bounds
+  and file-size thresholds; Keep, Move and Delete (archive only). Available as a
+  local service and a standalone script. Preview, then explicitly confirm changes.
 
-This repository implements the 80 confirmed architecture questionnaire decisions.
-The development preview includes the framework-neutral dock, optional capabilities,
-trusted extensions, framework adapters, local Development Studio and safe Vanilla
-generator/consumer CLI. **It is not release-ready:** public contracts, manual
-acceptance and release authorization remain open. See the
-[current evidence and blockers](docs/engineering/release-readiness.md).
+Every local script tool has a source hierarchy, console-style viewer, per-file
+Copy/Download and a complete ZIP. See the [portal guide](docs/portal/modular-tools.md)
+and [Directory Cleaner guide](tools/directory-cleaner/README.md).
 
-The website/Playground MVP adds four local applications, ten structural toolbar
-styles, manual light/dark design variants, geometry/action editing, browser-local
-autosave/recovery, responsive sheet/fullscreen workspaces and personalized
-Vanilla exports. The complete landing page links to a dedicated `/studio` with
-the existing real SDK labs. See the [portal guide](packages/portal/README.md) and
-[MVP implementation plan](docs/engineering/website-mvp.md). The separately
-licensed DM font assets include their SIL OFL notices; no CDN is required.
+## Development
 
-## Modular tools and local video service
-
-The homepage now lists independent tools. Each tool has its own metadata,
-description, use cases and setup page. The Toolbar experience remains at
-`/tools/toolbar/playground`; its overview is `/tools/toolbar`. VideoCrunch is
-fully imported under [`tools/videocrunch`](tools/videocrunch/) and accessible at
-`/tools/videocrunch`, including source hierarchy, copy/download controls and a
-complete ZIP.
-
-VideoCrunch's local web service is **off by default**. Run `pnpm tool:videocrunch`
-on Windows, then explicitly set `MOORKYZ_VIDEOCRUNCH_ENABLED=1` in the local
-portal terminal and open its workspace. Public hosting and multi-user features
-remain off. See the [modular portal guide](docs/portal/modular-tools.md) for setup,
-security boundaries, adding tools and verification. VideoCrunch retains its
-original no-selected-distribution-license status; do not assume Apache-2.0
-relicenses the imported application.
-
-## Local development
-
-```sh
+```powershell
 pnpm install --frozen-lockfile
-pnpm exec playwright install chromium firefox webkit
+pnpm --filter @moorkyz/portal dev --hostname 127.0.0.1
+pnpm build
 pnpm check
-pnpm test:coverage
 pnpm check:source
-pnpm measure:bundles
-pnpm --filter @moorkyz/portal dev
 ```
 
-The checks build the package and portal, run unit and three-browser accessibility
-tests, and typecheck Vanilla/React/Vue/Angular consumers plus the Next.js portal.
-The separate [public consumer CLI](docs/engineering/consumer-cli.md) performs
-local generation and preview-first upgrades without installs or silent overwrite.
-See the [implementation checklist](docs/engineering/implementation-status.md) for
-incomplete milestone exits and release restrictions.
+Use Node.js 22+ and the pinned pnpm version. Browser tests use installed
+Chromium/Firefox/WebKit; `pnpm exec playwright install` prepares them for development.
 
-## Production deployment
+## Explicit local services
 
-The portal has a standalone Docker image and a CI-gated Coolify deployment path. See the [Coolify setup guide](docs/deployment/coolify.md) for the server settings and required GitHub secrets.
+```powershell
+# Independent terminals, only for tools you want to run:
+pnpm tool:videocrunch
+pnpm tool:directory-cleaner
+# Portal terminal:
+$env:MOORKYZ_VIDEOCRUNCH_ENABLED = "1"
+$env:MOORKYZ_DIRECTORY_CLEANER_ENABLED = "1"
+pnpm --filter @moorkyz/portal dev --hostname 127.0.0.1
+```
 
-## Implementation status
+Both connections are **off by default**. Nothing is installed or started by
+opening a tool page. Do not expose either native service publicly or reverse-proxy
+its operations. No accounts, tenant isolation, hosted storage or telemetry.
 
-Implementation proceeds through the approved milestones; no product runtime or public API is claimed stable yet. Follow the [implementation checklist](docs/engineering/implementation-status.md) for milestone status and evidence.
+## Governance
 
-## Document authority and reading order
+[AGENTS.md](AGENTS.md), [decisions](docs/decisions/decision-register.md) and
+[testing](docs/engineering/testing.md) describe current behavior. Old specifications
+remain in Git history; [audits](docs/audits/) remain historical evidence.
+No publishing or deployment is authorized by local verification.
 
-1. [`docs/decisions/decision-register.md`](docs/decisions/decision-register.md): binding record of decisions Q1–Q80. Changing an approved decision requires a new documented decision and approval; do not silently rewrite its meaning.
-2. [`docs/architecture/product-and-system.md`](docs/architecture/product-and-system.md): system components, authority boundaries, product/non-product scope.
-3. [`docs/contracts/sdk-and-schema.md`](docs/contracts/sdk-and-schema.md): contract-first SDK and schema design, proposal status and versioning rules.
-4. [`docs/architecture/features-and-resources.md`](docs/architecture/features-and-resources.md): feature flags, lifecycle, feature loading, resource rules.
-5. [`docs/design/interaction-and-visual-system.md`](docs/design/interaction-and-visual-system.md): UI/UX, animation, responsive layout, accessibility.
-6. [`docs/architecture/security-and-trust.md`](docs/architecture/security-and-trust.md): isolation, CSP, trust and authorization.
-7. [`docs/portal/development-studio.md`](docs/portal/development-studio.md): developer website and live tools.
-8. [`docs/engineering/dependency-map.md`](docs/engineering/dependency-map.md): dependency and implementation order; conflict resolutions.
-9. [`docs/engineering/roadmap.md`](docs/engineering/roadmap.md): milestone-based build plan and measurable acceptance gates.
-10. [`docs/engineering/verification-and-release.md`](docs/engineering/verification-and-release.md): automated QA, audits, security and release approvals.
-11. [`docs/engineering/open-validations.md`](docs/engineering/open-validations.md): remaining evidence-backed questions, blockers and non-blockers.
-12. [`AGENTS.md`](AGENTS.md): agent instructions and risk-tiered change permissions.
-13. [`docs/engineering/implementation-status.md`](docs/engineering/implementation-status.md): implementation progress and verification evidence.
-
-## Scope and execution constraints
-
-- Build the **complete reusable library** and its dedicated, interactive **developer website first**. The site must actually import and exercise the library. **Do not integrate into other Moorkyz applications before completion and validation.**
-- One published npm package with modular exports; internal pnpm monorepo workspaces and an independent Next.js/React portal are permitted.
-- Framework-neutral TypeScript core; do not impose React, Next.js, CLI, AI, user accounts, or server requirements on library consumers.
-- Host owns navigation and business data/operations, authentication/authorization, background jobs, service workers, and privileged execution. SDK and extension boundaries are typed and policy-driven.
-- Core accessibility, safe content handling, permission enforcement, and deterministic state cannot be turned off. Most advanced features can be turned off, with no initialization, polling, fetching, or feature-owned observer overhead when disabled.
-- No behavior-based user learning, default remote telemetry, automatic network calls to Moorkyz, or cross-app preference synchronization.
-- No publishing, deploying, production release, payment, signing, or integration into other products without **separate explicit user authorization**. Writing these docs grants none of those permissions.
-
-## Baseline review checklist
-
-- [ ] Reconcile any shortened entries in the decision register against the original Q1–Q64 transcript before marking the registry archival/exact wording.
-- [ ] Approve public contract drafts and lock down supported exports, feature names, validation/error codes, and CLI behavior.
-- [ ] Establish a measured performance baseline and approved numerical gates.
-- [ ] Confirm supported browser/device/framework matrix and target Node/tool versions.
-- [ ] Run security/CSP/Shadow DOM compatibility spikes before hardening those assumptions.
-- [ ] Implement and independently test library + website; complete audits and secure explicit release authorization later.
-
-## Implementation authorization
-
-Question 80 chose **contract-first progressive implementation** and **risk-tiered agent authority**. Agents may resolve reversible internal engineering details; they must seek approval for material public-API changes, security weakening, feature-default changes, paid resources, scope changes, publishing, deployment, or cross-product integrations.
+The root [Apache-2.0 license](LICENSE) covers first-party project code. The
+imported VideoCrunch application's original no-selected-distribution-license
+notice remains separate; do not assume it was relicensed. Self-hosted fonts
+retain their SIL OFL notices.

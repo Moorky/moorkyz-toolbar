@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { readFile } from "node:fs/promises";
 
-const origin = `http://127.0.0.1:${process.env.MOORKYZ_TOOLBAR_PORTAL_PORT ?? process.env.PORTAL_TEST_PORT ?? "4174"}`;
+const origin = `http://127.0.0.1:${process.env.MOORKYZ_TOOLS_PORTAL_PORT ?? process.env.PORTAL_TEST_PORT ?? "4174"}`;
 
 test("catalog cards open complete tool pages, source tree and dormant local service", async ({
   page,
@@ -13,7 +13,7 @@ test("catalog cards open complete tool pages, source tree and dormant local serv
   await expect(
     page.getByRole("heading", { name: "A little more useful." }),
   ).toBeVisible();
-  await expect(page.locator(".tool-card")).toHaveCount(2);
+  await expect(page.locator(".tool-card")).toHaveCount(3);
   await expect(page.locator(".tool-card").first()).toContainText(
     "Design, preview and export",
   );
@@ -133,7 +133,12 @@ test("tool catalog and detail pages remain accessible and fit mobile in both the
   page,
 }, testInfo) => {
   test.slow();
-  for (const route of ["/", "/tools/toolbar", "/tools/videocrunch"]) {
+  for (const route of [
+    "/",
+    "/tools/toolbar",
+    "/tools/videocrunch",
+    "/tools/directory-cleaner",
+  ]) {
     await page.goto(`${origin}${route}`);
     await page.emulateMedia({ reducedMotion: "reduce" });
     for (const width of [320, 390, 1440]) {

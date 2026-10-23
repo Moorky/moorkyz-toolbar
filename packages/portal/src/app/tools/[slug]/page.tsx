@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import { SiteHeader } from "../../../components/site-header";
 import { SiteFooter } from "../../../components/site-footer";
 import { LocalToolWorkspace } from "../../../components/local-tool-workspace";
 import { ToolSourceBrowser } from "../../../components/tool-source-browser";
+import { CompactToolbarBuilder } from "../../../components/compact-toolbar-builder";
+import { DirectoryCleaner } from "../../../components/directory-cleaner";
 import { findTool, formatToolDate } from "../../../data/tools";
 
 type Props = { readonly params: Promise<{ slug: string }> };
@@ -21,6 +24,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ToolPage({ params }: Props) {
   const tool = findTool((await params).slug);
   if (!tool) notFound();
+  const nonce = (await headers()).get("x-nonce") ?? "";
   return (
     <>
       <a className="skip-link" href="#main-content">
@@ -77,14 +81,19 @@ export default async function ToolPage({ params }: Props) {
           <h2 id="description-heading">Description</h2>
           <p>{tool.description}</p>
         </section>
-        {tool.source && (
+        {(tool.source || tool.workspace === "toolbar") && (
           <section id="tool" aria-labelledby="tool-heading" tabIndex={-1}>
             <h2 id="tool-heading">Tool</h2>
-            <ToolSourceBrowser
-              key={tool.source.bundle}
-              bundle={tool.source.bundle}
-              files={tool.source.files}
-            />
+            {tool.workspace === "toolbar" && (
+              <CompactToolbarBuilder nonce={nonce} />
+            )}
+            {tool.source && (
+              <ToolSourceBrowser
+                key={tool.source.bundle}
+                bundle={tool.source.bundle}
+                files={tool.source.files}
+              />
+            )}
           </section>
         )}
         <section
@@ -115,25 +124,17 @@ export default async function ToolPage({ params }: Props) {
             ))}
           </ol>
         </section>
-        {tool.workspace && (
+        {tool.workspace && tool.workspace !== "toolbar" && (
           <section
             id="workspace"
             aria-labelledby="workspace-heading"
             tabIndex={-1}
           >
             <h2 id="workspace-heading">Workspace</h2>
-            {tool.workspace === "toolbar" ? (
-              <div className="hero-actions">
-                <a
-                  className="button button-primary"
-                  href="/tools/toolbar/playground"
-                >
-                  Open the Playground <span aria-hidden="true">↗</span>
-                </a>
-                <a className="button button-secondary" href="/studio">
-                  Open Development Studio
-                </a>
-              </div>
+            {tool.workspace === "directory-cleaner" ? (
+              <DirectoryCleaner
+                enabled={process.env.MOORKYZ_DIRECTORY_CLEANER_ENABLED === "1"}
+              />
             ) : (
               <LocalToolWorkspace
                 enabled={process.env.MOORKYZ_VIDEOCRUNCH_ENABLED === "1"}

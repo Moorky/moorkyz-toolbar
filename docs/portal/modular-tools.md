@@ -9,14 +9,25 @@ multi-user workers and infrastructure off. The live site had no discoverable
 footer game; the user explicitly selected its current footer without a game
 until a reference is supplied.
 
-The homepage is the catalog. `/tools/toolbar` and `/tools/videocrunch` provide
+The homepage is the catalog. `/tools/toolbar`, `/tools/videocrunch` and
+`/tools/directory-cleaner` provide
 Title, Release Date, Updated On, Description, Use Cases and Setup. Local script
 tools additionally show **Tool immediately after Description**: a file hierarchy,
 selectable console-style source, copy/download per file and a complete ZIP.
-Neither tool claims a public release date; the integration date is not a release.
-The existing SDK experience is preserved at `/tools/toolbar/playground`, and the
-Studio remains at `/studio`. Existing external root fragment links need to be
-updated to the Playground route; the catalog intentionally replaces the old home.
+None claims a public release date; the integration date is not a release.
+The user subsequently approved removal of the legacy SDK, Studio, examples,
+toolbar-specific tests and active specifications. Their history and audits are
+preserved. `/tools/toolbar` now contains only a compact, independent builder.
+The old large Playground and Studio routes intentionally return 404.
+
+## Compact Toolbar Builder
+
+The browser-only builder edits at most eight labels/URLs, light/dark appearance,
+top/bottom position and accent border. Native links provide keyboard navigation;
+the preview reports clicks without navigating. Copy/Download produces one
+self-contained HTML file, at most 8 KiB, with no JavaScript, package dependency,
+external fonts or network demand. The portal itself uses independent native
+navigation, not this generated toolbar.
 
 ## Adding tools
 
@@ -41,7 +52,39 @@ only the first-party source bundle; the viewer renders source as text and never
 executes it. Clipboard/download failures remain visible and source stays
 selectable. A future distribution license must be settled before distributing
 VideoCrunch: its original no-selected-license notice is retained and the
-Toolbar's Apache-2.0 license must not be assumed to relicense it.
+parent project's Apache-2.0 license must not be assumed to relicense it.
+
+## Directory Cleaner
+
+The [standalone guide](../../tools/directory-cleaner/README.md) describes its
+shared engine, CLI, service, receipts and supported bounds. The portal's rule
+editor also works with the connection off: download settings and the complete
+script ZIP, preview locally, then confirm explicitly.
+
+Rules support `*`, `?`, `**` filename/relative-path patterns, UTC creation date
+bounds and strict smaller/larger byte sizes. Conditions use AND. Keep wins;
+otherwise the first matching rule applies, and unmatched files are untouched.
+Delete always archives; permanent deletion is not a supported action.
+
+```powershell
+# Separate service terminal:
+pnpm tool:directory-cleaner
+# Portal terminal:
+$env:MOORKYZ_DIRECTORY_CLEANER_ENABLED = "1"
+pnpm --filter @moorkyz/portal dev --hostname 127.0.0.1
+```
+
+The default service port is 8766. An explicit native `--port` must match
+`MOORKYZ_DIRECTORY_CLEANER_PORT`. The process-local token guards previews,
+confirmed application and run status. Preview is non-mutating; apply accepts
+only a retained server-side plan ID plus its exact confirmation. Plans expire
+after ten minutes, and all files/settings must revalidate before writes.
+Archive and move targets are excluded, roots/home/system folders and links are
+rejected, destinations never overwrite, and preservation precedes unlinking.
+Large apply operations return a run ID immediately instead of tying file work to
+an HTTP timeout; polling starts only for an explicitly accepted/resumed run and
+is released on disconnect/unmount. Closing the view does not cancel confirmed
+work. Failures are explicit, processing stops and synced recovery receipts remain.
 
 ## VideoCrunch localhost service
 
@@ -93,7 +136,8 @@ The source viewer and setup page remain available when the gateway is off.
 ```powershell
 pnpm build
 node --test tests\tooling\tools-catalog.test.js tests\tooling\videocrunch-proxy.test.js tests\tooling\download-json.test.js
-pnpm exec playwright test 'tools\.spec\.js|website\.spec\.js' --workers=3
+pnpm exec playwright test --workers=2
+pnpm test:directory-cleaner:browser
 pnpm test:videocrunch
 pnpm test:videocrunch:browser
 ```
@@ -101,5 +145,6 @@ pnpm test:videocrunch:browser
 The separate real-service browser configuration uses isolated synthetic media,
 temporary exports/history and loopback fixture ports 8876/8877, with explicit
 teardown. It requires the Windows/native prerequisites and runs serially; it is
-not a mandatory dependency of the framework-neutral library or standard browser
-suite. No third-party video is downloaded for verification.
+not a mandatory dependency of the standard browser suite. Directory Cleaner has
+a separate real-service browser configuration using disposable files and port
+8878. No personal files or third-party videos are used for verification.

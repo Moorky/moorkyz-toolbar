@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { usePortalSettings } from "./portal-shell";
 import { TOOLS } from "../data/tools";
 
-const repository = "https://github.com/Moorky/moorkyz-toolbar";
 export const PORTAL_REFERENCE = [
   ...TOOLS.map((tool) => ({
     title: tool.title,
@@ -12,64 +11,9 @@ export const PORTAL_REFERENCE = [
     href: `/tools/${tool.slug}`,
   })),
   {
-    title: "Playground",
-    text: "Four local applications, ten styles, configuration and export.",
-    href: "/tools/toolbar/playground#playground",
-  },
-  {
-    title: "Personalized Quick Start",
-    text: "Verified Vanilla mount, host actions, disposal and source export.",
-    href: "/tools/toolbar/playground#quick-start",
-  },
-  {
-    title: "SDK schema and controller",
-    text: "createToolbar, validateConfiguration, feature defaults and errors.",
-    href: `${repository}/blob/master/docs/contracts/sdk-and-schema.md`,
-  },
-  {
-    title: "Themes and accessibility",
-    text: "Tokens, contrast, keyboard, reduced motion and WCAG requirements.",
-    href: `${repository}/blob/master/docs/design/interaction-and-visual-system.md`,
-  },
-  {
-    title: "Component Lab",
-    text: "Real SDK overflow, collapse and local search states.",
-    href: "/studio#component-lab",
-  },
-  {
-    title: "Scenario Lab",
-    text: "Host permission, faults, time, viewport, import and replay.",
-    href: "/studio#scenario-lab",
-  },
-  {
-    title: "Theme Studio",
-    text: "Manual palette authoring, validation and versioned import/export.",
-    href: "/studio#theme-studio",
-  },
-  {
-    title: "Extension Studio",
-    text: "Trusted recipes, host authorization and revocation.",
-    href: "/studio#extension-studio",
-  },
-  {
-    title: "Diagnostics and Inspector",
-    text: "Explicit local inspector and validated JSON workbench.",
-    href: "/studio#configurator",
-  },
-  {
-    title: "Framework integration fixtures",
-    text: "Vanilla, React, Vue and Angular consumers; not framework generators.",
-    href: `${repository}/tree/master/examples`,
-  },
-  {
-    title: "Security and host authority",
-    text: "Least privilege, data boundaries, trust and optional capabilities.",
-    href: `${repository}/blob/master/docs/architecture/security-and-trust.md`,
-  },
-  {
-    title: "M10/M11 release gates",
-    text: "Manual device/AT evidence, numerical budgets and release approval.",
-    href: `${repository}/blob/master/docs/engineering/release-readiness.md`,
+    title: "Contributing",
+    text: "Local development, tool registration and verification.",
+    href: "/contributing",
   },
 ];
 
@@ -98,9 +42,7 @@ export function PortalSearch() {
       const target = event.target;
       if (
         target instanceof Element &&
-        target.closest(
-          "input, textarea, select, [contenteditable], .mzk-toolbar, #playground-canvas",
-        )
+        target.closest("input, textarea, select, [contenteditable]")
       )
         return;
       event.preventDefault();
@@ -189,8 +131,7 @@ export function PortalSearch() {
         </ul>
         {!results.length && (
           <p role="status">
-            No matching reference entries. Try “theme”, “permissions” or
-            “Vanilla”.
+            No matching tools. Try “video”, “directory” or “toolbar”.
           </p>
         )}
       </dialog>

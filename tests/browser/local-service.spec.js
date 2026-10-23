@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const origin = `http://127.0.0.1:${process.env.MOORKYZ_TOOLBAR_PORTAL_PORT ?? process.env.PORTAL_TEST_PORT ?? "4174"}`;
+const origin = `http://127.0.0.1:${process.env.MOORKYZ_TOOLS_PORTAL_PORT ?? process.env.PORTAL_TEST_PORT ?? "4174"}`;
 
 test("integrated local service runs real exports, preserves downloads and stops view polling", async ({
   page,

@@ -26,6 +26,15 @@ Coolify provisions TLS for the configured domain after the first successful
 deployment. No runtime environment variables or persistent volumes are
 required for the current portal.
 
+The portal is now the modular tools catalog; the former toolbar SDK and Studio
+are removed. The repository and existing domain identifiers above are unchanged.
+Do not set `MOORKYZ_VIDEOCRUNCH_ENABLED` or
+`MOORKYZ_DIRECTORY_CLEANER_ENABLED` on a hosted deployment. Both filesystem/media
+services are explicitly localhost-only and independently started by the user.
+The container serves metadata, the small builder and allowlisted source downloads,
+not hosted cleanup or video workers. VideoCrunch's distribution-license decision
+remains a prerequisite for public source redistribution.
+
 ## GitHub Actions to Coolify
 
 The workflow at `.github/workflows/ci.yml` runs the deployment job only for

@@ -1,4 +1,5 @@
 import videoCrunchFiles from "../../../../tools/videocrunch.files.json" with { type: "json" };
+import cleanerFiles from "../../../../tools/directory-cleaner.files.json" with { type: "json" };
 
 export interface ToolDefinition {
   readonly slug: string;
@@ -16,7 +17,7 @@ export interface ToolDefinition {
     readonly text: string;
     readonly command?: string;
   }[];
-  readonly workspace?: "toolbar" | "videocrunch";
+  readonly workspace?: "toolbar" | "videocrunch" | "directory-cleaner";
   readonly source?: {
     readonly bundle: string;
     readonly files: readonly string[];
@@ -26,35 +27,29 @@ export interface ToolDefinition {
 export const TOOLS: readonly ToolDefinition[] = [
   {
     slug: "toolbar",
-    title: "Moorkyz Toolbar",
-    category: "INTERFACE TOOLKIT",
+    title: "Toolbar Builder",
+    category: "SMALL WEB TOOL",
     monogram: "tb",
-    version: "0.1.0 development preview",
+    version: "1.0.0 local preview",
     releaseDate: null,
     updatedOn: "2026-10-23",
     summary:
-      "One adaptive toolbar for your interface. Design, preview and export a dock that feels at home.",
+      "Design, preview and export a tiny toolbar. A few links, a little style, one HTML file.",
     description:
-      "A framework-neutral, accessible toolbar SDK with optional adapters and a working design playground. Explore four local applications, ten structural styles, manual themes and host-owned commands. The SDK is a development preview, not a published stable release.",
+      "A compact browser-only builder for up to eight navigation links. Pick light or dark appearance, an accent border and top or bottom placement, then copy or download one self-contained HTML file. No package, framework, account or service required.",
     useCases: [
-      "Build consistent navigation and contextual actions across web applications.",
-      "Prototype accessible docks with keyboard support and reduced motion.",
-      "Validate themes, replay scenarios and export a Vanilla starter locally.",
+      "Make a small navigation bar for a landing page or local utility.",
+      "Try link labels and appearance without setting up a development project.",
+      "Take portable, readable HTML/CSS with no JavaScript or runtime dependencies.",
     ],
     setup: [
       {
-        title: "Prepare the workspace",
-        text: "Use the repository's pinned pnpm version and install its locked development dependencies.",
-        command: "pnpm install --frozen-lockfile",
+        title: "Edit the links",
+        text: "Use the small builder above. Set labels and #section, /local-path or HTTP(S) destinations.",
       },
       {
-        title: "Start the portal",
-        text: "Open the local address printed by Next.js. No account or external demo service is required.",
-        command: "pnpm --filter @moorkyz/portal dev",
-      },
-      {
-        title: "Design and export",
-        text: "Open the Playground below. Follow its personalized quick start for a local SDK path; the package is not yet published.",
+        title: "Copy or download",
+        text: "Open the HTML directly, or copy its nav and CSS into your own page. Generated output is at most 8 KiB; no installation is needed.",
       },
     ],
     workspace: "toolbar",
@@ -100,6 +95,51 @@ export const TOOLS: readonly ToolDefinition[] = [
     ],
     workspace: "videocrunch",
     source: { bundle: "videocrunch", files: videoCrunchFiles },
+  },
+  {
+    slug: "directory-cleaner",
+    title: "Directory Cleaner",
+    category: "LOCAL FILE UTILITY",
+    monogram: "dc",
+    version: "1.0.0 local preview",
+    releaseDate: null,
+    updatedOn: "2026-10-23",
+    summary:
+      "Keep, move or archive files using patterns, creation dates and size limits. Preview every change first.",
+    description:
+      "A local file organizer available as both a web-service workspace and a downloadable script. Match filename or relative-path patterns, combine creation-before/after and size-smaller/larger conditions, then Keep, Move or Delete to archive. Keep rules win; otherwise the first match applies, and unmatched files remain untouched. Nothing is permanently deleted or overwritten.",
+    useCases: [
+      "Keep important documents while archiving old or tiny temporary files.",
+      "Move matching photos or downloads into another folder without overwriting existing files.",
+      "Find large files created before a chosen date, review the exact plan and archive only after confirmation.",
+    ],
+    setup: [
+      {
+        title: "Use the downloadable script",
+        text: "Requires Node.js 22+. Download the complete script ZIP from Tool or Workspace, extract it and download your settings from the rule editor. Preview does not change files.",
+        command:
+          "node .\\clean.mjs --settings .\\directory-cleaner-settings.json --plan .\\preview.json",
+      },
+      {
+        title: "Apply a reviewed script preview",
+        text: "Read preview.json and use its actual ID. Delete always puts files into an archive. The exact source snapshot is revalidated before any changes.",
+        command:
+          'node .\\clean.mjs --apply .\\preview.json --confirm "APPLY <preview-id>"',
+      },
+      {
+        title: "Or start the local web service",
+        text: "From this repository, run the service in its own terminal. It binds only to 127.0.0.1:8766; no account or installation runs automatically.",
+        command: "pnpm tool:directory-cleaner",
+      },
+      {
+        title: "Enable the portal connection",
+        text: "In another terminal, opt in and bind the portal to loopback. Connect in Workspace, preview the files and type the exact confirmation. Both local-service connections are independent and off by default.",
+        command:
+          '$env:MOORKYZ_DIRECTORY_CLEANER_ENABLED = "1"\npnpm --filter @moorkyz/portal dev --hostname 127.0.0.1',
+      },
+    ],
+    workspace: "directory-cleaner",
+    source: { bundle: "directory-cleaner", files: cleanerFiles },
   },
 ];
 

@@ -30,8 +30,9 @@ for (const path of paths) {
     }
   }
   if (
-    /^packages\/toolbar\/src\/.*\.ts$/.test(path) &&
-    !path.endsWith("/cli.ts")
+    /^(?:packages\/portal\/src\/|tools\/directory-cleaner\/).*\.(?:ts|tsx|mjs)$/.test(
+      path,
+    )
   ) {
     if (
       /\beval\s*\(|\bnew Function\s*\(|\.innerHTML\s*=|\.outerHTML\s*=/.test(
@@ -47,6 +48,6 @@ if (findings.length > 0) {
   process.exitCode = 1;
 } else {
   console.log(
-    `PASS: ${paths.length} repository paths checked for selected credential patterns; library source has no eval/HTML assignment sinks. This bounded scan is not a complete secret or security audit.`,
+    `PASS: ${paths.length} repository paths checked for selected credential patterns; portal/cleaner source has no eval/HTML assignment sinks. This bounded scan is not a complete secret or security audit.`,
   );
 }

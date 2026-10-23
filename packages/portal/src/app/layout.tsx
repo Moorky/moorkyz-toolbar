@@ -2,8 +2,6 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { PortalShell } from "../components/portal-shell";
 import "./globals.css";
-import "./playground.css";
-import "./website.css";
 import "./tools.css";
 
 export const metadata: Metadata = {
@@ -40,10 +38,10 @@ export const metadata: Metadata = {
       "Explore independent tools for interfaces and video, with local workspaces and clear setup guides.",
     images: [
       {
-        url: "/moorkyz-toolbar-github.png",
-        width: 1280,
-        height: 640,
-        alt: "Moorkyz Toolbar dock preview",
+        url: "/moorkyz-mark.png",
+        width: 512,
+        height: 512,
+        alt: "Moorkyz",
       },
     ],
   },
@@ -51,7 +49,7 @@ export const metadata: Metadata = {
     card: "summary",
     title: "Moorkyz Tools — A little more useful.",
     description: "Local-first tools for interfaces and video.",
-    images: ["/moorkyz-toolbar-github.png"],
+    images: ["/moorkyz-mark.png"],
   },
   robots: {
     index: true,
