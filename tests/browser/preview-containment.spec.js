@@ -9,7 +9,7 @@ const origin = `http://127.0.0.1:${port}`;
 test("framework development UI does not paint an empty button and CSP remains strict", async ({
   page,
 }) => {
-  const response = await page.goto(origin);
+  const response = await page.goto(`${origin}/tools/toolbar/playground`);
   expect(response.headers()["content-security-policy"]).not.toContain(
     "unsafe-inline",
   );
@@ -35,7 +35,7 @@ test("the preview toolbar stays inside its own application and clear of page cus
     [390, 844],
   ]) {
     await page.setViewportSize({ width, height });
-    await page.goto(origin);
+    await page.goto(`${origin}/tools/toolbar/playground`);
     const canvas = page.locator("#playground-canvas");
     const footer = canvas.locator(".playground-toolbar");
     await expect(footer).toHaveAttribute("data-sticky", "true");
@@ -100,7 +100,7 @@ test("preview containment still works without ResizeObserver", async ({
   await page.addInitScript(() => {
     window.ResizeObserver = undefined;
   });
-  await page.goto(origin);
+  await page.goto(`${origin}/tools/toolbar/playground`);
   const footer = page.locator("#playground-canvas .playground-toolbar");
   await page
     .locator("#playground-canvas")

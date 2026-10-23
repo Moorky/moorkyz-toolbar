@@ -1,0 +1,18 @@
+{
+  "name": "web-video-crunch",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A local browser workspace for downloading and compressing authorized videos.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node server.js --open",
+    "test": "node --test test\\server.test.js",
+    "test:media": "node --test test\\media.test.js",
+    "test:browser": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1"
+  }
+}

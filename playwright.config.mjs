@@ -29,6 +29,7 @@ const portalPort = configuredPort(
 export default defineConfig({
   testDir: "./tests/browser",
   testMatch: "**/*.spec.js",
+  testIgnore: "**/local-service.spec.js",
   fullyParallel: true,
   workers: process.env.CI ? 3 : undefined,
   reporter: [

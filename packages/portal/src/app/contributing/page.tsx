@@ -13,7 +13,7 @@ export default function ContributingPage() {
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
-      <SiteHeader homePath="/" />
+      <SiteHeader />
       <main
         id="main-content"
         className="section-shell website-section"
@@ -73,7 +73,7 @@ export default function ContributingPage() {
           <a href="https://github.com/Moorky/moorkyz-toolbar">
             Open the repository ↗
           </a>{" "}
-          · <a href="/#docs">Read the documentation</a>
+          · <a href="/tools/toolbar/playground#docs">Read the documentation</a>
         </p>
       </main>
       <SiteFooter />

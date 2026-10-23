@@ -4,15 +4,16 @@ import { PortalShell } from "../components/portal-shell";
 import "./globals.css";
 import "./playground.css";
 import "./website.css";
+import "./tools.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://toolbar.moorkyz.com"),
   title: {
-    default: "Moorkyz Toolbar — One toolbar. Every interface.",
-    template: "%s — Moorkyz Toolbar",
+    default: "Moorkyz Tools",
+    template: "%s — Moorkyz Tools",
   },
   description:
-    "A framework-independent toolbar for modern web applications. Easy to start, easy to use, powerful to master.",
+    "Independent tools for building interfaces and working with video. Local-first workspaces, clear guides and useful source files.",
   icons: {
     icon: [
       { url: "/favicon.ico", type: "image/x-icon" },
@@ -33,10 +34,10 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     url: "https://toolbar.moorkyz.com/",
-    siteName: "Moorkyz Toolbar",
-    title: "Moorkyz Toolbar — One toolbar. Every interface.",
+    siteName: "Moorkyz Tools",
+    title: "Moorkyz Tools — A little more useful.",
     description:
-      "Explore the real toolbar SDK in an interactive, developer-focused product experience.",
+      "Explore independent tools for interfaces and video, with local workspaces and clear setup guides.",
     images: [
       {
         url: "/moorkyz-toolbar-github.png",
@@ -48,8 +49,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary",
-    title: "Moorkyz Toolbar — One toolbar. Every interface.",
-    description: "A framework-independent toolbar for modern web applications.",
+    title: "Moorkyz Tools — A little more useful.",
+    description: "Local-first tools for interfaces and video.",
     images: ["/moorkyz-toolbar-github.png"],
   },
   robots: {

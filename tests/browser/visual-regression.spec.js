@@ -19,7 +19,7 @@ test("structural visual regression: ten rendered silhouettes preserve exact geom
 }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto(origin);
+  await page.goto(`${origin}/tools/toolbar/playground`);
   const playground = page.locator("#playground");
   const canvas = page.locator("#playground-canvas");
   await expect(playground.getByRole("toolbar")).toBeVisible();
@@ -111,7 +111,7 @@ test("mobile visual regression: extreme valid geometry retains 44px targets with
 }, testInfo) => {
   await page.setViewportSize({ width: 320, height: 780 });
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto(origin);
+  await page.goto(`${origin}/tools/toolbar/playground`);
   const playground = page.locator("#playground");
   await expect(
     playground.getByRole("button", { name: "Save locally" }),
@@ -188,7 +188,7 @@ test("local portal performance measurements are recorded without inventing appro
 }, testInfo) => {
   const samples = [];
   for (let index = 0; index < 3; index++) {
-    await page.goto(origin);
+    await page.goto(`${origin}/tools/toolbar/playground`);
     await expect(
       page.locator('#playground-canvas [role="toolbar"]'),
     ).toHaveCount(1);

@@ -8,7 +8,7 @@ test("Playground retains its original responsive gutters while other sections st
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.goto(origin);
+  await page.goto(`${origin}/tools/toolbar/playground`);
   await expect(
     page.getByRole("toolbar", { name: "Modern Workspace toolbar" }),
   ).toBeVisible();
@@ -35,7 +35,7 @@ test("Playground retains its original responsive gutters while other sections st
   }
 });
 
-for (const route of ["/", "/studio", "/contributing"]) {
+for (const route of ["/tools/toolbar/playground", "/studio", "/contributing"]) {
   test(`responsive, theme and keyboard audit of ${route}`, async ({
     page,
   }, testInfo) => {
@@ -68,6 +68,14 @@ for (const route of ["/", "/studio", "/contributing"]) {
           .toBe(true);
         await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
         if (width === 390 || width === 1440) {
+          await page.evaluate(
+            () =>
+              new Promise((resolve) =>
+                requestAnimationFrame(() =>
+                  requestAnimationFrame(() => resolve()),
+                ),
+              ),
+          );
           const scan = await new AxeBuilder({ page }).analyze();
           expect(scan.violations).toEqual([]);
           const file = testInfo.outputPath(
@@ -92,7 +100,11 @@ for (const route of ["/", "/studio", "/contributing"]) {
 test("large text reflows without horizontal page overflow and keeps the search dialog usable", async ({
   page,
 }) => {
-  for (const route of ["/", "/studio", "/contributing"]) {
+  for (const route of [
+    "/tools/toolbar/playground",
+    "/studio",
+    "/contributing",
+  ]) {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`${origin}${route}`);
     await expect(
@@ -138,7 +150,7 @@ test("all four applications and ten styles stay usable at constrained and wide w
   page,
 }) => {
   test.slow();
-  await page.goto(origin);
+  await page.goto(`${origin}/tools/toolbar/playground`);
   const playground = page.locator("#playground");
   await expect(
     playground.getByRole("button", { name: "Save locally" }),

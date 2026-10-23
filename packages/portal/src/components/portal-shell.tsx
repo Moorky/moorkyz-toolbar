@@ -15,6 +15,8 @@ import {
   type ToolbarController,
 } from "@moorkyz/toolbar";
 import { ToolbarMount } from "@moorkyz/toolbar/react";
+import { usePathname } from "next/navigation";
+import { findTool } from "../data/tools";
 
 const presets = {
   website: [
@@ -71,6 +73,12 @@ function ToolbarNavigation({
   readonly preset: DemoPreset;
   readonly theme: "light" | "dark";
 }) {
+  const pathname = usePathname();
+  const detailTool = findTool(pathname.split("/")[2] ?? "");
+  const isPlayground =
+    pathname === "/tools/toolbar/playground" ||
+    pathname === "/studio" ||
+    pathname === "/contributing";
   const { toggleTheme } = usePortalSettings();
   const toolbar = useRef<ToolbarController | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -102,7 +110,9 @@ function ToolbarNavigation({
           actions.some(({ id }) => id === actionId),
         )
       ) {
-        window.location.assign(`/#${encodeURIComponent(actionId)}`);
+        window.location.assign(
+          `/tools/toolbar/playground#${encodeURIComponent(actionId)}`,
+        );
         return;
       }
       throw new Error(`No portal section is registered for "${actionId}".`);
@@ -150,7 +160,23 @@ function ToolbarNavigation({
     const instance = toolbar.current;
     if (instance === null) return;
     const result = instance.update({
-      actions: presets[preset],
+      actions: isPlayground
+        ? presets[preset]
+        : pathname === "/"
+          ? [
+              { id: "home", label: "Home" },
+              { id: "tools", label: "Tools" },
+              { id: "about-tools", label: "About" },
+            ]
+          : [
+              { id: "description", label: "Description" },
+              ...(detailTool?.source ? [{ id: "tool", label: "Tool" }] : []),
+              { id: "use-cases", label: "Use cases" },
+              { id: "setup", label: "Setup" },
+              ...(detailTool?.workspace
+                ? [{ id: "workspace", label: "Workspace" }]
+                : []),
+            ],
       colorScheme: theme,
     });
     if (!result.ok) {
@@ -158,7 +184,7 @@ function ToolbarNavigation({
       return;
     }
     setError(null);
-  }, [preset, theme]);
+  }, [preset, theme, pathname, isPlayground, detailTool]);
 
   return (
     <>

@@ -3,6 +3,23 @@
 The private Next.js portal consumes the real `@moorkyz/toolbar` package. SDK
 contracts, feature defaults and framework-neutral architecture are unchanged.
 
+## Modular catalog
+
+`/` is the tool catalog; `/tools/<slug>` renders shared tool details. Local
+script tools include a source hierarchy after Description, console-style file
+viewer, per-file copy/download, and a full source ZIP. The original Toolbar
+landing/Playground now lives at `/tools/toolbar/playground`; `/studio` remains.
+Catalog/detail/search data comes from `src/data/tools.ts`.
+
+VideoCrunch is a real optional Windows localhost service, never a public worker.
+Run `pnpm tool:videocrunch` separately, opt in with
+`MOORKYZ_VIDEOCRUNCH_ENABLED=1`, and bind the portal to `127.0.0.1`. Its iframe
+only mounts after the user opens the workspace. See the
+[modular tools guide](../../docs/portal/modular-tools.md) for complete source,
+gateway, ZIP, lifecycle and testing details. The live-site footer is reproduced
+with its thin separator, dark background and centered Moorkyz mark/credit.
+Games await a reference, as explicitly selected by the user.
+
 ## Functional Playground
 
 - Four stateful local applications: Modern Workspace, Document Editor, Analytics

@@ -2,18 +2,24 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePortalSettings } from "./portal-shell";
+import { TOOLS } from "../data/tools";
 
 const repository = "https://github.com/Moorky/moorkyz-toolbar";
 export const PORTAL_REFERENCE = [
+  ...TOOLS.map((tool) => ({
+    title: tool.title,
+    text: tool.summary,
+    href: `/tools/${tool.slug}`,
+  })),
   {
     title: "Playground",
     text: "Four local applications, ten styles, configuration and export.",
-    href: "/#playground",
+    href: "/tools/toolbar/playground#playground",
   },
   {
     title: "Personalized Quick Start",
     text: "Verified Vanilla mount, host actions, disposal and source export.",
-    href: "/#quick-start",
+    href: "/tools/toolbar/playground#quick-start",
   },
   {
     title: "SDK schema and controller",

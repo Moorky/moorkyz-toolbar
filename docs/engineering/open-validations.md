@@ -20,6 +20,8 @@
 | V14 | Updated licensing of all chosen dependencies | Review before adding them and for release | Blocks use of incompatible dependency |
 | V15 | Absolute conformance of a11y in unusual browser/OS matrix | Automated + real manual testing | Blocks a11y certification claims |
 | V16 | External repo state and existing CI conventions | Inspect repository before touching files; reconcile rather than overwrite | Blocks applying draft package to existing remote repo |
+| V17 | Footer game reference | User selected the current live moorkyz.com footer without games on 2026-10-23; wait for an explicit reference before adding game behavior | Blocks a game-parity claim, not the approved current footer |
+| V18 | VideoCrunch distribution license | Imported source retains its original no-selected-license notice; obtain an owner-selected distribution license rather than assuming the Toolbar license applies | Blocks public redistribution/release approval, not the authorized local integration |
 
 ## Priority risk register
 - **R1: Too many modules in v1.** Mitigation: progressively implemented and independently disabled, milestone gates; no external integrations before full library/portal validation.

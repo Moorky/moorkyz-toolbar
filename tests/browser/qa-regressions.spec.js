@@ -97,7 +97,7 @@ test("document commands remain bounded under rapid invocation and retain Unicode
 async function open(page, width = 1440, height = 1000) {
   await page.setViewportSize({ width, height });
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto(origin);
+  await page.goto(`${origin}/tools/toolbar/playground`);
   await page
     .locator("#playground-canvas")
     .evaluate((element) =>

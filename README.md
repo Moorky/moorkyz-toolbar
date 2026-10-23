@@ -22,6 +22,23 @@ the existing real SDK labs. See the [portal guide](packages/portal/README.md) an
 [MVP implementation plan](docs/engineering/website-mvp.md). The separately
 licensed DM font assets include their SIL OFL notices; no CDN is required.
 
+## Modular tools and local video service
+
+The homepage now lists independent tools. Each tool has its own metadata,
+description, use cases and setup page. The Toolbar experience remains at
+`/tools/toolbar/playground`; its overview is `/tools/toolbar`. VideoCrunch is
+fully imported under [`tools/videocrunch`](tools/videocrunch/) and accessible at
+`/tools/videocrunch`, including source hierarchy, copy/download controls and a
+complete ZIP.
+
+VideoCrunch's local web service is **off by default**. Run `pnpm tool:videocrunch`
+on Windows, then explicitly set `MOORKYZ_VIDEOCRUNCH_ENABLED=1` in the local
+portal terminal and open its workspace. Public hosting and multi-user features
+remain off. See the [modular portal guide](docs/portal/modular-tools.md) for setup,
+security boundaries, adding tools and verification. VideoCrunch retains its
+original no-selected-distribution-license status; do not assume Apache-2.0
+relicenses the imported application.
+
 ## Local development
 
 ```sh

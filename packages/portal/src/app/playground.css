@@ -749,8 +749,7 @@ body:has(#playground-workspace[data-focus="true"]) {
     font-size: 0.75rem;
   }
 
-  .adaptive-header .header-links > a:nth-child(2),
-  .adaptive-header .header-links > a:nth-child(4) {
+  .adaptive-header .header-links > a.header-aux-link {
     display: none;
   }
 }

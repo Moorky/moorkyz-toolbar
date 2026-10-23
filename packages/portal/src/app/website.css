@@ -188,39 +188,6 @@ kbd,
 .final-cta {
   text-align: center;
 }
-.website-footer {
-  padding: 1.5rem clamp(1rem, 4vw, 4rem);
-  border-top: 1px solid var(--line);
-  font-size: 0.8rem;
-}
-.footer-upper,
-.footer-lower {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 1rem;
-  max-width: 72rem;
-  margin-inline: auto;
-}
-.footer-upper {
-  padding-bottom: 1rem;
-}
-.footer-upper nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-.footer-upper a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 2.75rem;
-}
-.footer-lower {
-  border-top: 1px solid var(--line);
-  padding-top: 1rem;
-  color: var(--muted);
-}
 .website-footer a {
   text-decoration: none;
 }

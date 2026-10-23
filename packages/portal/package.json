@@ -4,15 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm --filter @moorkyz/toolbar build && node scripts/run-next.mjs dev",
-    "build": "pnpm --filter @moorkyz/toolbar build && node scripts/run-next.mjs build && node scripts/prepare-standalone.mjs",
+    "dev": "pnpm --filter @moorkyz/toolbar build && node ../../scripts/prepare-tool-sources.mjs && node scripts/run-next.mjs dev",
+    "build": "pnpm --filter @moorkyz/toolbar build && node ../../scripts/prepare-tool-sources.mjs && node scripts/run-next.mjs build && node scripts/prepare-standalone.mjs",
     "start": "node scripts/run-next.mjs start",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@moorkyz/toolbar": "workspace:*",
-    "next": "16.4.0",
+    "next": "16.4.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },

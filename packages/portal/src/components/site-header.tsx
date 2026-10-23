@@ -4,7 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { ThemeToggle } from "./portal-shell";
 import { PortalSearch } from "./portal-search";
 
-export function SiteHeader({ homePath = "" }: { readonly homePath?: string }) {
+export function SiteHeader({
+  homePath = "/tools/toolbar/playground",
+}: {
+  readonly homePath?: string;
+}) {
   const header = useRef<HTMLElement>(null);
   const [hidden, setHidden] = useState(false);
 
@@ -31,7 +35,7 @@ export function SiteHeader({ homePath = "" }: { readonly homePath?: string }) {
       data-hidden={hidden}
       onFocusCapture={() => setHidden(false)}
     >
-      <a className="brand" href={`${homePath}#home`}>
+      <a className="brand" href="/#home">
         <img
           className="header-logo"
           src="/moorkyz-toolbar-logo.png"
@@ -40,16 +44,19 @@ export function SiteHeader({ homePath = "" }: { readonly homePath?: string }) {
           alt=""
         />
         <span>
-          <strong>moorkyz</strong>{" "}
-          <span className="brand-product">toolbar</span>
+          <strong>moorkyz</strong> <span className="brand-product">tools</span>
         </span>
       </a>
       <nav className="header-links" aria-label="Main navigation">
+        <a href="/#tools">Tools</a>
         <a href={`${homePath}#playground`}>Playground</a>
-        <a href="/studio">Studio</a>
+        <a className="header-aux-link" href="/studio">
+          Studio
+        </a>
         <a href={`${homePath}#docs`}>Docs</a>
         <a
           href="https://github.com/Moorky/moorkyz-toolbar"
+          className="header-aux-link"
           target="_blank"
           rel="noreferrer"
         >

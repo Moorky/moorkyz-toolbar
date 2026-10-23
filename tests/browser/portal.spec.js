@@ -16,7 +16,7 @@ test("portal mounts the actual library and updates its actions by context", asyn
       externalRequests.push(request.url());
     }
   });
-  const response = await page.goto(portalUrl);
+  const response = await page.goto(`${portalUrl}/tools/toolbar/playground`);
   const policy = response.headers()["content-security-policy"];
   expect(policy).toContain("script-src 'self' 'nonce-");
   expect(policy).toContain("style-src 'self' 'nonce-");
@@ -47,7 +47,7 @@ test("portal mounts the actual library and updates its actions by context", asyn
 test("portal theme persists locally and updates the mounted dock tokens", async ({
   page,
 }) => {
-  await page.goto(portalUrl);
+  await page.goto(`${portalUrl}/tools/toolbar/playground`);
   const toolbar = page.getByRole("toolbar", {
     name: "Moorkyz Toolbar website navigation",
   });
@@ -341,7 +341,7 @@ test("Theme Studio inspects built-in tokens and exports versioned validated data
 test("toolbar preferences persist in the portal's explicit local namespace", async ({
   page,
 }) => {
-  await page.goto(portalUrl);
+  await page.goto(`${portalUrl}/tools/toolbar/playground`);
   const toolbar = page.getByRole("toolbar", {
     name: "Moorkyz Toolbar website navigation",
   });
@@ -363,7 +363,7 @@ test("toolbar preferences persist in the portal's explicit local namespace", asy
 test("portal landing page has no automated axe violations", async ({
   page,
 }) => {
-  await page.goto(portalUrl);
+  await page.goto(`${portalUrl}/tools/toolbar/playground`);
   const { violations } = await new AxeBuilder({ page }).analyze();
   expect(violations).toEqual([]);
 });

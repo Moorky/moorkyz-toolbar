@@ -102,6 +102,22 @@
 The record is append-only in meaning: a change to an approved choice should produce a new ADR describing motivation, impact, migration and explicit user approval. Editing prose for clarity without altering intent is permitted. The decision register outranks later implementation convenience.
 ## Explicit option selections from later questionnaire
 
+### 2026-10-23: user-approved modular tools portal
+
+The current task explicitly expands the portal landing into a modular tool
+catalog and imports the supplied VideoCrunch application. Shared tool details
+include title, release/updated metadata, description, use cases and setup; local
+script tools insert a browsable source hierarchy immediately after description,
+with console-style source, per-file copy/download and complete ZIP download.
+The existing Toolbar playground and Studio remain available on dedicated routes.
+The user chose a localhost web service with hosted/multi-user features off, and
+the current live moorkyz.com footer without games pending a supplied reference.
+This is not publishing, deployment, relicensing or a public SDK contract change.
+See [implementation boundaries](../portal/modular-tools.md).
+During verification the user explicitly approved the focused Next.js
+16.4.0 -> 16.4.1 security patch and corresponding lockfile update after the build
+and dependency audit identified two critical and one high advisory.
+
 | Question | Selected architecture option | Selected policy / companion option |
 |---:|---|---|
 | Q64 | C: Accessibility-by-Construction System | B: Severity-Based Validation with Guided Fixes |

@@ -70,7 +70,11 @@ test("record local web-vital, payload and user-journey observations without fiel
     routes: [],
     journeys: [],
   };
-  for (const route of ["/", "/studio", "/contributing"]) {
+  for (const route of [
+    "/tools/toolbar/playground",
+    "/studio",
+    "/contributing",
+  ]) {
     const context = await browser.newContext({
       viewport: { width: 1440, height: 1000 },
     });
@@ -111,7 +115,7 @@ test("record local web-vital, payload and user-journey observations without fiel
       await context.close();
     }
   }
-  await page.goto(origin);
+  await page.goto(`${origin}/tools/toolbar/playground`);
   const playground = page.locator("#playground");
   await page
     .locator("#playground-canvas")

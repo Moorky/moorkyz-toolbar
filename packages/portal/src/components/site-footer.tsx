@@ -1,24 +1,22 @@
 export function SiteFooter() {
   return (
     <footer className="website-footer">
-      <div className="footer-upper">
-        <a className="footer-brand" href="/#home">
-          moorkyz toolbar
-        </a>
-        <nav aria-label="Footer navigation">
-          <a href="/#playground">Playground</a>
-          <a href="/studio">Studio</a>
-          <a href="/#docs">Documentation</a>
-          <a href="https://github.com/Moorky/moorkyz-toolbar">GitHub</a>
-        </nav>
-      </div>
-      <div className="footer-lower">
-        <span>© {new Date().getUTCFullYear()} Moorkyz</span>
-        <a href="https://github.com/Moorky/moorkyz-toolbar/blob/master/LICENSE">
-          Apache-2.0
-        </a>
-        <a href="https://moorkyz.com">powered by Moorkyz</a>
-      </div>
+      <p className="footer-note">
+        <span>made /w</span>
+        <svg
+          viewBox="0 0 512 512"
+          className="footer-logo"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path
+            fill="currentColor"
+            d="M40 50c7 5 22 21 29 28l42 40 24 24 64 62c9 9 23 20 30 30l-24 25-19 18-24-23-34-32-22-21v120l1 8 9 8 20 13 41 28 60 41c-3 7-19 19-26 25-3 2-8 7-11 7l-10-5-22-13-77-45-36-21c-12-7-15-6-15-17V50Zm431 0c2 5 1 22 1 28v272c0 11-3 10-15 17l-36 21-77 45-22 13-10 5c-3 0-8-5-11-7-7-6-23-18-26-25l60-41 41-28 20-13 9-8 1-8V201c-6 4-13 12-19 18l-11 10-16 16-35 33-17 17-12 11-28 27c-2 2-9 10-12 10s-11-8-13-10l-31-31 35-35 31-29 24-24 9-8 24-24 10-9 23-23L471 50Z"
+          />
+        </svg>
+        <span>© {new Date().getUTCFullYear()}</span>
+        <a href="https://moorkyz.com">Moorkyz</a>
+      </p>
     </footer>
   );
 }

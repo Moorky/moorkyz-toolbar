@@ -22,7 +22,7 @@ export default async function StudioPage() {
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
-      <SiteHeader homePath="/" />
+      <SiteHeader />
       <main id="main-content" className="studio-page" tabIndex={-1}>
         <section className="hero section-shell" id="home" tabIndex={-1}>
           <div className="hero-copy">
@@ -32,7 +32,10 @@ export default async function StudioPage() {
               Inspect real components, replay host scenarios and author
               validated themes. No arbitrary code execution or remote services.
             </p>
-            <a className="text-link" href="/#playground">
+            <a
+              className="text-link"
+              href="/tools/toolbar/playground#playground"
+            >
               Return to your Playground design ↗
             </a>
           </div>
@@ -123,7 +126,9 @@ export default async function StudioPage() {
             generators and interactive courses remain future capabilities.
             M10/M11 release holds are unchanged.
           </p>
-          <a href="/#quick-start">Personalized Quick Start</a>
+          <a href="/tools/toolbar/playground#quick-start">
+            Personalized Quick Start
+          </a>
         </section>
       </main>
       <SiteFooter />

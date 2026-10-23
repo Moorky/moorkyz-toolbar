@@ -6,7 +6,11 @@ const origin = `http://127.0.0.1:${process.env.MOORKYZ_TOOLBAR_PORTAL_PORT ?? pr
 test("header uses the supplied logo at the current size without clipping responsive navigation", async ({
   page,
 }, testInfo) => {
-  for (const route of ["/", "/studio", "/contributing"]) {
+  for (const route of [
+    "/tools/toolbar/playground",
+    "/studio",
+    "/contributing",
+  ]) {
     await page.goto(`${origin}${route}`);
     const header = page.locator(".adaptive-header");
     const logo = header.locator(".brand img");
@@ -64,7 +68,7 @@ test("landing structure, real links, local typography and exact footer branding 
   page.on("request", (request) => {
     if (!request.url().startsWith(`${origin}/`)) external.push(request.url());
   });
-  const response = await page.goto(origin);
+  const response = await page.goto(`${origin}/tools/toolbar/playground`);
   expect(response.headers()["content-security-policy"]).not.toContain(
     "unsafe-inline",
   );
@@ -95,13 +99,10 @@ test("landing structure, real links, local typography and exact footer branding 
     page.getByRole("link", { name: "Try the Playground", exact: false }),
   ).toHaveAttribute("href", "#playground");
   await expect(
-    page.getByRole("link", { name: "powered by Moorkyz", exact: true }),
+    page.getByRole("link", { name: "Moorkyz", exact: true }),
   ).toHaveAttribute("href", "https://moorkyz.com");
-  await expect(
-    page
-      .locator(".footer-upper")
-      .getByRole("link", { name: "Studio", exact: true }),
-  ).toHaveAttribute("href", "/studio");
+  await expect(page.locator(".footer-note")).toContainText("made /w");
+  await expect(page.locator(".footer-logo")).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
   expect(
     await page.evaluate(() =>
@@ -133,7 +134,7 @@ test("landing structure, real links, local typography and exact footer branding 
 test("local command search returns real results and respects editor shortcut ownership", async ({
   page,
 }) => {
-  await page.goto(origin);
+  await page.goto(`${origin}/tools/toolbar/playground`);
   await expect(page.getByLabel("New task title")).toBeEnabled();
   await page.getByLabel("New task title").focus();
   await expect(page.getByLabel("New task title")).toBeFocused();
@@ -185,7 +186,7 @@ test("local command search returns real results and respects editor shortcut own
 test("capability explorer switches genuine SDK demonstrations and architecture follows actual boundaries", async ({
   page,
 }) => {
-  await page.goto(origin);
+  await page.goto(`${origin}/tools/toolbar/playground`);
   const explorer = page.locator(".capability-explorer");
   await explorer.getByRole("button", { name: /^Responsive overflow/ }).click();
   const preview = explorer.getByRole("toolbar", {
@@ -223,7 +224,7 @@ test("capability explorer switches genuine SDK demonstrations and architecture f
 test("Studio expands lazily, opens a dedicated route and all real previews follow global variants", async ({
   page,
 }) => {
-  await page.goto(origin);
+  await page.goto(`${origin}/tools/toolbar/playground`);
   const showcase = page.locator(".studio-showcase");
   await expect(showcase.getByRole("toolbar")).toHaveCount(0);
   await showcase.getByRole("button", { name: "Expand Studio preview" }).click();
@@ -284,7 +285,7 @@ test("Studio custom palettes retain separate global light and dark variants", as
 test("final CTAs preserve the design and site-dock color controls synchronize the global theme", async ({
   page,
 }) => {
-  await page.goto(origin);
+  await page.goto(`${origin}/tools/toolbar/playground`);
   const playground = page.locator("#playground");
   await playground
     .getByRole("button", { name: "Actions", exact: true })
@@ -328,7 +329,7 @@ test("final CTAs preserve the design and site-dock color controls synchronize th
 test("adaptive header remains keyboard reachable and mobile has no overflowing panels", async ({
   page,
 }) => {
-  await page.goto(origin);
+  await page.goto(`${origin}/tools/toolbar/playground`);
   await page.emulateMedia({ reducedMotion: "reduce" });
   await expect(
     page.getByRole("button", { name: "Switch to dark theme" }),

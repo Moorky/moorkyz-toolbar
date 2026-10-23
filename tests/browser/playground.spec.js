@@ -15,7 +15,7 @@ const designKey = "moorkyz-toolbar:portal:playground:design:v2";
 const autoKey = `${designKey}:autosave`;
 
 async function open(page) {
-  await page.goto(url);
+  await page.goto(`${url}/tools/toolbar/playground`);
   const playground = page.locator("#playground");
   await page
     .locator("#playground-canvas")

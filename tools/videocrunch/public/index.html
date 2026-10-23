@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>VideoCrunch - Your local video workspace</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="#workspace" aria-label="VideoCrunch home"><span class="brand-icon">&#9654;</span>Video<span>Crunch</span></a>
+    <div class="sidebar-label">YOUR WORKSPACE</div>
+    <nav class="navigation" aria-label="Main navigation">
+      <a class="nav-link active" href="#workspace" data-view="workspace"><span class="nav-icon">&#8862;</span> Overview</a>
+      <a class="nav-link" href="#history" data-view="history"><span class="nav-icon">&#8634;</span> Export history <span id="history-count" class="nav-count">0</span></a>
+      <a class="nav-link" href="#guide" data-view="guide"><span class="nav-icon">?</span> How it works</a>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="local-card"><span class="status-dot"></span><strong>A little more local.</strong><p>Your files stay on this PC.<br>No uploads. No account.</p></div>
+      <div class="sidebar-footer"><span class="mini-logo">vc</span><div>Local workspace<small>Made for your own machine</small></div><span class="lock-icon">&#9671;</span></div>
+    </div>
+  </aside>
+  <div class="app">
+    <header class="topbar"><div class="breadcrumbs">Workspace <span>/</span> <strong id="page-label">Overview</strong></div><span class="local-badge"><span class="status-dot"></span> Running locally</span></header>
+    <main>
+      <div id="global-error" class="notice error" role="alert" hidden></div>
+      <section id="workspace-view" class="view">
+        <div class="page-heading"><div><div class="eyebrow">LESS SIZE. MORE POSSIBILITIES.</div><h1>Good videos. Smaller footprint.</h1><p>Turn a video link into something you can keep, share, and watch offline.</p></div><span class="heading-art" aria-hidden="true"><span>&#9654;</span><i></i><b>mp4</b></span></div>
+        <div class="workspace-grid">
+          <section class="card export-card" aria-labelledby="create-title">
+            <div class="card-heading"><span class="section-icon">&#8600;</span><div><h2 id="create-title">Create an export</h2><p>A link is all you need to get started.</p></div><span class="step-label">01 / 03</span></div>
+            <form id="export-form">
+              <label class="field-label" for="video-url">Video URL <span>REQUIRED</span></label>
+              <div class="url-field"><span aria-hidden="true">&#8599;</span><input id="video-url" name="url" type="url" placeholder="https://example.com/watch/your-video" required maxlength="8192" autocomplete="off" spellcheck="false"></div>
+              <p class="field-help">A video page, a direct video link, or a public stream.</p>
+              <fieldset id="compression-options"><legend class="field-label">Find your balance</legend>
+                <div class="compression-grid">
+                  <label class="compression-option"><input type="radio" name="compression" value="Balanced"><span class="mode-icon">&#9681;</span><strong>Balanced</strong><span>Keep the detail</span><small>Higher quality</small></label>
+                  <label class="compression-option"><input type="radio" name="compression" value="Crunch" checked><span class="recommended">THE SWEET SPOT</span><span class="mode-icon">&#9707;</span><strong>Crunch</strong><span>A little less space</span><small>Recommended</small></label>
+                  <label class="compression-option"><input type="radio" name="compression" value="Extreme"><span class="mode-icon">&#10035;</span><strong>Extreme</strong><span>Make it tiny</span><small>Lower quality</small></label>
+                </div>
+              </fieldset>
+              <label class="toggle-row"><span><strong>Just the original</strong><small>Download without compressing the video.</small></span><input id="skip-compression" type="checkbox" role="switch"><span class="switch-track" aria-hidden="true"></span></label>
+              <details class="output-settings"><summary>Save location <span id="output-summary">Loading...</span><span class="edit-label">Change &#8964;</span></summary><div class="output-field"><label class="field-label" for="output-dir">Output folder</label><input id="output-dir" type="text" required spellcheck="false" aria-describedby="output-help"><p id="output-help" class="field-help">Each export gets its own folder. Your original is always preserved.</p></div></details>
+              <div id="form-error" class="notice error" role="alert" hidden></div>
+              <button id="submit-button" class="button primary full-width" type="submit" disabled><span id="submit-label">Download &amp; compress</span><span aria-hidden="true">&#8594;</span></button>
+              <p class="permission-note"><span aria-hidden="true">&#9671;</span> Only download videos you own or have permission to save.</p>
+            </form>
+          </section>
+          <aside class="right-column">
+            <section class="workflow-card"><div class="eyebrow">FROM THE WEB, TO YOUR WORLD</div><h2>One link.<br>Three simple steps.</h2><ol class="workflow-steps"><li><span>01</span><div><strong>Find the source</strong><p>We locate the video behind your link.</p></div></li><li><span>02</span><div><strong>Make room for more</strong><p>Compress it without touching the original.</p></div></li><li><span>03</span><div><strong>Keep it yours</strong><p>A local video, an offline player, and a full integrity record.</p></div></li></ol><div class="workflow-footer"><span>&#10003;</span> Your original stays original.</div></section>
+            <section class="card engine-card"><div class="engine-heading"><h3>Under the hood</h3><span id="engine-status">Checking...</span></div><div id="tool-list" class="tool-list" aria-live="polite"></div><p>Powered by open-source tools.<br>Everything runs on your machine.</p></section>
+          </aside>
+        </div>
+        <section id="active-section" class="active-section" hidden aria-labelledby="active-title"><div class="section-heading"><h2 id="active-title">Your latest export</h2><span class="section-caption">FROM LINK TO LOCAL</span></div><div id="active-job"></div></section>
+        <section class="recent-section" aria-labelledby="recent-title"><div class="section-heading"><h2 id="recent-title">Recent exports <span id="recent-count" class="count-pill">0</span></h2><a href="#history">View all exports <span aria-hidden="true">&#8599;</span></a></div><div id="recent-jobs"></div></section>
+        <footer class="main-footer"><span><span class="status-dot"></span> Private by design. Local by default.</span><a href="#guide">A quick guide &#8599;</a></footer>
+      </section>
+      <section id="history-view" class="view" hidden><div class="page-heading"><div><div class="eyebrow">YOUR LOCAL LIBRARY</div><h1>A little history. A lot to keep.</h1><p>Your last 50 exports, with their originals, playback files, and integrity records.</p></div></div><div id="history-jobs"></div><p class="field-help history-note">History stays on this PC. Exported videos stay in their save folders, even after they leave this list.</p></section>
+      <section id="guide-view" class="view" hidden><div class="page-heading"><div><div class="eyebrow">A QUICK GUIDE</div><h1>Less setup. More playback.</h1><p>A few things worth knowing before your first export.</p></div></div><div class="guide-grid">
+        <article class="card guide-card"><span class="guide-number">01</span><h2>Start with a link</h2><p>Paste a public video page, direct video URL, or HLS/DASH stream. Use only videos you own or are authorized to download. The app does not bypass DRM, logins, or paywalls.</p></article>
+        <article class="card guide-card"><span class="guide-number">02</span><h2>Choose your trade-off</h2><p>Balanced keeps more detail. Crunch is the everyday choice. Extreme prioritizes size and caps width at 1280px. Compression is lossy and does not always produce a smaller file.</p></article>
+        <article class="card guide-card"><span class="guide-number">03</span><h2>Keep the original</h2><p>Every export keeps the downloaded source. Choose "Just the original" to skip compression. Some original codecs need a desktop player rather than a browser.</p></article>
+        <article class="card guide-card"><span class="guide-number">04</span><h2>Watch anywhere, offline</h2><p>Open the finished player here, or open index.html inside the export folder. The manifest records file sizes, SHA-256 hashes, and download attempts. Keep output folders private: stream URLs may contain temporary tokens.</p></article>
+      </div><section class="card setup-card"><h2>First-time setup</h2><p>Double-click Start-WebVideoCrunch.cmd. Missing prerequisites are installed automatically through winget; Windows may ask for approval. If automatic setup is unavailable, install them manually:</p><pre>winget install OpenJS.NodeJS.LTS
+winget install yt-dlp.yt-dlp
+winget install Gyan.FFmpeg</pre><p>Keep the app terminal open while using VideoCrunch. One export runs at a time; no files are uploaded to a hosted service. Closing the app during an export can interrupt it.</p></section></section>
+    </main>
+  </div>
+  <template id="empty-template"><div class="empty-state card"><span class="empty-icon" aria-hidden="true">&#9655;</span><div><h3>Your next favorite video lives here.</h3><p>Create your first export. We'll keep the details right here.</p></div><span class="empty-arrow" aria-hidden="true">&#8593;</span></div></template>
+  <noscript><div class="noscript">Please enable JavaScript to use this local application.</div></noscript>
+</body>
+</html>
