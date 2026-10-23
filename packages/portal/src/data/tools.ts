@@ -86,7 +86,7 @@ export const TOOLS: readonly ToolDefinition[] = [
         title: "Enable the portal connection",
         text: "In a second PowerShell terminal, opt in and start the portal on loopback. The connection is disabled by default and never starts or installs the service itself.",
         command:
-          '$env:TOOLS_MOORKYZ_COM_VIDEOCRUNCH_ENABLED = "1"\npnpm --filter @tools.moorkyz.com/portal dev --hostname 127.0.0.1',
+          '$env:TOOLS_MOORKYZ_COM_VIDEOCRUNCH_ENABLED = "1"\npnpm --filter @moorkyz-tools/portal dev --hostname 127.0.0.1',
       },
       {
         title: "Open your workspace",
@@ -135,7 +135,7 @@ export const TOOLS: readonly ToolDefinition[] = [
         title: "Enable the portal connection",
         text: "In another terminal, opt in and bind the portal to loopback. Connect in Workspace, preview the files and type the exact confirmation. Both local-service connections are independent and off by default.",
         command:
-          '$env:TOOLS_MOORKYZ_COM_DIRECTORY_CLEANER_ENABLED = "1"\npnpm --filter @tools.moorkyz.com/portal dev --hostname 127.0.0.1',
+          '$env:TOOLS_MOORKYZ_COM_DIRECTORY_CLEANER_ENABLED = "1"\npnpm --filter @moorkyz-tools/portal dev --hostname 127.0.0.1',
       },
     ],
     workspace: "directory-cleaner",

@@ -1,4 +1,4 @@
-# tools.moorkyz.com
+# Moorkyz Tools
 
 A growing catalog of independent tools, with clear setup, readable source and
 local-first workspaces. The former SDK and Studio have been removed;
@@ -22,7 +22,7 @@ and [Directory Cleaner guide](tools/directory-cleaner/README.md).
 
 ```powershell
 pnpm install --frozen-lockfile
-pnpm --filter @tools.moorkyz.com/portal dev --hostname 127.0.0.1
+pnpm --filter @moorkyz-tools/portal dev --hostname 127.0.0.1
 pnpm build
 pnpm check
 pnpm check:source
@@ -34,11 +34,10 @@ Chromium/Firefox/WebKit; `pnpm exec playwright install` prepares them for develo
 Repository management uses `.\tools.moorkyz.com.cmd help` on Windows or
 `sh ./tools.moorkyz.com help` on macOS/Linux. See the
 [CLI guide](docs/engineering/tools.moorkyz.com-cli.md). The workspace package is
-`tools.moorkyz.com`; the portal package is `@tools.moorkyz.com/portal`.
+`moorkyz-tools`; the portal package is `@moorkyz-tools/portal`.
 
-Project links target [Moorky/tools.moorkyz.com](https://github.com/Moorky/tools.moorkyz.com).
-The GitHub repository, local checkout/remote, DNS and hosting configuration need
-separate updates; this local rename does not modify them. See the
+Project links target [Moorky/moorkyz-tools](https://github.com/Moorky/moorkyz-tools).
+Use the same repository and hostname in GitHub, Cloudflare and Coolify. See the
 [deployment guide](docs/deployment/coolify.md).
 
 ## Explicit local services
@@ -50,7 +49,7 @@ pnpm tool:directory-cleaner
 # Portal terminal:
 $env:TOOLS_MOORKYZ_COM_VIDEOCRUNCH_ENABLED = "1"
 $env:TOOLS_MOORKYZ_COM_DIRECTORY_CLEANER_ENABLED = "1"
-pnpm --filter @tools.moorkyz.com/portal dev --hostname 127.0.0.1
+pnpm --filter @moorkyz-tools/portal dev --hostname 127.0.0.1
 ```
 
 Both connections are **off by default**. Nothing is installed or started by
@@ -62,9 +61,15 @@ its operations. No accounts, tenant isolation, hosted storage or telemetry.
 [AGENTS.md](AGENTS.md), [decisions](docs/decisions/decision-register.md) and
 [testing](docs/engineering/testing.md) describe current behavior. Old specifications
 remain in Git history; [audits](docs/audits/) remain historical evidence.
-No publishing or deployment is authorized by local verification.
+Production deployments follow the authenticated CI pipeline and the approved hosting configuration.
 
 The root [Apache-2.0 license](LICENSE) covers first-party project code. The
 imported VideoCrunch application's original no-selected-distribution-license
 notice remains separate; do not assume it was relicensed. Self-hosted fonts
 retain their SIL OFL notices.
+
+## Repository operations
+
+[Deployment and CI](docs/deployment/coolify.md), [security reporting](SECURITY.md) and [audit evidence](audits/) describe repository operations. [README.html](README.html) and [READM.html](READM.html) are offline HTML entry points.
+
+The root `trash/`, `logs/`, `archive/` and `.moorkyz/` directories are local runtime data and ignored by Git and Docker. The shared `moorkyz` command manages project-scoped retention and saved ports; see its help and runtime documentation.

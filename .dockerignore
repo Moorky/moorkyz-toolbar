@@ -8,3 +8,21 @@ coverage
 playwright-report
 playwright/.cache
 test-results
+
+# Keep private/runtime data out of build contexts.
+.git
+.github
+**/node_modules
+**/dist
+**/.next
+.moorkyz
+trash
+logs
+archive
+**/logs
+.env
+.env.*
+!.env.example
+coverage
+playwright-report
+test-results

@@ -1,73 +1,39 @@
-# Production deployment on Coolify
+# Production deployment
 
-The portal is built as a standalone Next.js application and packaged as a
-small production container. Pull requests and pushes run the full repository
-checks, build the same container used in production, and smoke-test its HTTP
-response. A push to `master` triggers Coolify only after those checks succeed.
+The standalone repository builds with `docker build -t moorkyz-tools .` from its root. GitHub Actions validates a locked install, security checks, source gates and a container HTTP smoke test before a production deployment.
 
-## Coolify application settings
+## Coolify on Hetzner
 
-Create one application from the `Moorky/tools.moorkyz.com` GitHub repository:
+| Setting | Value |
+| --- | --- |
+| Git repository | `Moorky/moorkyz-tools` |
+| Branch | `master` |
+| Build pack | Dockerfile |
+| Build context | Repository root, `/` |
+| Dockerfile | `/Dockerfile` |
+| Container port | `3000` |
+| Public domain | `https://tools.moorkyz.com` |
+| Health path | `/` |
+| Built-in Git auto-deploy | Disabled; CI is the trigger |
 
-| Setting                        | Value                       |
-| ------------------------------ | --------------------------- |
-| Branch                         | `master`                    |
-| Build pack                     | Dockerfile                  |
-| Base directory / build context | Repository root (`/`)       |
-| Dockerfile location            | `/Dockerfile`               |
-| Exposed port                   | `3000`                      |
-| Domain                         | `https://tools.moorkyz.com` |
-| Auto deploy                    | Manual deployments only     |
+Point the Cloudflare hostname at the approved Hetzner ingress and enable TLS at the proxy. Do not copy server IPs or credentials from examples. Restrict runtime/network access to the reverse proxy and necessary management paths.
 
-The target Cloudflare DNS record is an A record: `tools` → `2.31.44.54`.
-Renaming local files does not change DNS, Coolify, or the GitHub repository.
-Rename the GitHub repository to `Moorky/tools.moorkyz.com` and update the local
-Git remote and Coolify source settings separately before deploying this identity.
+The Next.js standalone portal needs no runtime secret or persistent volume. Keep `TOOLS_MOORKYZ_COM_VIDEOCRUNCH_ENABLED` and `TOOLS_MOORKYZ_COM_DIRECTORY_CLEANER_ENABLED` unset on public hosting. Native media/filesystem services are explicitly opt-in and loopback-only. The portal ships the builder, metadata and allowlisted source bundles. Preserve third-party licenses and resolve the imported VideoCrunch distribution-license decision before public redistribution.
 
-The container binds to `0.0.0.0:3000` and has a built-in HTTP health check.
-Coolify provisions TLS for the configured domain after the first successful
-deployment. No runtime environment variables or persistent volumes are
-required for the current portal.
+## GitHub configuration
 
-The portal is now the modular tools catalog; the former SDK and Studio
-are removed. The repository and domain identifiers above use tools.moorkyz.com.
-Do not set `TOOLS_MOORKYZ_COM_VIDEOCRUNCH_ENABLED` or
-`TOOLS_MOORKYZ_COM_DIRECTORY_CLEANER_ENABLED` on a hosted deployment. Both filesystem/media
-services are explicitly localhost-only and independently started by the user.
-The container serves metadata, the small builder and allowlisted source downloads,
-not hosted cleanup or video workers. VideoCrunch's distribution-license decision
-remains a prerequisite for public source redistribution.
+Use a `production` environment, with a deploy-scoped Coolify API token in the `COOLIFY_TOKEN` environment secret. Set repository/environment variables `COOLIFY_BASE_URL` (HTTPS origin), `COOLIFY_RESOURCE_UUID` and optionally `APP_HEALTH_URL` (default `https://tools.moorkyz.com/`). Enable Coolify API access. Keep secrets out of files and Docker build arguments.
 
-## GitHub Actions to Coolify
+Pull requests and manual CI runs validate without production access. Only a passing push to `master` reaches the serialized deployment job. It confirms the current branch head, calls `scripts/deploy-coolify.cjs`, requires the returned deployment commit to match the tested SHA, polls for a successful terminal status, then checks public HTTP health. A queued API response alone is not deployment success. Protect `master` with the `verify` and `container` checks. Configure environment reviewers only if your release process requires them.
 
-The workflow at `.github/workflows/ci.yml` runs the deployment job only for
-pushes to `master`, after both `verify` and `container` succeed. It calls
-Coolify's authenticated deploy webhook for the current `master` head; stale
-workflow runs are skipped. Configure these repository secrets in
-**Settings → Secrets and variables → Actions**:
+## Verification and recovery
 
-| Secret            | Value                                                            |
-| ----------------- | ---------------------------------------------------------------- |
-| `COOLIFY_WEBHOOK` | The application's **Deploy webhook URL** from Coolify → Webhooks |
-| `COOLIFY_TOKEN`   | A Coolify API token with the **Deploy** permission               |
+Run the repository checks, `node --test scripts/deploy-coolify.test.cjs`, then the CI container gate. After deployment, check the health endpoint and the product flow in a browser. Use Coolify's last healthy deployment to roll back, or revert the source commit and let CI redeploy. Preserve runtime credentials across deployments.
 
-Keep the Coolify application's built-in Git auto-deploy mode set to **Manual
-deployments only** so CI is the single deployment trigger. Do not put either
-secret in repository files or Docker build arguments.
+## Primary references
 
-## First deployment and recovery
+Reviewed on 2026-10-23:
 
-After creating the Coolify application and adding both GitHub secrets, push a
-commit to `master`. CI builds and runs the production image first; only a
-passing image smoke test calls the deploy webhook. Confirm the new deployment
-is healthy in Coolify and that `https://tools.moorkyz.com` returns HTTP 200.
-
-If a deployment fails, use Coolify's deployment history to roll back to the
-last healthy image. Revert a source change and push to `master` to rebuild and
-deploy the corrected version after CI passes.
-
-## References
-
-- [Next.js standalone output](https://nextjs.org/docs/app/api-reference/config/next-config-js/output)
-- [Coolify Dockerfile applications](https://coolify.io/docs/applications/builds/dockerfile)
-- [Coolify deployments from GitHub Actions](https://coolify.io/docs/applications/sources/github/actions)
+- [GitHub Actions secure use](https://docs.github.com/en/actions/reference/security/secure-use): least privilege, secrets and immutable action references.
+- [Docker build practices](https://docs.docker.com/build/building/best-practices/): small multi-stage images, non-root runtime and context exclusions.
+- [Coolify deploy webhooks](https://coolify.io/docs/core/automation/deploy-webhooks): authenticated triggers and deployment verification.

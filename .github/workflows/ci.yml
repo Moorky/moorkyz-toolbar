@@ -1,25 +1,35 @@
 name: CI
 
 on:
-  push:
   pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
         with:
           version: 11.8.0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: node --test scripts/deploy-coolify.test.cjs tests/tooling/moorkyz-runtime.node.cjs
       - run: pnpm exec playwright install --with-deps chromium firefox webkit
       - run: pnpm check
       - run: pnpm test:directory-cleaner:browser
@@ -30,38 +40,32 @@ jobs:
   container:
     runs-on: ubuntu-latest
     needs: verify
+    timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
       - name: Build production image
-        run: docker build --tag tools.moorkyz.com-portal:${{ github.sha }} .
+        run: docker build --pull --tag moorkyz-tools:${{ github.sha }} .
       - name: Smoke-test production container
         shell: bash
+        env:
+          IMAGE_TAG: moorkyz-tools:${{ github.sha }}
         run: |
-          cleanup() {
-            docker rm --force tools.moorkyz.com-portal >/dev/null 2>&1 || true
-          }
-          trap cleanup EXIT
-
-          docker run --detach --name tools.moorkyz.com-portal \
-            --publish 127.0.0.1::3000 \
-            tools.moorkyz.com-portal:${{ github.sha }}
-
-          published_port="$(docker port tools.moorkyz.com-portal 3000/tcp | sed 's/.*://')"
-          if [[ -z "$published_port" ]]; then
-            echo "::error title=Container port was not published::Could not find the container's mapped HTTP port."
-            docker logs tools.moorkyz.com-portal
-            exit 1
-          fi
-
-          for attempt in {1..30}; do
-            if curl --fail --silent "http://127.0.0.1:${published_port}/" >/dev/null; then
-              echo "Production container returned HTTP 200."
+          set -euo pipefail
+          trap 'docker rm --force ci-app >/dev/null 2>&1 || true' EXIT
+          docker run --detach --name ci-app --publish 127.0.0.1::3000 "$IMAGE_TAG"
+          published_port="$(docker port ci-app 3000/tcp | sed 's/.*://')"
+          test -n "$published_port"
+          for attempt in {1..45}; do
+            if curl --fail --silent --max-time 3 "http://127.0.0.1:$published_port/" >/dev/null \
+              && curl --fail --silent --max-time 3 "http://127.0.0.1:$published_port/" >/dev/null; then
+              echo "Production health and root page passed."
               exit 0
             fi
             sleep 2
           done
-
-          docker logs tools.moorkyz.com-portal
+          docker logs ci-app
           exit 1
 
   deploy:
@@ -69,37 +73,42 @@ jobs:
     runs-on: ubuntu-latest
     needs: [verify, container]
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    environment: production
+    timeout-minutes: 25
     concurrency:
-      group: tools.moorkyz.com-production
+      group: moorkyz-tools-production
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
-      - name: Skip stale commit deployments
-        id: current_commit
-        shell: bash
-        run: |
-          latest_sha="$(git ls-remote origin refs/heads/master | cut -f1)"
-          if [[ -z "$latest_sha" ]]; then
-            echo "::error title=Could not verify the current commit::Unable to read the master branch head from GitHub."
-            exit 1
-          fi
-          if [[ "$latest_sha" != "$GITHUB_SHA" ]]; then
-            echo "current=false" >> "$GITHUB_OUTPUT"
-            echo "::notice title=Skipping stale deployment::A newer commit is already on master."
-          else
-            echo "current=true" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Trigger production deployment
-        if: steps.current_commit.outputs.current == 'true'
-        shell: bash
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - name: Skip stale production commits
+        id: head
         env:
-          COOLIFY_WEBHOOK: ${{ secrets.COOLIFY_WEBHOOK }}
-          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
-          if [[ -z "$COOLIFY_WEBHOOK" || -z "$COOLIFY_TOKEN" ]]; then
-            echo "::error title=Coolify is not configured::Add COOLIFY_WEBHOOK and COOLIFY_TOKEN as repository Actions secrets."
-            exit 1
-          fi
-
-          curl --fail --silent --show-error --request POST "$COOLIFY_WEBHOOK" \
-            --header "Authorization: Bearer $COOLIFY_TOKEN"
+          node --input-type=module <<'NODE'
+          import { appendFileSync } from 'node:fs';
+          const response = await fetch(process.env.GITHUB_API_URL + '/repos/' + process.env.GITHUB_REPOSITORY + '/git/ref/heads/master', {
+            headers: { Authorization: 'Bearer ' + process.env.GH_TOKEN, Accept: 'application/vnd.github+json' },
+            signal: AbortSignal.timeout(15000),
+          });
+          if (!response.ok) throw new Error('Cannot verify production branch head: HTTP ' + response.status);
+          const ref = await response.json();
+          const current = ref.object?.sha === process.env.GITHUB_SHA;
+          appendFileSync(process.env.GITHUB_OUTPUT, 'current=' + current + '\n');
+          if (!current) console.log('A newer production commit exists; skipping this deployment.');
+          NODE
+      - name: Deploy, wait for completion and check public health
+        if: steps.head.outputs.current == 'true'
+        env:
+          COOLIFY_BASE_URL: ${{ vars.COOLIFY_BASE_URL }}
+          COOLIFY_RESOURCE_UUID: ${{ vars.COOLIFY_RESOURCE_UUID }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+          APP_HEALTH_URL: ${{ vars.APP_HEALTH_URL || 'https://tools.moorkyz.com/' }}
+          DEPLOY_COMMIT_SHA: ${{ github.sha }}
+        run: node scripts/deploy-coolify.cjs

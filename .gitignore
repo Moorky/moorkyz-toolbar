@@ -11,3 +11,12 @@ playwright/.cache/
 packages/portal/public/tool-sources/
 **/.directory-cleaner-archive/
 directory-cleaner-settings.json
+
+# Project-local runtime data and recoverable disposable files. Never commit.
+/.moorkyz/
+/trash/
+/logs/
+/archive/
+.env
+.env.*
+!.env.example

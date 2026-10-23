@@ -1,10 +1,10 @@
 {
-  "name": "tools.moorkyz.com",
+  "name": "moorkyz-tools",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.8.0",
   "scripts": {
-    "build": "pnpm --filter @tools.moorkyz.com/portal build",
+    "build": "pnpm --filter @moorkyz-tools/portal build",
     "check": "pnpm lint && pnpm format:check && pnpm test && pnpm test:browser && pnpm typecheck",
     "format": "prettier --write package.json pnpm-workspace.yaml tsconfig.base.json .prettierrc.json eslint.config.mjs playwright*.mjs tools/*.files.json tools/directory-cleaner tools/toolbar-builder packages/portal tests/tooling tests/browser scripts",
     "format:check": "prettier --check package.json pnpm-workspace.yaml tsconfig.base.json .prettierrc.json eslint.config.mjs playwright*.mjs tools/*.files.json tools/directory-cleaner tools/toolbar-builder packages/portal tests/tooling tests/browser scripts",
@@ -17,7 +17,7 @@
     "test:videocrunch:browser": "playwright test --config playwright.videocrunch.config.mjs",
     "test:browser": "playwright test",
     "check:source": "node scripts/verify-source.mjs",
-    "typecheck": "pnpm --filter @tools.moorkyz.com/portal typecheck"
+    "typecheck": "pnpm --filter @moorkyz-tools/portal typecheck"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
@@ -26,5 +26,9 @@
     "prettier": "^3.9.10",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.71.2"
+  },
+  "engines": {
+    "node": ">=22.18.0",
+    "pnpm": "11.8.0"
   }
 }

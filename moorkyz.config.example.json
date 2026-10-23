@@ -1,0 +1,25 @@
+{
+  "defaultProject": "web",
+  "storage": {
+    "maxLogs": 50,
+    "minFreeBytes": 1073741824,
+    "targetFreeBytes": 2147483648,
+    "minFreePercent": 5,
+    "targetFreePercent": 10
+  },
+  "projects": {
+    "web": {
+      "cwd": "apps/web",
+      "dev": "dev",
+      "prod": "start",
+      "url": "http://localhost:3000",
+      "startupTimeoutMs": 20000
+    },
+    "admin": {
+      "cwd": "apps/admin",
+      "dev": "dev",
+      "prod": "start",
+      "url": "http://localhost:3001"
+    }
+  }
+}

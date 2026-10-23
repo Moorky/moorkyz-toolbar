@@ -33,7 +33,7 @@ test("project identity is consistent across branding, metadata, assets and prefe
   );
   await expect(
     page.getByRole("link", { name: "GitHub", exact: true }),
-  ).toHaveAttribute("href", "https://github.com/Moorky/tools.moorkyz.com");
+  ).toHaveAttribute("href", "https://github.com/Moorky/moorkyz-tools");
   const manifest = await request.get(`${origin}/site.webmanifest`);
   expect(manifest.ok()).toBe(true);
   expect(await manifest.json()).toMatchObject({

@@ -37,7 +37,7 @@ export default function ContributingPage() {
         >
           <code>
             {
-              "pnpm install --frozen-lockfile\npnpm --filter @tools.moorkyz.com/portal dev\npnpm check\npnpm check:source"
+              "pnpm install --frozen-lockfile\npnpm --filter @moorkyz-tools/portal dev\npnpm check\npnpm check:source"
             }
           </code>
         </pre>
@@ -70,7 +70,7 @@ export default function ContributingPage() {
           security review or manual accessibility/device acceptance.
         </p>
         <p>
-          <a href="https://github.com/Moorky/tools.moorkyz.com">
+          <a href="https://github.com/Moorky/moorkyz-tools">
             Open the repository ↗
           </a>{" "}
           · <a href="/#tools">Explore the tools</a>

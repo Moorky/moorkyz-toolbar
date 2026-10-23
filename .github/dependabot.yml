@@ -1,0 +1,44 @@
+# Dependabot version updates + support for security-update pull requests.
+# IMPORTANT: In GitHub Settings > Security & analysis / Advanced Security,
+# enable Dependency graph, Dependabot alerts, and Dependabot security updates.
+# This file by itself does NOT turn those repository settings on.
+version: 2
+updates:
+  # npm projects use the "npm" package ecosystem in Dependabot.
+  # Update directory if your package.json / lockfile are not at repository root.
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 5
+    groups:
+      # Ordinary compatible patch versions can be reviewed together.
+      # Vulnerability-fix PRs remain separate unless grouping is configured
+      # deliberately in repository settings.
+      stable-patches:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - "patch"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:30"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 2

@@ -71,7 +71,7 @@ Delete always archives; permanent deletion is not a supported action.
 pnpm tool:directory-cleaner
 # Portal terminal:
 $env:TOOLS_MOORKYZ_COM_DIRECTORY_CLEANER_ENABLED = "1"
-pnpm --filter @tools.moorkyz.com/portal dev --hostname 127.0.0.1
+pnpm --filter @moorkyz-tools/portal dev --hostname 127.0.0.1
 ```
 
 The default service port is 8766. An explicit native `--port` must match
@@ -102,7 +102,7 @@ On Windows with Node.js 22+, Windows PowerShell 5.1, yt-dlp and FFmpeg installed
 pnpm tool:videocrunch
 # Terminal 2, repository root:
 $env:TOOLS_MOORKYZ_COM_VIDEOCRUNCH_ENABLED = "1"
-pnpm --filter @tools.moorkyz.com/portal dev --hostname 127.0.0.1
+pnpm --filter @moorkyz-tools/portal dev --hostname 127.0.0.1
 ```
 
 For explicit prerequisite bootstrapping, run

@@ -3,7 +3,8 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 
-const identity = "tools.moorkyz.com";
+const identity = "moorkyz-tools";
+const launcherIdentity = "tools.moorkyz.com";
 const previousBrand = ["moor", "kyz"].join("");
 const retiredPackage = ["tool", "bar"].join("");
 const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -12,12 +13,7 @@ const previousIdentity = new RegExp(
     `${previousBrand}-toolbar`,
     `toolbar\\.${previousBrand}\\.com`,
     `@${previousBrand}/`,
-    `${previousBrand}-(?:tools-workspace|cli|cleaner|portal-theme|mark\\.png)`,
-    `\\.${previousBrand}(?:/|\\\\|$)`,
-    `\\b${previousBrand}\\.(?:cjs|cmd|config\\.json)`,
-    `\\b${previousBrand.toUpperCase()}_`,
-    `${previousBrand} (?:Tools|Toolbar|CLI)`,
-    `\\b${previousBrand} (?:start|stop|restart|status|logs|list|doctor|verify|build|test|lint|typecheck|security|run|audit|help)\\b`,
+    `${previousBrand}-(?:tools-workspace|cleaner|portal-theme|mark\\.png)`,
     `packages[/\\\\]${retiredPackage}[/\\\\]`,
     `@${escape(identity)}/${retiredPackage}\\b`,
     `\\b${retiredPackage} (?:SDK|project|package|repository|website|monorepo|build|dependency)\\b`,
@@ -39,6 +35,10 @@ test("retired identifier detection distinguishes the feature from project naming
   }
   for (const text of [
     identity,
+    "Moorkyz Tools",
+    ".moorkyz/",
+    "moorkyz.cjs",
+    "moorkyz status",
     "Toolbar Builder",
     "tools/toolbar-builder/builder.mjs",
     "/tools/toolbar",
@@ -58,12 +58,11 @@ test("workspace, portal package and command filters use the project identity", (
   assert.ok(root.scripts.build.includes(`--filter @${identity}/portal`));
   assert.ok(root.scripts.typecheck.includes(`--filter @${identity}/portal`));
   for (const suffix of ["", ".cjs", ".cmd", ".config.json"]) {
-    assert.ok(existsSync(`${identity}${suffix}`));
-    assert.equal(existsSync(`${previousBrand}${suffix}`), false);
+    assert.ok(existsSync(`${launcherIdentity}${suffix}`));
   }
   assert.match(
-    readFileSync(`${identity}.cjs`, "utf8"),
-    new RegExp(escape(`path.join(ROOT, ".${identity}")`)),
+    readFileSync(`${launcherIdentity}.cjs`, "utf8"),
+    new RegExp(escape(`path.join(ROOT, ".${launcherIdentity}")`)),
   );
 });
 

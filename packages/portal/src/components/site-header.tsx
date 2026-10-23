@@ -24,7 +24,7 @@ export function SiteHeader() {
           Contributing
         </a>
         <a
-          href="https://github.com/Moorky/tools.moorkyz.com"
+          href="https://github.com/Moorky/moorkyz-tools"
           className="header-aux-link"
           target="_blank"
           rel="noreferrer"
